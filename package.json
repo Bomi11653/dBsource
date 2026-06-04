@@ -1,0 +1,37 @@
+{
+  "name": "dbsource-pro",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003 -H 127.0.0.1",
+    "build": "next build",
+    "start": "next start -p 3003 -H 127.0.0.1",
+    "preview": "npm run rebuild && npm run start",
+    "preview:safe": "node scripts/kill-port.mjs 3003 && npm run rebuild && npm run start",
+    "preview:quick": "next start -p 3003 -H 127.0.0.1",
+    "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "rebuild": "npm run clean && npm run build",
+    "lint": "next lint",
+    "doctor": "npm run rebuild && npm run lint"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "framer-motion": "^11.18.2",
+    "next": "14.2.28",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.28",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

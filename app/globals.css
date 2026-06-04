@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-black text-white antialiased;
+}
+
+/* 防止 next/image fill 在样式未加载时撑满视口 */
+img {
+  max-width: 100%;
+}
+[style*="position: relative"] img[data-nimg="fill"],
+.relative[style*="height"] img {
+  max-width: none;
+}
+
+::selection {
+  background: rgba(46, 184, 150, 0.35);
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-page-in {
+  animation: page-fade-in 0.2s ease-out;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #5ed4b8 0%, #2eb896 50%, #1a8f72 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero：不依赖 JS，避免动效失败导致白屏/黑屏 */
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-in {
+  animation: hero-fade-in 0.8s ease-out both;
+}
+
+.hero-fade-in-delay {
+  animation: hero-fade-in 0.8s ease-out 0.15s both;
+}
+
+/* 滚动进入：默认可见，仅增强动效 */
+.reveal-on-scroll {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-on-scroll {
+    animation: hero-fade-in 0.6s ease-out both;
+  }
+}
+
+.qr-swiper .swiper-pagination-bullet {
+  background: #666;
+  opacity: 1;
+}
+.qr-swiper .swiper-pagination-bullet-active {
+  background: #2eb896;
+}
+
