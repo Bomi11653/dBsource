@@ -36,7 +36,7 @@ function svg(label, bg, qr = false) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${h}" viewBox="0 0 ${size} ${h}">
     <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${bg}"/><stop offset="100%" stop-color="#0a0a0a"/></linearGradient></defs>
     <rect width="${size}" height="${h}" fill="url(#g)"/>
-    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#2eb896" font-size="28" font-family="system-ui">${label}</text>
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-size="28" font-family="system-ui">${label}</text>
   </svg>`;
 }
 

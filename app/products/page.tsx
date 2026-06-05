@@ -2,6 +2,7 @@ import ProductsContent from "./ProductsContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getProducts } from "@/lib/cms";
 import { pageMetadata } from "@/lib/seo";
+import { Suspense } from "react";
 
 export const metadata = pageMetadata(
   "产品中心",
@@ -12,7 +13,9 @@ export default async function ProductsPage() {
   const products = await getProducts();
   return (
     <main className="pt-28 min-h-screen">
-      <ProductsContent products={products} />
+      <Suspense fallback={<div className="min-h-[40vh]" />}>
+        <ProductsContent products={products} />
+      </Suspense>
       <SiteFooter />
     </main>
   );

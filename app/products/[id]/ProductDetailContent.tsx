@@ -67,7 +67,7 @@ export default function ProductDetailContent({
             {relatedCases.map((c) => (
               <Link
                 key={c.id}
-                href="/cases"
+                href={`/cases/${c.id}`}
                 className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
               >
                 <div className="relative h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">

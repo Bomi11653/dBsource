@@ -37,6 +37,11 @@ export async function getCases() {
   return (await fetchStrapi<typeof cases>("/cases?populate=*")) ?? cases;
 }
 
+export async function getCaseById(id: number) {
+  const list = await getCases();
+  return list.find((c) => c.id === id) ?? null;
+}
+
 export async function getDownloads() {
   if (USE_MOCK) return downloads;
   return (await fetchStrapi<typeof downloads>("/downloads?populate=*")) ?? downloads;

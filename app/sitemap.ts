@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { getProducts } from "@/lib/fetchCMS";
+import { getCases, getProducts } from "@/lib/fetchCMS";
 import { siteConfig } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -21,5 +21,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...productEntries];
+  const caseList = await getCases();
+  const caseEntries: MetadataRoute.Sitemap = caseList.map((c) => ({
+    url: `${base}/cases/${c.id}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.65,
+  }));
+
+  return [...staticEntries, ...productEntries, ...caseEntries];
 }

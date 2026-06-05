@@ -1,5 +1,5 @@
 import Navbar from "@/components/Navbar";
-import PageTransition from "@/components/PageTransition";
+import PageTransitionProvider from "@/components/PageTransitionProvider";
 import { I18nProvider } from "@/components/I18nProvider";
 import { siteConfig } from "@/lib/seo";
 import "./globals.css";
@@ -35,8 +35,10 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-black text-white">
         <I18nProvider>
-          <Navbar />
-          <PageTransition>{children}</PageTransition>
+          <PageTransitionProvider>
+            <Navbar />
+            {children}
+          </PageTransitionProvider>
         </I18nProvider>
       </body>
     </html>

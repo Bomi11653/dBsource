@@ -1,6 +1,12 @@
 "use client";
 
-import type { CategoryFilter, SeriesTab } from "@/lib/products";
+import {
+  getSubSeriesForGroup,
+  subSeriesLabel,
+  type CategoryFilter,
+  type ProductSubSeriesSlug,
+  type SeriesTab,
+} from "@/lib/products";
 import { useI18n } from "./I18nProvider";
 
 const SERIES_TABS: SeriesTab[] = ["all", "speaker", "dsp", "software", "engineering"];
@@ -9,17 +15,23 @@ const CATEGORY_FILTERS: CategoryFilter[] = ["all", "speaker", "dsp", "software"]
 export default function ProductSeriesBar({
   seriesTab,
   categoryFilter,
+  subSeries,
   onSeriesChange,
   onCategoryChange,
+  onSubSeriesChange,
   resultCount,
 }: {
   seriesTab: SeriesTab;
   categoryFilter: CategoryFilter;
+  subSeries: ProductSubSeriesSlug | "all";
   onSeriesChange: (tab: SeriesTab) => void;
   onCategoryChange: (cat: CategoryFilter) => void;
+  onSubSeriesChange: (sub: ProductSubSeriesSlug | "all") => void;
   resultCount: number;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const subSeriesOptions =
+    seriesTab !== "all" ? getSubSeriesForGroup(seriesTab) : [];
 
   const seriesLabels: Record<SeriesTab, string> = {
     all: t.products.seriesAll,
@@ -54,6 +66,39 @@ export default function ProductSeriesBar({
           </button>
         ))}
       </div>
+
+      {subSeriesOptions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <span className="text-xs text-gray-500 uppercase tracking-wider">
+            {t.nav.megaSubSeries}
+          </span>
+          <button
+            type="button"
+            onClick={() => onSubSeriesChange("all")}
+            className={`px-3 py-1.5 rounded-md text-xs transition border ${
+              subSeries === "all"
+                ? "border-white/30 text-white bg-white/10"
+                : "border-white/10 text-gray-400 hover:border-white/20"
+            }`}
+          >
+            {t.products.filterAll}
+          </button>
+          {subSeriesOptions.map((sub) => (
+            <button
+              key={sub.slug}
+              type="button"
+              onClick={() => onSubSeriesChange(sub.slug)}
+              className={`px-3 py-1.5 rounded-md text-xs transition border ${
+                subSeries === sub.slug
+                  ? "border-white/30 text-white bg-white/10"
+                  : "border-white/10 text-gray-400 hover:border-white/20"
+              }`}
+            >
+              {subSeriesLabel(sub, locale)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-gray-500 uppercase tracking-wider">

@@ -3,6 +3,7 @@
 import DownloadList from "@/components/DownloadList";
 import type { DownloadItem } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
+import { Suspense } from "react";
 
 export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
   const { t } = useI18n();
@@ -27,7 +28,9 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 md:px-10">
-        <DownloadList items={items} />
+        <Suspense fallback={<div className="h-40" />}>
+          <DownloadList items={items} />
+        </Suspense>
       </div>
     </div>
   );

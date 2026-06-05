@@ -196,13 +196,19 @@ function buildProductCatalog(count = 80): Product[] {
   return items;
 }
 
+export type CaseType = "engineering" | "performance";
+
 export interface CaseItem {
   id: number;
+  type: CaseType;
   title: { zh: string; en: string };
   desc: { zh: string; en: string };
+  detail?: { zh: string; en: string };
   scene: { zh: string; en: string };
   products: string;
   image: string;
+  gallery?: string[];
+  highlights?: { zh: string[]; en: string[] };
 }
 
 export interface DownloadItem {
@@ -248,36 +254,66 @@ export const PRODUCTS_PAGE_SIZE = 20;
 export const cases: CaseItem[] = [
   {
     id: 1,
+    type: "performance",
     title: { zh: "体育场演唱会项目", en: "Stadium Concert Project" },
     desc: {
       zh: "72,000 人户外音乐节，全栈线阵列 + 心形超低系统",
       en: "72,000-capacity outdoor festival with full line array & cardioid subs",
     },
+    detail: {
+      zh: "本项目为大型户外音乐节主扩声系统，场地呈扇形开放布局，需兼顾远场投射与近场均匀度。我们采用 X1 线阵列作为主 PA，搭配 S9 心形超低音构建低频阵列，经 EASE 模拟与现场测量联合调校，实现全场声压一致、语言清晰度达标。",
+      en: "A large outdoor festival main PA deployment in a fan-shaped venue requiring long throw and even near-field coverage. X1 line arrays served as main PA with S9 cardioid sub arrays; EASE modeling and on-site measurement delivered consistent SPL and speech intelligibility.",
+    },
     scene: { zh: "体育场馆", en: "Stadium" },
     products: "X1-2024 × 24, S9-Deep × 12",
     image: "/images/case-1.svg",
+    gallery: ["/images/case-1.svg", "/images/scene-1.svg", "/images/scene-2.svg"],
+    highlights: {
+      zh: ["72,000+ 观众覆盖", "140dB 峰值声压", "48h 系统调试"],
+      en: ["72,000+ audience", "140dB peak SPL", "48h commissioning"],
+    },
   },
   {
     id: 2,
+    type: "performance",
     title: { zh: "城市 Live House", en: "Urban Live House" },
     desc: {
       zh: "360° 舞池覆盖，艺术家定制返听方案",
       en: "360° dance floor coverage with artist-custom monitor mixes",
     },
+    detail: {
+      zh: "室内 Live House 空间紧凑、反射复杂，舞池需 360° 均匀覆盖。主扩采用点声源与超低组合，舞台返听按艺人需求分区配置 M6 同轴返听，FOH 与 Monitor 系统独立组网，支持快速换场与预设调用。",
+      en: "Compact indoor venue with complex reflections requiring 360° dance floor coverage. Point-source mains with subs; M6 coaxial monitors zoned per artist with independent FOH/monitor networking and show presets.",
+    },
     scene: { zh: "演艺酒吧", en: "Live House" },
     products: "S9-Deep × 8, M6-Pro × 16",
     image: "/images/case-2.svg",
+    gallery: ["/images/case-2.svg", "/images/scene-3.svg", "/images/product-3.svg"],
+    highlights: {
+      zh: ["360° 舞池覆盖", "16 路舞台返听", "Dante 数字音频"],
+      en: ["360° dance floor", "16 monitor mixes", "Dante audio"],
+    },
   },
   {
     id: 3,
+    type: "engineering",
     title: { zh: "国际会展中心", en: "Convention Center" },
     desc: {
       zh: "多厅 AV 升级，Dante 组网，按厅型预设 DSP",
       en: "Multi-hall AV upgrade with Dante and per-room DSP presets",
     },
+    detail: {
+      zh: "会展中心多厅并行使用，需统一管控与分厅独立扩声。P4 点声源分布式部署于各会议厅与多功能厅，Dante 骨干网互联，按厅型预置 DSP 参数，支持政企会议、发布会与展览同期运行。",
+      en: "Multi-hall convention center requiring centralized control and per-room PA. P4 point-source systems in meeting and multi-function halls on a Dante backbone with room-type DSP presets for concurrent conferences and events.",
+    },
     scene: { zh: "政企会议", en: "Corporate" },
     products: "P4-Compact × 48",
     image: "/images/case-3.svg",
+    gallery: ["/images/case-3.svg", "/images/scene-3.svg", "/images/product-4.svg"],
+    highlights: {
+      zh: ["48 台点声源", "多厅 Dante 组网", "厅型 DSP 预设"],
+      en: ["48 point sources", "Multi-hall Dante", "Room DSP presets"],
+    },
   },
 ];
 

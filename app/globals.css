@@ -33,10 +33,16 @@ img {
 }
 
 .text-gradient-gold {
-  background: linear-gradient(135deg, #5ed4b8 0%, #2eb896 50%, #1a8f72 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+/* 全站品牌色文字统一为白色（保留边框/背景装饰色） */
+.text-brand-gold,
+.hover\:text-brand-gold:hover,
+.group:hover .group-hover\:text-brand-gold {
+  color: #fff !important;
 }
 
 /* Hero：不依赖 JS，避免动效失败导致白屏/黑屏 */
