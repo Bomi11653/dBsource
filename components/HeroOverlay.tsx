@@ -1,5 +1,7 @@
 "use client";
 
+import BrowseGuide from "@/components/BrowseGuide";
+import ScrollGuide from "@/components/ScrollGuide";
 import { useI18n } from "./I18nProvider";
 import Image from "next/image";
 
@@ -21,7 +23,22 @@ export default function HeroOverlay() {
           className="h-[2.4rem] md:h-[3.2rem] lg:h-[3.6rem] w-auto object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.15)]"
           priority
         />
+        <BrowseGuide
+          title={t.guide.exploreTitle}
+          items={[
+            { label: t.guide.homeScenes, targetId: "home-scenes" },
+            { label: t.guide.homeProducts, targetId: "home-products" },
+            { label: t.guide.homeCases, targetId: "home-cases" },
+          ]}
+          className="mt-8 md:mt-10 pointer-events-auto items-center"
+        />
       </div>
+      <ScrollGuide
+        targetId="home-scenes"
+        label={t.guide.scroll}
+        ariaLabel={t.guide.scrollAria}
+        className="absolute bottom-8 md:bottom-10 left-1/2 -translate-x-1/2"
+      />
     </section>
   );
 }

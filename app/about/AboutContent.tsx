@@ -1,6 +1,7 @@
 "use client";
 
-import { aboutImages } from "@/data/about";
+import BrowseGuide from "@/components/BrowseGuide";
+import { aboutImages, type AboutImages } from "@/data/about";
 import { useI18n } from "@/components/I18nProvider";
 import Image from "next/image";
 
@@ -12,8 +13,11 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-export default function AboutContent() {
-  const { t } = useI18n();
+const systemAspects = ["aspect-[1024/612]", "aspect-[988/749]", "aspect-[598/643]"] as const;
+const systemAlts = ["dBcover", "dBcover EQ", "dBcover SPL"] as const;
+
+export default function AboutContent({ images = aboutImages }: { images?: AboutImages }) {
+  const { locale, t } = useI18n();
 
   return (
     <div className="bg-black text-white">
@@ -21,7 +25,17 @@ export default function AboutContent() {
       <section className="px-6 md:px-10 pt-32 pb-32 md:pb-40">
         <div className="max-w-5xl mx-auto">
           <SectionLabel>{t.about.label}</SectionLabel>
-          <div className="space-y-8 hero-fade-in">
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.aboutStory, targetId: "about-story" },
+              { label: t.guide.aboutSystem, targetId: "about-system" },
+              { label: t.guide.aboutDsp, targetId: "about-dsp" },
+              { label: t.guide.productsSpeaker, href: "/products" },
+            ]}
+            className="mb-10"
+          />
+          <div id="about-story" className="space-y-8 hero-fade-in scroll-mt-28">
             {t.about.origin.body.map((paragraph, i) => (
               <p
                 key={i}
@@ -36,60 +50,80 @@ export default function AboutContent() {
             ))}
           </div>
 
-          <div className="mt-16 md:mt-24 w-full aspect-[16/10] md:h-[500px] relative rounded-2xl overflow-hidden border border-white/5 hero-fade-in-delay">
+          <div className="mt-16 md:mt-20 w-full aspect-[16/9] md:h-[420px] relative rounded-2xl overflow-hidden border border-white/5 hero-fade-in-delay">
             <Image
-              src={aboutImages.origin}
-              alt="dBsource factory"
+              src={images.brandIntro}
+              alt={locale === "zh" ? "dBsource 东莞工厂" : "dBsource Dongguan factory"}
               fill
-              className="object-cover"
+              className="object-cover object-[center_45%]"
               sizes="(max-width: 1024px) 100vw, 1024px"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+          </div>
 
+          <div className="mt-8 md:mt-12 w-full aspect-[4/3] md:h-[500px] relative rounded-2xl overflow-hidden border border-white/5">
+            <Image
+              src={images.origin}
+              alt={locale === "zh" ? "消声室" : "Anechoic chamber"}
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 1024px) 100vw, 1024px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           </div>
         </div>
       </section>
 
-      {/* Section 2 — 系统能力（图文交错） */}
-      <section className="px-6 md:px-10 py-32 md:py-40 border-t border-white/5">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          <div className="space-y-8 order-2 lg:order-1 reveal-on-scroll">
+      {/* Section 2 — 系统能力（分开展示） */}
+      <section id="about-system" className="px-6 md:px-10 py-32 md:py-40 border-t border-white/5 scroll-mt-28">
+        <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
+          <div className="max-w-2xl reveal-on-scroll">
             <SectionLabel>02</SectionLabel>
             <h2 className="text-3xl md:text-4xl font-light tracking-tight">
               {t.about.system.title}
             </h2>
-            <p className="text-gray-400 text-lg leading-relaxed max-w-md">
+            <p className="text-gray-400 text-lg leading-relaxed mt-6">
               {t.about.system.body}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 order-1 lg:order-2 reveal-on-scroll">
-            <div className="relative h-52 md:h-60 rounded-xl overflow-hidden border border-white/5 bg-white/5">
+          <div className="space-y-8 md:space-y-10 reveal-on-scroll">
+            <div
+              className={`relative w-full ${systemAspects[0]} rounded-2xl overflow-hidden border border-white/5`}
+            >
               <Image
-                src={aboutImages.system[0]}
-                alt=""
+                src={images.system[0]}
+                alt={systemAlts[0]}
                 fill
-                className="object-cover hover:scale-105 transition-transform duration-700"
-                sizes="25vw"
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1152px"
               />
             </div>
-            <div className="relative h-52 md:h-60 rounded-xl overflow-hidden border border-white/5 bg-white/5 mt-8 md:mt-12">
-              <Image
-                src={aboutImages.system[1]}
-                alt=""
-                fill
-                className="object-cover hover:scale-105 transition-transform duration-700"
-                sizes="25vw"
-              />
-            </div>
-            <div className="relative h-52 md:h-60 rounded-xl overflow-hidden border border-white/5 bg-white/5 col-span-2">
-              <Image
-                src={aboutImages.system[2]}
-                alt=""
-                fill
-                className="object-cover hover:scale-105 transition-transform duration-700"
-                sizes="50vw"
-              />
+
+            <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+              <div
+                className={`relative w-full ${systemAspects[1]} rounded-2xl overflow-hidden border border-white/5`}
+              >
+                <Image
+                  src={images.system[1]}
+                  alt={systemAlts[1]}
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+              <div
+                className={`relative w-full ${systemAspects[2]} rounded-2xl overflow-hidden border border-white/5 md:max-w-md md:justify-self-end`}
+              >
+                <Image
+                  src={images.system[2]}
+                  alt={systemAlts[2]}
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -108,12 +142,12 @@ export default function AboutContent() {
             </p>
           </div>
 
-          <div className="relative w-full aspect-[16/9] md:h-[500px] rounded-2xl overflow-hidden border border-white/5 reveal-on-scroll">
+          <div className="relative w-full aspect-[3/2] md:aspect-[1016/687] rounded-2xl overflow-hidden border border-white/5 reveal-on-scroll">
             <Image
-              src={aboutImages.focus}
-              alt="Focus app"
+              src={images.focus}
+              alt="dBsource Focus"
               fill
-              className="object-cover"
+              className="object-cover object-center"
               sizes="(max-width: 1200px) 100vw, 1152px"
             />
           </div>
@@ -121,7 +155,7 @@ export default function AboutContent() {
       </section>
 
       {/* Section 4 — DSP 硬件 */}
-      <section className="px-6 md:px-10 py-32 md:pb-48 border-t border-white/5">
+      <section id="about-dsp" className="px-6 md:px-10 py-32 md:pb-48 border-t border-white/5 scroll-mt-28">
         <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
           <div className="max-w-2xl reveal-on-scroll">
             <SectionLabel>04</SectionLabel>
@@ -133,17 +167,17 @@ export default function AboutContent() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {aboutImages.dsp.map((src, i) => (
+          <div className="grid md:grid-cols-3 gap-5 md:gap-6">
+            {images.dsp.map((src, i) => (
               <div
                 key={src}
-                className="relative h-64 md:h-72 rounded-2xl overflow-hidden border border-white/5 group reveal-on-scroll"
+                className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/5 group reveal-on-scroll"
               >
                 <Image
                   src={src}
-                  alt={`unit48 ${i + 1}`}
+                  alt={`Unit48 ${i + 1}`}
                   fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-700"
                   sizes="33vw"
                 />
               </div>

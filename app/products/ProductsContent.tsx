@@ -1,14 +1,17 @@
 "use client";
 
+import BrowseGuide from "@/components/BrowseGuide";
 import PageHeader from "@/components/PageHeader";
 import ProductGridCard from "@/components/ProductGridCard";
 import ProductPagination from "@/components/ProductPagination";
+import ProductSearchBar from "@/components/ProductSearchBar";
 import ProductSeriesBar from "@/components/ProductSeriesBar";
 import type { Product } from "@/data/mock";
 import { PRODUCTS_PAGE_SIZE } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import {
   filterProducts,
+  searchProducts,
   getSubSeriesBySlug,
   type CategoryFilter,
   type ProductSubSeriesSlug,
@@ -26,6 +29,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   const [seriesTab, setSeriesTab] = useState<SeriesTab>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [subSeries, setSubSeries] = useState<ProductSubSeriesSlug | "all">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const series = searchParams.get("series") as SeriesTab | null;
@@ -42,10 +46,15 @@ export default function ProductsContent({ products }: { products: Product[] }) {
     }
   }, [searchParams]);
 
-  const filtered = useMemo(
-    () => filterProducts(products, seriesTab, categoryFilter, subSeries),
-    [products, seriesTab, categoryFilter, subSeries]
-  );
+  const filtered = useMemo(() => {
+    const byFilters = filterProducts(products, seriesTab, categoryFilter, subSeries);
+    return searchProducts(byFilters, searchQuery);
+  }, [products, seriesTab, categoryFilter, subSeries, searchQuery]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PAGE_SIZE));
 
@@ -82,7 +91,22 @@ export default function ProductsContent({ products }: { products: Product[] }) {
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 md:px-10 pb-24">
-      <PageHeader title={t.products.title} subtitle={t.products.subtitle} />
+      <PageHeader
+        title={t.products.title}
+        subtitle={t.products.subtitle}
+        guide={
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.productsSpeaker, href: "/products?series=speaker" },
+              { label: t.guide.productsDsp, href: "/products?series=dsp" },
+              { label: t.guide.productsSoftware, href: "/products?series=software" },
+              { label: t.guide.productsCases, href: "/cases" },
+            ]}
+            className="mt-6"
+          />
+        }
+      />
 
       <ProductSeriesBar
         seriesTab={seriesTab}
@@ -92,13 +116,20 @@ export default function ProductsContent({ products }: { products: Product[] }) {
         onCategoryChange={handleCategoryChange}
         onSubSeriesChange={handleSubSeriesChange}
         resultCount={filtered.length}
+        search={
+          <ProductSearchBar
+            value={searchQuery}
+            onChange={handleSearchChange}
+            resultCount={filtered.length}
+          />
+        }
       />
 
       {currentProducts.length === 0 ? (
         <p className="text-center text-gray-500 py-20">{t.products.noResults}</p>
       ) : (
         <div
-          key={`${seriesTab}-${categoryFilter}-${subSeries}-${currentPage}`}
+          key={`${seriesTab}-${categoryFilter}-${subSeries}-${searchQuery}-${currentPage}`}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 animate-page-in"
         >
           {currentProducts.map((p) => (

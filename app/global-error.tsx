@@ -9,7 +9,16 @@ export default function GlobalError({
 }) {
   return (
     <html lang="zh-CN">
-      <body style={{ margin: 0, background: "#000", color: "#fff", fontFamily: "system-ui" }}>
+      <body
+        style={{
+          margin: 0,
+          background: "#000",
+          color: "#fff",
+          fontFamily:
+            'Inter, "Source Han Sans SC", -apple-system, BlinkMacSystemFont, sans-serif',
+          letterSpacing: "0.02em",
+        }}
+      >
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <h1 style={{ fontWeight: 300 }}>网站运行异常</h1>
           <p style={{ color: "#888", marginTop: 16 }}>{error.message}</p>

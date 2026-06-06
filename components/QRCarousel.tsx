@@ -13,7 +13,7 @@ export default function QRCarousel({ items }: { items: QRItem[] }) {
       <p className="text-center text-xs text-gray-500 mb-6 tracking-widest uppercase">
         {t.footer.scan}
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+      <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
         {items.map((qr) => (
           <div key={qr.id} className="flex flex-col items-center gap-3">
             <SafeImageContain

@@ -1,5 +1,6 @@
 import ContactContent from "./ContactContent";
 import SiteFooter from "@/components/SiteFooter";
+import { getQRCodes } from "@/lib/cms";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata(
@@ -8,10 +9,12 @@ export const metadata = pageMetadata(
   "/contact"
 );
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const qrItems = await getQRCodes();
+
   return (
     <main className="min-h-screen">
-      <ContactContent />
+      <ContactContent qrItems={qrItems} />
       <SiteFooter />
     </main>
   );

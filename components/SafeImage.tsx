@@ -59,7 +59,7 @@ export function SafeImageContain({
 }) {
   return (
     <div
-      className={`relative overflow-hidden bg-white p-2 ${className}`}
+      className={`relative overflow-hidden bg-zinc-900 p-1 ${className}`}
       style={{
         position: "relative",
         width: size,

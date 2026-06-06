@@ -1,5 +1,6 @@
 import AboutContent from "./AboutContent";
 import SiteFooter from "@/components/SiteFooter";
+import { getAboutImages } from "@/lib/fetchCMS";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata(
@@ -7,10 +8,12 @@ export const metadata = pageMetadata(
   "dBsource 品牌起源、系统解决方案、Focus 声学软件与 unit48 DSP 硬件"
 );
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const images = await getAboutImages();
+
   return (
     <main className="min-h-screen">
-      <AboutContent />
+      <AboutContent images={images} />
       <SiteFooter />
     </main>
   );

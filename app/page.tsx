@@ -5,20 +5,16 @@ import {
   HomeScenes,
 } from "@/components/HomeSections";
 import SiteFooter from "@/components/SiteFooter";
-import { getCases, getProducts, getScenes } from "@/lib/fetchCMS";
+import { getCases, getScenes } from "@/lib/fetchCMS";
 
 export default async function HomePage() {
-  const [products, scenes, cases] = await Promise.all([
-    getProducts(),
-    getScenes(),
-    getCases(),
-  ]);
+  const [scenes, cases] = await Promise.all([getScenes(), getCases()]);
 
   return (
     <main>
       <Hero />
       <HomeScenes scenes={scenes} />
-      <HomeProductsPreview products={products} />
+      <HomeProductsPreview />
       <HomeCasesPreview cases={cases} />
       <SiteFooter />
     </main>

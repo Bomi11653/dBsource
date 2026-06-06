@@ -2,6 +2,13 @@
 
 import { usePageTransition } from "@/components/PageTransitionProvider";
 import type { CaseType, ProductSeriesGroup } from "@/data/mock";
+import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
+import {
+  DOWNLOAD_TABS,
+  downloadSubCategoryLabel,
+  getDownloadSubCategoriesForTab,
+  type DownloadTab,
+} from "@/lib/downloads";
 import {
   getSubSeriesForGroup,
   PRODUCT_SERIES_GROUPS,
@@ -17,39 +24,98 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type MegaMenu = "products" | "cases" | "downloads" | null;
 
-const CASE_TYPES: CaseType[] = ["engineering", "performance"];
+type MegaLinkItem = { key: string; href: string; label: string };
 
-const DOWNLOAD_TABS = ["software", "catalog"] as const;
+function splitIntoMegaColumns(
+  items: MegaLinkItem[],
+  firstColumnCount: number,
+  restColumnSize = 3
+): MegaLinkItem[][] {
+  if (items.length <= firstColumnCount) return [items];
+  const columns: MegaLinkItem[][] = [items.slice(0, firstColumnCount)];
+  const rest = items.slice(firstColumnCount);
+  for (let i = 0; i < rest.length; i += restColumnSize) {
+    columns.push(rest.slice(i, i + restColumnSize));
+  }
+  return columns;
+}
 
-function MegaTextColumn({
+function MegaMainColumn({
+  exploreLabel,
+  viewAllHref,
+  viewAllLabel,
+  onNavigate,
+  children,
+}: {
+  exploreLabel: string;
+  viewAllHref?: string;
+  viewAllLabel?: string;
+  onNavigate: (e: React.MouseEvent, href: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-[200px] flex flex-col self-stretch shrink-0">
+      <div>
+        <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{exploreLabel}</p>
+        {children}
+      </div>
+      {viewAllHref && viewAllLabel ? (
+        <Link
+          href={viewAllHref}
+          onClick={(e) => onNavigate(e, viewAllHref)}
+          className="mt-auto pt-10 text-sm text-gray-500 hover:text-white transition-colors"
+        >
+          {viewAllLabel}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function MegaSubColumns({
   title,
   links,
+  firstColumnCount,
+  restColumnSize = 3,
   onNavigate,
 }: {
   title: string;
-  links: { href: string; label: string; large?: boolean }[];
+  links: MegaLinkItem[];
+  firstColumnCount: number;
+  restColumnSize?: number;
   onNavigate: (e: React.MouseEvent, href: string) => void;
 }) {
+  const columns =
+    links.length > firstColumnCount
+      ? splitIntoMegaColumns(links, firstColumnCount, restColumnSize)
+      : [links];
+
   return (
-    <div className="min-w-[180px]">
-      <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{title}</p>
-      <ul className="space-y-1">
-        {links.map((link) => (
-          <li key={link.href + link.label}>
-            <Link
-              href={link.href}
-              onClick={(e) => onNavigate(e, link.href)}
-              className={`block py-1 transition-colors text-gray-300 hover:text-white ${
-                link.large
-                  ? "text-xl md:text-2xl font-semibold tracking-tight"
-                  : "text-sm"
-              }`}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="flex gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-start flex-1 min-w-0">
+      {columns.map((column, columnIndex) => (
+        <div key={columnIndex} className="min-w-[160px] shrink-0">
+          {columnIndex === 0 ? (
+            <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{title}</p>
+          ) : (
+            <p className="text-[11px] mb-4 tracking-wide opacity-0 select-none" aria-hidden="true">
+              {title}
+            </p>
+          )}
+          <ul className="space-y-1">
+            {column.map((link) => (
+              <li key={link.key}>
+                <Link
+                  href={link.href}
+                  onClick={(e) => onNavigate(e, link.href)}
+                  className="block py-1.5 text-base md:text-lg text-gray-300 hover:text-white transition-colors"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
@@ -70,11 +136,21 @@ function ProductsMegaPanel({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   const subItems = getSubSeriesForGroup(activeSeries);
+  const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
+    key: sub.slug,
+    href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
+    label: subSeriesLabel(sub, locale),
+  }));
+  const firstColumnCount = activeSeries === "speaker" ? 5 : subLinks.length;
 
   return (
-    <div className="flex flex-wrap gap-12 md:gap-20 lg:gap-28">
-      <div className="min-w-[200px]">
-        <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{t.nav.megaExplore}</p>
+    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
+      <MegaMainColumn
+        exploreLabel={t.nav.megaExplore}
+        viewAllHref="/products"
+        viewAllLabel={t.nav.megaViewAll}
+        onNavigate={onNavigate}
+      >
         <ul className="space-y-1">
           {PRODUCT_SERIES_GROUPS.map((series) => (
             <li key={series}>
@@ -93,38 +169,129 @@ function ProductsMegaPanel({
               </Link>
             </li>
           ))}
-          <li className="pt-2">
-            <Link
-              href="/products"
-              onClick={(e) => onNavigate(e, "/products")}
-              className="text-sm text-gray-500 hover:text-white transition-colors"
-            >
-              {t.nav.megaViewAll}
-            </Link>
-          </li>
         </ul>
-      </div>
+      </MegaMainColumn>
 
-      <div className="min-w-[220px]">
-        <p className="text-[11px] text-gray-500 mb-4 tracking-wide">
-          {seriesLabels[activeSeries]}
-        </p>
+      <MegaSubColumns
+        title={seriesLabels[activeSeries]}
+        links={subLinks}
+        firstColumnCount={firstColumnCount}
+        restColumnSize={3}
+        onNavigate={onNavigate}
+      />
+    </div>
+  );
+}
+
+function CasesMegaPanel({
+  activeType,
+  onTypeHover,
+  onNavigate,
+  caseLabels,
+  locale,
+  t,
+}: {
+  activeType: CaseType;
+  onTypeHover: (type: CaseType) => void;
+  onNavigate: (e: React.MouseEvent, href: string) => void;
+  caseLabels: Record<CaseType, string>;
+  locale: "zh" | "en";
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  const subLinks: MegaLinkItem[] = getCaseMegaLinks(activeType, locale);
+  const firstColumnCount = 3;
+
+  return (
+    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
+      <MegaMainColumn
+        exploreLabel={t.nav.megaExplore}
+        viewAllHref="/cases"
+        viewAllLabel={t.nav.megaViewAllCases}
+        onNavigate={onNavigate}
+      >
         <ul className="space-y-1">
-          {subItems.map((sub) => (
-            <li key={sub.slug}>
+          {CASE_TYPES.map((type) => (
+            <li key={type}>
               <Link
-                href={`/products?series=${sub.seriesGroup}&sub=${sub.slug}`}
-                onClick={(e) =>
-                  onNavigate(e, `/products?series=${sub.seriesGroup}&sub=${sub.slug}`)
-                }
-                className="block py-1.5 text-base md:text-lg text-gray-300 hover:text-white transition-colors"
+                href={`/cases?type=${type}`}
+                onMouseEnter={() => onTypeHover(type)}
+                onFocus={() => onTypeHover(type)}
+                onClick={(e) => onNavigate(e, `/cases?type=${type}`)}
+                className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
+                  activeType === type ? "text-white" : "text-gray-400 hover:text-white"
+                }`}
               >
-                {subSeriesLabel(sub, locale)}
+                {caseLabels[type]}
               </Link>
             </li>
           ))}
         </ul>
-      </div>
+      </MegaMainColumn>
+
+      <MegaSubColumns
+        title={caseLabels[activeType]}
+        links={subLinks}
+        firstColumnCount={firstColumnCount}
+        restColumnSize={2}
+        onNavigate={onNavigate}
+      />
+    </div>
+  );
+}
+
+function DownloadsMegaPanel({
+  activeTab,
+  onTabHover,
+  onNavigate,
+  locale,
+  t,
+}: {
+  activeTab: DownloadTab;
+  onTabHover: (tab: DownloadTab) => void;
+  onNavigate: (e: React.MouseEvent, href: string) => void;
+  locale: "zh" | "en";
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  const subItems = getDownloadSubCategoriesForTab(activeTab);
+  const tabLabels: Record<DownloadTab, string> = {
+    software: t.downloads.software,
+    catalog: t.downloads.catalog,
+  };
+  const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
+    key: sub.slug,
+    href: `/downloads?tab=${sub.tab}&sub=${sub.slug}`,
+    label: downloadSubCategoryLabel(sub, locale),
+  }));
+
+  return (
+    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
+      <MegaMainColumn exploreLabel={t.nav.megaExplore} onNavigate={onNavigate}>
+        <ul className="space-y-1">
+          {DOWNLOAD_TABS.map((tab) => (
+            <li key={tab}>
+              <Link
+                href={`/downloads?tab=${tab}`}
+                onMouseEnter={() => onTabHover(tab)}
+                onFocus={() => onTabHover(tab)}
+                onClick={(e) => onNavigate(e, `/downloads?tab=${tab}`)}
+                className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
+                  activeTab === tab ? "text-white" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {tabLabels[tab]}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </MegaMainColumn>
+
+      <MegaSubColumns
+        title={tabLabels[activeTab]}
+        links={subLinks}
+        firstColumnCount={2}
+        restColumnSize={2}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }
@@ -135,6 +302,8 @@ export default function Navbar() {
   const { navigateWithTransition } = usePageTransition();
   const [megaOpen, setMegaOpen] = useState<MegaMenu>(null);
   const [activeProductSeries, setActiveProductSeries] = useState<ProductSeriesGroup>("speaker");
+  const [activeCaseType, setActiveCaseType] = useState<CaseType>("engineering");
+  const [activeDownloadTab, setActiveDownloadTab] = useState<DownloadTab>("software");
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -154,6 +323,8 @@ export default function Navbar() {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setMegaOpen(menu);
     if (menu === "products") setActiveProductSeries("speaker");
+    if (menu === "cases") setActiveCaseType("engineering");
+    if (menu === "downloads") setActiveDownloadTab("software");
   }, []);
 
   const scheduleCloseMega = useCallback(() => {
@@ -314,41 +485,24 @@ export default function Navbar() {
               )}
 
               {megaOpen === "cases" && (
-                <div className="flex flex-wrap gap-12 md:gap-20">
-                  <MegaTextColumn
-                    title={t.nav.megaExplore}
-                    onNavigate={handleNavClick}
-                    links={[
-                      ...CASE_TYPES.map((c) => ({
-                        href: `/cases?type=${c}`,
-                        label: caseLabels[c],
-                        large: true,
-                      })),
-                      {
-                        href: "/cases",
-                        label: t.nav.megaViewAllCases,
-                        large: false,
-                      },
-                    ]}
-                  />
-                </div>
+                <CasesMegaPanel
+                  activeType={activeCaseType}
+                  onTypeHover={setActiveCaseType}
+                  onNavigate={handleNavClick}
+                  caseLabels={caseLabels}
+                  locale={locale}
+                  t={t}
+                />
               )}
 
               {megaOpen === "downloads" && (
-                <div className="flex flex-wrap gap-12 md:gap-20">
-                  <MegaTextColumn
-                    title={t.nav.megaExplore}
-                    onNavigate={handleNavClick}
-                    links={DOWNLOAD_TABS.map((tab) => ({
-                      href: `/downloads?tab=${tab}`,
-                      label:
-                        tab === "software"
-                          ? t.downloads.software
-                          : t.downloads.catalog,
-                      large: true,
-                    }))}
-                  />
-                </div>
+                <DownloadsMegaPanel
+                  activeTab={activeDownloadTab}
+                  onTabHover={setActiveDownloadTab}
+                  onNavigate={handleNavClick}
+                  locale={locale}
+                  t={t}
+                />
               )}
             </div>
           </motion.div>
@@ -406,14 +560,25 @@ export default function Navbar() {
                   {t.nav.cases}
                 </Link>
                 {CASE_TYPES.map((c) => (
-                  <Link
-                    key={c}
-                    href={`/cases?type=${c}`}
-                    onClick={(e) => handleNavClick(e, `/cases?type=${c}`)}
-                    className="block py-2 pl-3 text-gray-400"
-                  >
-                    {caseLabels[c]}
-                  </Link>
+                  <div key={c}>
+                    <Link
+                      href={`/cases?type=${c}`}
+                      onClick={(e) => handleNavClick(e, `/cases?type=${c}`)}
+                      className="block py-2 pl-3 text-gray-300 font-medium"
+                    >
+                      {caseLabels[c]}
+                    </Link>
+                    {getCaseMegaLinks(c, locale).map((sub) => (
+                      <Link
+                        key={sub.key}
+                        href={sub.href}
+                        onClick={(e) => handleNavClick(e, sub.href)}
+                        className="block py-1.5 pl-6 text-gray-500 text-xs"
+                      >
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
                 ))}
               </div>
               <div>
@@ -421,14 +586,27 @@ export default function Navbar() {
                   {t.nav.downloads}
                 </Link>
                 {DOWNLOAD_TABS.map((tab) => (
-                  <Link
-                    key={tab}
-                    href={`/downloads?tab=${tab}`}
-                    onClick={(e) => handleNavClick(e, `/downloads?tab=${tab}`)}
-                    className="block py-2 pl-3 text-gray-400"
-                  >
-                    {tab === "software" ? t.downloads.software : t.downloads.catalog}
-                  </Link>
+                  <div key={tab}>
+                    <Link
+                      href={`/downloads?tab=${tab}`}
+                      onClick={(e) => handleNavClick(e, `/downloads?tab=${tab}`)}
+                      className="block py-2 pl-3 text-gray-300 font-medium"
+                    >
+                      {tab === "software" ? t.downloads.software : t.downloads.catalog}
+                    </Link>
+                    {getDownloadSubCategoriesForTab(tab).map((sub) => (
+                      <Link
+                        key={sub.slug}
+                        href={`/downloads?tab=${sub.tab}&sub=${sub.slug}`}
+                        onClick={(e) =>
+                          handleNavClick(e, `/downloads?tab=${sub.tab}&sub=${sub.slug}`)
+                        }
+                        className="block py-1.5 pl-6 text-gray-500 text-xs"
+                      >
+                        {downloadSubCategoryLabel(sub, locale)}
+                      </Link>
+                    ))}
+                  </div>
                 ))}
               </div>
               <Link href="/contact" onClick={(e) => handleNavClick(e, "/contact")} className="block py-2">

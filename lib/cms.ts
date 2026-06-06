@@ -9,6 +9,7 @@ export {
   getDownloads,
   getScenes,
   getQRCodes,
+  getAboutImages,
 } from "./fetchCMS";
 
 export { PRODUCTS_PAGE_SIZE } from "@/data/mock";

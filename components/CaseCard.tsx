@@ -8,10 +8,13 @@ import Link from "next/link";
 export default function CaseCard({
   item,
   locale,
+  emptyImage = false,
 }: {
   item: CaseItem;
   locale: Locale;
   index?: number;
+  /** 保留缩略图框，不显示图片（待上传封面） */
+  emptyImage?: boolean;
 }) {
   return (
     <Link
@@ -19,16 +22,24 @@ export default function CaseCard({
       className="group block"
     >
       <article className="flex flex-col md:flex-row gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors">
-        <div className="md:w-72 shrink-0" style={{ minHeight: 192 }}>
-          <SafeImage
-            src={item.image}
-            alt={item.title[locale]}
-            frameHeight={192}
-            frameWidth="100%"
-            sizes="(max-width: 768px) 100vw, 33vw"
-            loading="lazy"
+        {emptyImage ? (
+          <div
+            className="md:w-72 shrink-0 bg-zinc-900/70 border-r border-white/5"
+            style={{ minHeight: 192 }}
+            aria-hidden
           />
-        </div>
+        ) : (
+          <div className="md:w-72 shrink-0" style={{ minHeight: 192 }}>
+            <SafeImage
+              src={item.image}
+              alt={item.title[locale]}
+              frameHeight={192}
+              frameWidth="100%"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              loading="lazy"
+            />
+          </div>
+        )}
         <div className="p-6 flex flex-col justify-center">
           <span className="text-xs text-brand-gold uppercase tracking-wider">
             {item.scene[locale]}

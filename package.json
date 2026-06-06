@@ -12,7 +12,8 @@
     "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "rebuild": "npm run clean && npm run build",
     "lint": "next lint",
-    "doctor": "npm run rebuild && npm run lint"
+    "doctor": "npm run rebuild && npm run lint",
+    "sync:case-images": "python scripts/sync-case-images.py"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

@@ -1,12 +1,12 @@
 "use client";
 
-import { contactInfo } from "@/data/mock";
-import { qrCodes } from "@/data/mock";
+import BrowseGuide from "@/components/BrowseGuide";
+import { contactInfo, type QRItem } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import { SafeImageContain } from "@/components/SafeImage";
 import { FormEvent, useState } from "react";
 
-export default function ContactContent() {
+export default function ContactContent({ qrItems }: { qrItems: QRItem[] }) {
   const { locale, t } = useI18n();
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,10 +43,21 @@ export default function ContactContent() {
       <section className="pt-32 pb-16 px-6 text-center hero-fade-in">
         <h1 className="text-4xl md:text-6xl font-light">{t.contact.title}</h1>
         <p className="text-gray-400 mt-4 text-lg max-w-2xl mx-auto">{t.contact.subtitle}</p>
+        <BrowseGuide
+          title={t.guide.exploreTitle}
+          items={[
+            { label: t.guide.contactForm, targetId: "contact-form" },
+            { label: t.guide.contactInfo, targetId: "contact-info" },
+            { label: t.guide.contactMap, targetId: "contact-map" },
+            { label: t.guide.productsSpeaker, href: "/products" },
+          ]}
+          className="mt-8 items-center"
+        />
       </section>
 
       <section className="max-w-6xl mx-auto px-6 md:px-10 pb-16 grid md:grid-cols-2 gap-10 md:gap-14">
         <form
+          id="contact-form"
           onSubmit={handleSubmit}
           className="space-y-4 bg-white/5 border border-white/10 p-8 rounded-2xl reveal-on-scroll"
         >
@@ -92,7 +103,10 @@ export default function ContactContent() {
         </form>
 
         <div className="space-y-6 reveal-on-scroll">
-          <div className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-white/10">
+          <div
+            id="contact-map"
+            className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-white/10 scroll-mt-28"
+          >
             <iframe
               title="map"
               src={mapSrc}
@@ -101,7 +115,10 @@ export default function ContactContent() {
               referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3 text-gray-300">
+          <div
+            id="contact-info"
+            className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3 text-gray-300 scroll-mt-28"
+          >
             <p className="text-white font-light text-lg">{contactInfo.company[locale]}</p>
             {contactInfo.phones.map((phone) => (
               <p key={phone}>
@@ -130,7 +147,7 @@ export default function ContactContent() {
           {t.contact.qrTitle}
         </p>
         <div className="flex justify-center gap-6 overflow-x-auto pb-4">
-          {qrCodes.map((qr) => (
+          {qrItems.map((qr) => (
             <div key={qr.id} className="flex flex-col items-center gap-2 shrink-0 group">
               <SafeImageContain
                 src={qr.image}

@@ -2,9 +2,16 @@
 
 import CaseCard from "@/components/CaseCard";
 import CasesScrollStory from "@/components/CasesScrollStory";
+import BrowseGuide from "@/components/BrowseGuide";
 import PageHeader from "@/components/PageHeader";
 import type { CaseItem, CaseType } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
+import {
+  filterCasesBySub,
+  getCaseSubCategoryBySlug,
+  getCasesForType,
+  type CaseSubCategorySlug,
+} from "@/lib/cases";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
@@ -12,13 +19,18 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") as CaseType | null;
+  const subParam = searchParams.get("sub") as CaseSubCategorySlug | null;
+  const validSub = subParam && getCaseSubCategoryBySlug(subParam) ? subParam : null;
 
   const filtered = useMemo(() => {
     if (typeParam === "engineering" || typeParam === "performance") {
-      return cases.filter((c) => c.type === typeParam);
+      if (validSub) {
+        return filterCasesBySub(cases, typeParam, validSub);
+      }
+      return getCasesForType(typeParam, cases);
     }
     return cases;
-  }, [cases, typeParam]);
+  }, [cases, typeParam, validSub]);
 
   if (!typeParam) {
     return <CasesScrollStory cases={cases} />;
@@ -35,7 +47,22 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
 
   return (
     <div className="bg-black text-white pt-28 min-h-screen px-6 md:px-10 pb-20 max-w-5xl mx-auto">
-      <PageHeader title={title} subtitle={subtitle} />
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        guide={
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
+              { label: t.guide.casesPerformance, href: "/cases?type=performance" },
+              { label: t.guide.casesAll, href: "/cases" },
+              { label: t.guide.productsSpeaker, href: "/products" },
+            ]}
+            className="mt-6"
+          />
+        }
+      />
       <div className="space-y-8">
         {filtered.map((item) => (
           <CaseCard key={item.id} item={item} locale={locale} />

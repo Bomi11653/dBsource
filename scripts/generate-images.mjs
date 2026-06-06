@@ -19,6 +19,14 @@ const files = [
   ["qr-wecom.svg", "WeCom", "#ffffff"],
   ["qr-douyin.svg", "Douyin", "#ffffff"],
   ["qr-video.svg", "Video", "#ffffff"],
+  ["download-cover-1.svg", "Tuning SW", "#1a2a3a"],
+  ["download-cover-2.svg", "Config Tool", "#16213e"],
+  ["download-cover-3.svg", "Dante", "#0f3460"],
+  ["download-cover-4.svg", "Catalog CN", "#2d1b4e"],
+  ["download-cover-5.svg", "Catalog EN", "#1e3a5f"],
+  ["download-cover-6.svg", "Preset Pack", "#1a3a2e"],
+  ["download-cover-7.svg", "SOL12SA", "#2a1a3a"],
+  ["download-cover-8.svg", "V415A", "#1e3a5f"],
 ];
 
 function svg(label, bg, qr = false) {
@@ -50,6 +58,7 @@ const aboutFiles = [
   ["6.svg", "unit48 · 01", "#1a1a2e"],
   ["7.svg", "unit48 · 02", "#16213e"],
   ["8.svg", "unit48 · 03", "#0f3460"],
+  ["9.svg", "品牌 · 团队", "#2a1a3a"],
 ];
 
 mkdirSync(root, { recursive: true });

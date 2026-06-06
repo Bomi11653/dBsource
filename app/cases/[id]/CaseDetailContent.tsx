@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaseItem } from "@/data/mock";
+import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
 import Image from "next/image";
@@ -42,14 +43,31 @@ export default function CaseDetailContent({
           <p className="text-xs uppercase tracking-[0.25em] text-brand-gold mb-3">
             {caseItem.scene[locale]}
           </p>
-          <h1 className="text-4xl md:text-5xl font-light">{caseItem.title[locale]}</h1>
+          <h1 className="text-4xl md:text-5xl font-medium">{caseItem.title[locale]}</h1>
           <p className="text-gray-400 text-sm font-mono mt-4">{caseItem.products}</p>
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.caseOverview, targetId: "case-overview" },
+              { label: t.guide.caseGallery, targetId: "case-gallery" },
+              ...(relatedCases.length
+                ? [{ label: t.guide.caseRelated, targetId: "case-related" }]
+                : []),
+              { label: t.guide.productsSpeaker, href: "/products" },
+            ]}
+            className="mt-6"
+          />
         </div>
       </section>
 
-      <section className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10">
-        <h2 className="text-2xl font-light mb-6">{t.cases.overview}</h2>
-        <p className="text-gray-400 leading-relaxed text-lg max-w-3xl">{body}</p>
+      <section
+        id="case-overview"
+        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
+      >
+        <h2 className="text-2xl font-medium mb-6">{t.cases.overview}</h2>
+        <p className="text-gray-400 leading-relaxed text-lg max-w-3xl whitespace-pre-line">
+          {body}
+        </p>
         {highlights.length > 0 && (
           <div className="mt-10">
             <h3 className="text-sm uppercase tracking-[0.2em] text-gray-500 mb-4">
@@ -72,9 +90,18 @@ export default function CaseDetailContent({
         </p>
       </section>
 
-      <section className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10">
-        <h2 className="text-2xl font-light mb-8">{t.cases.gallery}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <section
+        id="case-gallery"
+        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
+      >
+        <h2 className="text-2xl font-medium mb-8">{t.cases.gallery}</h2>
+        <div
+          className={`grid gap-4 md:gap-6 ${
+            gallery.length > 9
+              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
           {gallery.map((src, i) => (
             <button
               key={src + i}
@@ -109,8 +136,11 @@ export default function CaseDetailContent({
       />
 
       {relatedCases.length > 0 && (
-        <section className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto">
-          <h2 className="text-2xl font-light mb-8">{t.cases.related}</h2>
+        <section
+          id="case-related"
+          className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28"
+        >
+          <h2 className="text-2xl font-medium mb-8">{t.cases.related}</h2>
           <div className="grid md:grid-cols-2 gap-8">
             {relatedCases.map((c) => (
               <Link
@@ -129,7 +159,7 @@ export default function CaseDetailContent({
                 <span className="text-xs text-brand-gold uppercase tracking-wider">
                   {c.scene[locale]}
                 </span>
-                <h3 className="text-xl font-light mt-2 group-hover:text-brand-gold transition-colors">
+                <h3 className="text-xl font-medium mt-2 group-hover:text-brand-gold transition-colors">
                   {c.title[locale]}
                 </h3>
                 <p className="text-gray-400 text-sm mt-2 line-clamp-2">{c.desc[locale]}</p>

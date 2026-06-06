@@ -1,16 +1,22 @@
 "use client";
 
 import type { DownloadItem } from "@/data/mock";
+import {
+  filterDownloads,
+  getDownloadSubCategoryBySlug,
+  type DownloadSubCategorySlug,
+  type DownloadTab,
+} from "@/lib/downloads";
+import Image from "next/image";
 import { useI18n } from "./I18nProvider";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Tab = "software" | "catalog";
-
 export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>("software");
+  const [tab, setTab] = useState<DownloadTab>("software");
+  const [subCategory, setSubCategory] = useState<DownloadSubCategorySlug | "all">("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const rowRefs = useRef<Record<number, HTMLLIElement | null>>({});
 
@@ -18,6 +24,12 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     const tabParam = searchParams.get("tab");
     if (tabParam === "software" || tabParam === "catalog") {
       setTab(tabParam);
+    }
+    const sub = searchParams.get("sub");
+    if (sub && getDownloadSubCategoryBySlug(sub)) {
+      setSubCategory(sub as DownloadSubCategorySlug);
+    } else {
+      setSubCategory("all");
     }
   }, [searchParams]);
 
@@ -36,7 +48,11 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     }
   }, [searchParams, tab, items]);
 
-  const filtered = items.filter((i) => i.type === tab);
+  const filtered = filterDownloads(
+    items,
+    tab,
+    subCategory === "all" ? null : subCategory
+  );
 
   const shareLink = useCallback((file: DownloadItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -71,7 +87,10 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
           <button
             key={key}
             type="button"
-            onClick={() => setTab(key)}
+            onClick={() => {
+              setTab(key);
+              setSubCategory("all");
+            }}
             className={`px-5 py-2 text-sm border transition-colors ${
               tab === key
                 ? "border-brand-gold text-white bg-brand-gold/5"
@@ -92,11 +111,22 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             }}
             className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 py-4 hover:bg-white/[0.02] px-2 transition-colors rounded-lg"
           >
-            <div>
-              <span className="text-white">{file.name[locale]}</span>
-              <span className="text-gray-500 text-sm ml-4">
-                {t.downloads.size}: {file.size}
-              </span>
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="relative w-[96px] h-[38px] md:w-[120px] md:h-[47px] shrink-0 rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                <Image
+                  src={file.cover}
+                  alt=""
+                  fill
+                  className="object-cover object-center"
+                  sizes="120px"
+                />
+              </div>
+              <div className="min-w-0">
+                <span className="text-white block truncate">{file.name[locale]}</span>
+                <span className="text-gray-500 text-sm">
+                  {t.downloads.size}: {file.size}
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-4 shrink-0">
               <button

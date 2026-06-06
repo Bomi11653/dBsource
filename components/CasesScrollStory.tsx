@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaseItem } from "@/data/mock";
+import { getScrollStoryLayout } from "@/lib/cases";
 import { useI18n } from "@/components/I18nProvider";
 import {
   motion,
@@ -10,6 +11,8 @@ import {
   MotionValue,
 } from "framer-motion";
 import Image from "next/image";
+import BrowseGuide from "@/components/BrowseGuide";
+import ScrollGuide from "@/components/ScrollGuide";
 import Link from "next/link";
 import { useRef } from "react";
 
@@ -67,9 +70,8 @@ function StickyCaseVisual({
 export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
   const { locale, t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroCase = cases[0];
-  const secondCase = cases[1];
-  const thirdCase = cases[2];
+  const { hero: heroCase, profile: profileCase, spotlight: spotlightCase, moreCases } =
+    getScrollStoryLayout(cases);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -86,36 +88,61 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
 
   return (
     <div ref={containerRef} className="bg-black text-white">
-      {/* 第一屏：品牌标题 */}
-      <section className="h-screen flex flex-col items-center justify-center relative">
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="text-5xl md:text-7xl font-light tracking-tight text-center"
-        >
-          {t.cases.title}
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="text-gray-500 mt-6 text-center max-w-lg"
-        >
-          {t.cases.subtitle}
-        </motion.p>
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ delay: 1 }}
-          className="absolute bottom-12 text-xs tracking-[0.3em] text-gray-600 uppercase"
-        >
-          {t.cases.scrollLabel}
-        </motion.span>
+      {/* 第一屏：品牌标题 + 彝族新年晚会现场背景 */}
+      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+        <Image
+          src="/images/cases/cases-hero-bg.png"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+        <div className="relative z-10 flex flex-col items-center px-6">
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-5xl md:text-7xl font-light tracking-tight text-center drop-shadow-lg"
+          >
+            {t.cases.title}
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-gray-300 mt-6 text-center max-w-lg drop-shadow-md"
+          >
+            {t.cases.subtitle}
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="mt-8"
+          >
+            <BrowseGuide
+              title={t.guide.exploreTitle}
+              items={[
+                { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
+                { label: t.guide.casesPerformance, href: "/cases?type=performance" },
+                { label: t.guide.productsSpeaker, href: "/products" },
+              ]}
+              className="items-center"
+            />
+          </motion.div>
+        </div>
+        <ScrollGuide
+          targetId="cases-story"
+          label={t.guide.scroll}
+          ariaLabel={t.guide.scrollAria}
+          className="absolute bottom-8 md:bottom-10 left-1/2 z-10 -translate-x-1/2"
+        />
       </section>
 
       {/* 第二屏：Sticky 全屏视觉（Apple 核心） */}
-      <section className="h-[220vh] relative">
+      <section id="cases-story" className="h-[220vh] relative scroll-mt-28">
         <StickyCaseVisual
           caseItem={heroCase}
           locale={locale}
@@ -135,14 +162,14 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           <p className="text-brand-gold text-xs tracking-[0.3em] uppercase mb-4">
             {t.cases.projectBackground}
           </p>
-          <Link href={`/cases/${heroCase.id}`} className="group inline-block">
+          <Link href={`/cases/${profileCase.id}`} className="group inline-block">
             <h2 className="text-3xl md:text-4xl font-light mb-6 group-hover:text-brand-gold transition-colors">
-              {heroCase.title[locale]}
+              {profileCase.title[locale]}
             </h2>
           </Link>
-          <p className="text-gray-400 leading-relaxed text-lg">{heroCase.desc[locale]}</p>
+          <p className="text-gray-400 leading-relaxed text-lg">{profileCase.desc[locale]}</p>
           <p className="text-gray-500 text-sm font-mono mt-8 border-t border-white/10 pt-6">
-            {t.cases.deliverables}: {heroCase.products}
+            {t.cases.deliverables}: {profileCase.products}
           </p>
         </motion.div>
         <motion.div
@@ -152,10 +179,10 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          {secondCase && (
+          {profileCase && (
             <Image
-              src={secondCase.image}
-              alt={secondCase.title[locale]}
+              src={profileCase.image}
+              alt={profileCase.title[locale]}
               fill
               className="object-cover"
               sizes="50vw"
@@ -173,22 +200,22 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
-          {thirdCase && (
+          {spotlightCase && (
             <Image
-              src={thirdCase.image}
-              alt={thirdCase.title[locale]}
+              src={spotlightCase.image}
+              alt={spotlightCase.title[locale]}
               fill
               className="object-cover"
               sizes="(max-width: 1200px) 90vw"
             />
           )}
-          {thirdCase && (
+          {spotlightCase && (
             <Link
-              href={`/cases/${thirdCase.id}`}
+              href={`/cases/${spotlightCase.id}`}
               className="absolute inset-0 flex flex-col justify-end p-8 bg-gradient-to-t from-black/90 via-black/20 to-transparent hover:from-black/95 transition-colors"
             >
-              <h3 className="text-2xl font-light">{thirdCase.title[locale]}</h3>
-              <p className="text-gray-400 mt-2 text-sm">{thirdCase.desc[locale]}</p>
+              <h3 className="text-2xl font-light">{spotlightCase.title[locale]}</h3>
+              <p className="text-gray-400 mt-2 text-sm">{spotlightCase.desc[locale]}</p>
               <span className="text-brand-gold text-sm mt-4">{t.cases.viewDetail} →</span>
             </Link>
           )}
@@ -283,12 +310,12 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       </section>
 
       {/* 更多案例条 */}
-      {cases.length > 1 && (
+      {moreCases.length > 0 && (
         <section className="px-6 md:px-20 py-24 border-t border-white/10 space-y-16">
           <h3 className="text-2xl font-light text-center text-gray-400">
             {locale === "zh" ? "更多案例" : "More Projects"}
           </h3>
-          {cases.slice(1).map((item, index) => (
+          {moreCases.map((item, index) => (
             <motion.article
               key={item.id}
               initial={{ opacity: 0, y: 40 }}

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   getSubSeriesForGroup,
   subSeriesLabel,
@@ -20,6 +21,7 @@ export default function ProductSeriesBar({
   onCategoryChange,
   onSubSeriesChange,
   resultCount,
+  search,
 }: {
   seriesTab: SeriesTab;
   categoryFilter: CategoryFilter;
@@ -28,6 +30,7 @@ export default function ProductSeriesBar({
   onCategoryChange: (cat: CategoryFilter) => void;
   onSubSeriesChange: (sub: ProductSubSeriesSlug | "all") => void;
   resultCount: number;
+  search?: ReactNode;
 }) {
   const { locale, t } = useI18n();
   const subSeriesOptions =
@@ -50,21 +53,26 @@ export default function ProductSeriesBar({
 
   return (
     <div className="mb-10 space-y-6">
-      <div className="flex flex-wrap gap-2 md:gap-3 border-b border-white/10 pb-4">
-        {SERIES_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => onSeriesChange(tab)}
-            className={`px-4 py-2 rounded-full text-sm transition ${
-              seriesTab === tab
-                ? "bg-brand-gold/90 text-black"
-                : "bg-white/5 hover:bg-white/10 text-gray-300"
-            }`}
-          >
-            {seriesLabels[tab]}
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="flex flex-wrap gap-2 md:gap-3 flex-1 min-w-0">
+          {SERIES_TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onSeriesChange(tab)}
+              className={`px-4 py-2 rounded-full text-sm transition ${
+                seriesTab === tab
+                  ? "bg-brand-gold/90 text-black"
+                  : "bg-white/5 hover:bg-white/10 text-gray-300"
+              }`}
+            >
+              {seriesLabels[tab]}
+            </button>
+          ))}
+        </div>
+        {search ? (
+          <div className="w-full md:w-72 lg:w-80 shrink-0 md:ml-4">{search}</div>
+        ) : null}
       </div>
 
       {subSeriesOptions.length > 0 && (
