@@ -19,6 +19,7 @@ export default function SmoothScroll() {
       duration: 1.1,
       smoothWheel: true,
       touchMultiplier: 0,
+      allowNestedScroll: true,
     });
     let frame = 0;
 

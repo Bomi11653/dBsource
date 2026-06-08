@@ -15,10 +15,9 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/LA206/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/LA206/gallery/01.png"
     ]
   },
   {
@@ -37,10 +36,9 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/LA115S/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/LA115S/gallery/01.png"
     ]
   },
   {
@@ -59,10 +57,11 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/LA208/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/LA208/gallery/01.jpg",
+      "/images/products/LA208/gallery/02.jpg",
+      "/images/products/LA208/gallery/03.png"
     ]
   },
   {
@@ -81,10 +80,10 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/LA118S/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/LA118S/gallery/01.jpg",
+      "/images/products/LA118S/gallery/02.png"
     ]
   },
   {
@@ -103,10 +102,13 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/LA210/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/LA210/gallery/01.jpg",
+      "/images/products/LA210/gallery/02.png",
+      "/images/products/LA210/gallery/03.png",
+      "/images/products/LA210/gallery/04.png",
+      "/images/products/LA210/gallery/05.png"
     ]
   },
   {
@@ -125,10 +127,10 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/LA118W/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/LA118W/gallery/01.jpg",
+      "/images/products/LA118W/gallery/02.jpg"
     ]
   },
   {
@@ -169,10 +171,11 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/LA212/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/LA212/gallery/01.png",
+      "/images/products/LA212/gallery/02.png",
+      "/images/products/LA212/gallery/03.png"
     ]
   },
   {
@@ -191,10 +194,9 @@
     "productLine": "la",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/LA218S/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/LA218S/gallery/01.png"
     ]
   },
   {
@@ -213,10 +215,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/LW210L/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/LW210L/gallery/01.jpg"
     ]
   },
   {
@@ -235,10 +236,11 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/LW18S/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/LW18S/gallery/01.png",
+      "/images/products/LW18S/gallery/02.png",
+      "/images/products/LW18S/gallery/03.png"
     ]
   },
   {
@@ -257,10 +259,10 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/LW6/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/LW6/gallery/01.jpg",
+      "/images/products/LW6/gallery/02.jpg"
     ]
   },
   {
@@ -279,10 +281,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/LW8/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/LW8/gallery/01.jpg"
     ]
   },
   {
@@ -301,10 +302,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/LW12/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/LW12/gallery/01.jpg"
     ]
   },
   {
@@ -323,10 +323,10 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/LW15/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/LW15/gallery/01.jpg",
+      "/images/products/LW15/gallery/02.jpg"
     ]
   },
   {
@@ -345,10 +345,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/LW208/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/LW208/gallery/01.png"
     ]
   },
   {
@@ -367,10 +366,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/LW212/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/LW212/gallery/01.png"
     ]
   },
   {
@@ -389,10 +387,9 @@
     "productLine": "lw",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/LW215/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/LW215/gallery/01.png"
     ]
   },
   {
@@ -411,10 +408,10 @@
     "productLine": "mi",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/MI12/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/MI12/gallery/01.png",
+      "/images/products/MI12/gallery/02.png"
     ]
   },
   {
@@ -433,10 +430,10 @@
     "productLine": "mi",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/MI15/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/MI15/gallery/01.png",
+      "/images/products/MI15/gallery/02.png"
     ]
   },
   {
@@ -455,10 +452,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/DO106/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/DO106/gallery/01.jpg",
+      "/images/products/DO106/gallery/02.jpg",
+      "/images/products/DO106/gallery/03.png"
     ]
   },
   {
@@ -477,10 +475,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/DO108/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/DO108/gallery/01.jpg",
+      "/images/products/DO108/gallery/02.jpg",
+      "/images/products/DO108/gallery/03.png"
     ]
   },
   {
@@ -499,10 +498,12 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/DO110/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/DO110/gallery/01.jpg",
+      "/images/products/DO110/gallery/02.png",
+      "/images/products/DO110/gallery/03.png",
+      "/images/products/DO110/gallery/04.png"
     ]
   },
   {
@@ -521,10 +522,10 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/DO112/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/DO112/gallery/01.jpg",
+      "/images/products/DO112/gallery/02.png"
     ]
   },
   {
@@ -543,10 +544,9 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/DO115/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/DO115/gallery/01.jpg"
     ]
   },
   {
@@ -565,10 +565,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/DO115H/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/DO115H/gallery/01.png",
+      "/images/products/DO115H/gallery/02.png",
+      "/images/products/DO115H/gallery/03.jpg"
     ]
   },
   {
@@ -587,10 +588,10 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/DO215/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/DO215/gallery/01.png",
+      "/images/products/DO215/gallery/02.png"
     ]
   },
   {
@@ -609,10 +610,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/DO115S/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/DO115S/gallery/01.jpg",
+      "/images/products/DO115S/gallery/02.png",
+      "/images/products/DO115S/gallery/03.png"
     ]
   },
   {
@@ -631,10 +633,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/DO118S/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/DO118S/gallery/01.jpg",
+      "/images/products/DO118S/gallery/02.png",
+      "/images/products/DO118S/gallery/03.png"
     ]
   },
   {
@@ -653,10 +656,11 @@
     "productLine": "do",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/DO218S/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/DO218S/gallery/01.png",
+      "/images/products/DO218S/gallery/02.jpg",
+      "/images/products/DO218S/gallery/03.png"
     ]
   },
   {
@@ -675,10 +679,10 @@
     "productLine": "sol",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/SOL403/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/SOL403/gallery/01.png",
+      "/images/products/SOL403/gallery/02.png"
     ]
   },
   {
@@ -697,10 +701,10 @@
     "productLine": "sol",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/SOL405/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/SOL405/gallery/01.png",
+      "/images/products/SOL405/gallery/02.png"
     ]
   },
   {
@@ -719,10 +723,10 @@
     "productLine": "sol",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/SOL407/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/SOL407/gallery/01.png",
+      "/images/products/SOL407/gallery/02.png"
     ]
   },
   {
@@ -741,10 +745,10 @@
     "productLine": "k",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/K10/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/K10/gallery/01.png",
+      "/images/products/K10/gallery/02.png"
     ]
   },
   {
@@ -763,10 +767,9 @@
     "productLine": "k",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/K12/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/K12/gallery/01.png"
     ]
   },
   {
@@ -785,10 +788,9 @@
     "productLine": "k",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/K212S/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/K212S/gallery/01.jpg"
     ]
   },
   {
@@ -807,10 +809,9 @@
     "productLine": "k",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/K18S/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/K18S/gallery/01.png"
     ]
   },
   {
@@ -829,10 +830,9 @@
     "productLine": "re",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/RE8/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/RE8/gallery/01.png"
     ]
   },
   {
@@ -851,10 +851,9 @@
     "productLine": "re",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/RE10/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/RE10/gallery/01.png"
     ]
   },
   {
@@ -873,10 +872,9 @@
     "productLine": "re",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/RE12/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/RE12/gallery/01.png"
     ]
   },
   {
@@ -895,10 +893,10 @@
     "productLine": "re",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/RE15/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/RE15/gallery/01.png",
+      "/images/products/RE15/gallery/02.png"
     ]
   },
   {
@@ -961,10 +959,87 @@
     "productLine": "tour",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-4.svg",
+    "image": "/images/products/V212/cover.jpg",
     "gallery": [
-      "/images/product-4.svg",
-      "/images/product-1.svg"
+      "/images/products/V212/gallery/01.png",
+      "/images/products/V212/gallery/02.png",
+      "/images/products/V212/gallery/03.png",
+      "/images/products/V212/gallery/04.png",
+      "/images/products/V212/gallery/05.png",
+      "/images/products/V212/gallery/06.png",
+      "/images/products/V212/gallery/07.jpg",
+      "/images/products/V212/gallery/08.jpg",
+      "/images/products/V212/gallery/09.jpg",
+      "/images/products/V212/gallery/10.jpg",
+      "/images/products/V212/gallery/11.jpg",
+      "/images/products/V212/gallery/12.jpg",
+      "/images/products/V212/gallery/13.jpg",
+      "/images/products/V212/gallery/14.jpg",
+      "/images/products/V212/gallery/15.jpg",
+      "/images/products/V212/gallery/16.jpg",
+      "/images/products/V212/gallery/17.jpg",
+      "/images/products/V212/gallery/18.jpg",
+      "/images/products/V212/gallery/19.jpg",
+      "/images/products/V212/gallery/20.jpg",
+      "/images/products/V212/gallery/21.jpg",
+      "/images/products/V212/gallery/22.jpg",
+      "/images/products/V212/gallery/23.jpg",
+      "/images/products/V212/gallery/24.jpg",
+      "/images/products/V212/gallery/25.jpg",
+      "/images/products/V212/gallery/26.jpg",
+      "/images/products/V212/gallery/27.jpg",
+      "/images/products/V212/gallery/28.jpg",
+      "/images/products/V212/gallery/29.jpg",
+      "/images/products/V212/gallery/30.jpg",
+      "/images/products/V212/gallery/31.jpg",
+      "/images/products/V212/gallery/32.jpg",
+      "/images/products/V212/gallery/33.jpg",
+      "/images/products/V212/gallery/34.jpg",
+      "/images/products/V212/gallery/35.jpg",
+      "/images/products/V212/gallery/36.jpg",
+      "/images/products/V212/gallery/37.jpg",
+      "/images/products/V212/gallery/38.jpg",
+      "/images/products/V212/gallery/39.jpg",
+      "/images/products/V212/gallery/40.jpg",
+      "/images/products/V212/gallery/41.jpg",
+      "/images/products/V212/gallery/42.jpg",
+      "/images/products/V212/gallery/43.jpg",
+      "/images/products/V212/gallery/44.jpg",
+      "/images/products/V212/gallery/45.jpg",
+      "/images/products/V212/gallery/46.jpg",
+      "/images/products/V212/gallery/47.jpg",
+      "/images/products/V212/gallery/48.jpg",
+      "/images/products/V212/gallery/49.jpg",
+      "/images/products/V212/gallery/50.jpg",
+      "/images/products/V212/gallery/51.jpg",
+      "/images/products/V212/gallery/52.jpg",
+      "/images/products/V212/gallery/53.jpg",
+      "/images/products/V212/gallery/54.jpg",
+      "/images/products/V212/gallery/55.jpg",
+      "/images/products/V212/gallery/56.jpg",
+      "/images/products/V212/gallery/57.jpg",
+      "/images/products/V212/gallery/58.jpg",
+      "/images/products/V212/gallery/59.jpg",
+      "/images/products/V212/gallery/60.jpg",
+      "/images/products/V212/gallery/61.jpg",
+      "/images/products/V212/gallery/62.jpg",
+      "/images/products/V212/gallery/63.jpg",
+      "/images/products/V212/gallery/64.jpg",
+      "/images/products/V212/gallery/65.jpg",
+      "/images/products/V212/gallery/66.jpg",
+      "/images/products/V212/gallery/67.jpg",
+      "/images/products/V212/gallery/68.jpg",
+      "/images/products/V212/gallery/69.jpg",
+      "/images/products/V212/gallery/70.jpg",
+      "/images/products/V212/gallery/71.jpg",
+      "/images/products/V212/gallery/72.jpg",
+      "/images/products/V212/gallery/73.jpg",
+      "/images/products/V212/gallery/74.jpg",
+      "/images/products/V212/gallery/75.jpg",
+      "/images/products/V212/gallery/76.jpg",
+      "/images/products/V212/gallery/77.jpg",
+      "/images/products/V212/gallery/78.jpg",
+      "/images/products/V212/gallery/79.jpg"
     ]
   },
   {
@@ -983,10 +1058,35 @@
     "productLine": "tour",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-1.svg",
+    "image": "/images/products/V221S/cover.jpg",
     "gallery": [
-      "/images/product-1.svg",
-      "/images/product-2.svg"
+      "/images/products/V221S/gallery/01.png",
+      "/images/products/V221S/gallery/02.png",
+      "/images/products/V221S/gallery/03.png",
+      "/images/products/V221S/gallery/04.png",
+      "/images/products/V221S/gallery/05.png",
+      "/images/products/V221S/gallery/06.png",
+      "/images/products/V221S/gallery/07.png",
+      "/images/products/V221S/gallery/08.png",
+      "/images/products/V221S/gallery/09.png",
+      "/images/products/V221S/gallery/10.png",
+      "/images/products/V221S/gallery/11.jpg",
+      "/images/products/V221S/gallery/12.jpg",
+      "/images/products/V221S/gallery/13.jpg",
+      "/images/products/V221S/gallery/14.jpg",
+      "/images/products/V221S/gallery/15.jpg",
+      "/images/products/V221S/gallery/16.jpg",
+      "/images/products/V221S/gallery/17.jpg",
+      "/images/products/V221S/gallery/18.jpg",
+      "/images/products/V221S/gallery/19.jpg",
+      "/images/products/V221S/gallery/20.jpg",
+      "/images/products/V221S/gallery/21.jpg",
+      "/images/products/V221S/gallery/22.jpg",
+      "/images/products/V221S/gallery/23.jpg",
+      "/images/products/V221S/gallery/24.jpg",
+      "/images/products/V221S/gallery/25.jpg",
+      "/images/products/V221S/gallery/26.jpg",
+      "/images/products/V221S/gallery/27.jpg"
     ]
   },
   {
@@ -1027,10 +1127,66 @@
     "productLine": "tour",
     "seriesGroup": "speaker",
     "category": "speaker",
-    "image": "/images/product-3.svg",
+    "image": "/images/products/206M/cover.jpg",
     "gallery": [
-      "/images/product-3.svg",
-      "/images/product-4.svg"
+      "/images/products/206M/gallery/01.jpg",
+      "/images/products/206M/gallery/02.jpg",
+      "/images/products/206M/gallery/03.png",
+      "/images/products/206M/gallery/04.jpg",
+      "/images/products/206M/gallery/05.jpg",
+      "/images/products/206M/gallery/06.jpg",
+      "/images/products/206M/gallery/07.jpg",
+      "/images/products/206M/gallery/08.jpg",
+      "/images/products/206M/gallery/09.jpg",
+      "/images/products/206M/gallery/10.jpg",
+      "/images/products/206M/gallery/11.jpg",
+      "/images/products/206M/gallery/12.jpg",
+      "/images/products/206M/gallery/13.jpg",
+      "/images/products/206M/gallery/14.jpg",
+      "/images/products/206M/gallery/15.jpg",
+      "/images/products/206M/gallery/16.jpg",
+      "/images/products/206M/gallery/17.jpg",
+      "/images/products/206M/gallery/18.jpg",
+      "/images/products/206M/gallery/19.jpg",
+      "/images/products/206M/gallery/20.jpg",
+      "/images/products/206M/gallery/21.jpg",
+      "/images/products/206M/gallery/22.jpg",
+      "/images/products/206M/gallery/23.jpg",
+      "/images/products/206M/gallery/24.jpg",
+      "/images/products/206M/gallery/25.jpg",
+      "/images/products/206M/gallery/26.jpg",
+      "/images/products/206M/gallery/27.jpg",
+      "/images/products/206M/gallery/28.jpg",
+      "/images/products/206M/gallery/29.jpg",
+      "/images/products/206M/gallery/30.jpg",
+      "/images/products/206M/gallery/31.jpg",
+      "/images/products/206M/gallery/32.jpg",
+      "/images/products/206M/gallery/33.jpg",
+      "/images/products/206M/gallery/34.jpg",
+      "/images/products/206M/gallery/35.jpg",
+      "/images/products/206M/gallery/36.jpg",
+      "/images/products/206M/gallery/37.jpg",
+      "/images/products/206M/gallery/38.jpg",
+      "/images/products/206M/gallery/39.jpg",
+      "/images/products/206M/gallery/40.jpg",
+      "/images/products/206M/gallery/41.jpg",
+      "/images/products/206M/gallery/42.jpg",
+      "/images/products/206M/gallery/43.jpg",
+      "/images/products/206M/gallery/44.jpg",
+      "/images/products/206M/gallery/45.jpg",
+      "/images/products/206M/gallery/46.jpg",
+      "/images/products/206M/gallery/47.jpg",
+      "/images/products/206M/gallery/48.jpg",
+      "/images/products/206M/gallery/49.jpg",
+      "/images/products/206M/gallery/50.jpg",
+      "/images/products/206M/gallery/51.jpg",
+      "/images/products/206M/gallery/52.jpg",
+      "/images/products/206M/gallery/53.jpg",
+      "/images/products/206M/gallery/54.jpg",
+      "/images/products/206M/gallery/55.jpg",
+      "/images/products/206M/gallery/56.jpg",
+      "/images/products/206M/gallery/57.jpg",
+      "/images/products/206M/gallery/58.jpg"
     ]
   },
   {
@@ -1181,10 +1337,10 @@
     "productLine": "unit48",
     "seriesGroup": "dsp",
     "category": "dsp",
-    "image": "/images/product-2.svg",
+    "image": "/images/products/Unit48/cover.jpg",
     "gallery": [
-      "/images/product-2.svg",
-      "/images/product-3.svg"
+      "/images/products/Unit48/gallery/01.png",
+      "/images/products/Unit48/gallery/02.jpg"
     ]
   },
   {

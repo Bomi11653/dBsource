@@ -1,7 +1,11 @@
 import type { CaseItem, DownloadItem, Product } from "@/data/mock";
 import type { AiPageContext } from "@/lib/ai/page-context";
 import { buildSiteBaseline } from "@/lib/ai/site-knowledge";
-import { expandSearchQuery } from "@/lib/ai/synonyms";
+import {
+  expandSearchQuery,
+  extractModelCodes,
+  matchProductsByModelCodes,
+} from "@/lib/ai/synonyms";
 import { getCases, getDownloads, getProducts } from "@/lib/cms";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
 
@@ -44,6 +48,20 @@ export async function retrieveContext(
   let topProducts = rankProducts(products, terms, locale).slice(0, 6);
   let topCases = rankCases(cases, terms, locale).slice(0, 3);
   const topDownloads = rankDownloads(downloads, terms, locale).slice(0, 2);
+
+  const modelCodes = extractModelCodes(question);
+  if (modelCodes.length) {
+    const matched = matchProductsByModelCodes(products, modelCodes);
+    if (matched.length) {
+      topProducts = matched.slice(0, modelCodes.length === 1 ? 1 : 4);
+      const relatedCases = cases.filter((c) =>
+        modelCodes.some((code) => c.products.toUpperCase().includes(code))
+      );
+      if (relatedCases.length) {
+        topCases = relatedCases.slice(0, 3);
+      }
+    }
+  }
 
   if (pageContext?.type === "product") {
     const current = products.find((p) => p.id === pageContext.productId);

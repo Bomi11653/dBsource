@@ -4,6 +4,7 @@ import { generateFallbackReply } from "@/lib/ai/fallback";
 import { chatCompletion, getDeepSeekConfig, type ChatMessage } from "@/lib/ai/deepseek";
 import { buildAiLinks } from "@/lib/ai/links";
 import { buildSystemPrompt, retrieveContext } from "@/lib/ai/knowledge";
+import { extractModelCodes } from "@/lib/ai/synonyms";
 import { checkAiRateLimit, peekAiRateLimit } from "@/lib/ai/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -76,7 +77,8 @@ export async function POST(request: NextRequest) {
 
   const enrichedMessage = augmentUserMessage(message, pageContext, locale);
   const ctx = await retrieveContext(enrichedMessage, locale, pageContext);
-  const links = buildAiLinks(ctx.products, ctx.cases, ctx.downloads, locale);
+  const focusModels = extractModelCodes(enrichedMessage);
+  const links = buildAiLinks(ctx.products, ctx.cases, ctx.downloads, locale, focusModels);
   const { remaining: peekRemaining } = peekAiRateLimit(ip);
 
   function fallbackResponse(reason: "offline" | "rate_limit" | "api_error") {

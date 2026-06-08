@@ -237,6 +237,7 @@ export default function AiAdvisor() {
             className="fixed z-[95] bottom-4 right-4 sm:right-6 w-[min(100vw-2rem,400px)] max-h-[min(85vh,640px)] rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden safe-bottom"
             role="dialog"
             aria-label={t.ai.title}
+            data-lenis-prevent
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
               <div className="min-w-0">
@@ -270,7 +271,10 @@ export default function AiAdvisor() {
 
             <div
               ref={listRef}
-              className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 text-sm overscroll-contain"
+              data-lenis-prevent
+              onWheel={(e) => e.stopPropagation()}
+              className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 text-sm overscroll-contain scroll-smooth"
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
               {!aiReady ? (
                 <p className="text-xs text-amber-500/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
@@ -347,7 +351,11 @@ export default function AiAdvisor() {
                     ) : null}
                     {m.text}
                     {m.role === "assistant" && m.links?.length ? (
-                      <AiAdvisorLinks links={m.links} onNavigate={closePanel} />
+                      <AiAdvisorLinks
+                        links={m.links}
+                        onNavigate={closePanel}
+                        prominent={m.fallback}
+                      />
                     ) : null}
                     {m.role === "assistant" && m.needsHuman ? (
                       <AiSalesShortcuts
@@ -389,6 +397,8 @@ export default function AiAdvisor() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onInputKeyDown}
+                  onWheel={(e) => e.stopPropagation()}
+                  data-lenis-prevent
                   placeholder={
                     pageContext?.type === "product"
                       ? t.ai.placeholderProduct.replace("{model}", pageContext.model)

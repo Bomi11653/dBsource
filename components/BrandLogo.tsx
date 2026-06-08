@@ -16,9 +16,9 @@ const variants = {
       "h-[2.25rem] sm:h-12 md:h-14 lg:h-16 w-auto object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.12)]",
   },
   transition: {
-    width: 160,
-    height: 240,
-    className: "h-28 md:h-36 w-auto object-contain",
+    width: 80,
+    height: 120,
+    className: "h-14 md:h-[4.5rem] w-auto object-contain",
   },
   admin: {
     width: 56,

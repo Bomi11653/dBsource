@@ -1,4 +1,5 @@
 import type { Product, ProductLineSlug } from "./mock";
+import { getProductImages } from "./product-images";
 import { getSpecSheet, SERIES_SPEC_SUMMARY } from "./product-specs";
 
 const PRODUCT_IMAGES = [
@@ -109,7 +110,11 @@ const CATALOG_ENTRIES: CatalogEntry[] = [
 export function buildRealProductCatalog(): Product[] {
   return CATALOG_ENTRIES.map((entry, i) => {
     const meta = SERIES_META[entry.productLine];
-    const img = PRODUCT_IMAGES[i % PRODUCT_IMAGES.length];
+    const imgs = getProductImages(entry.model);
+    const fallback = PRODUCT_IMAGES[i % PRODUCT_IMAGES.length];
+    const img = imgs?.cover ?? fallback;
+    const gallery =
+      imgs?.gallery.length ? imgs.gallery : [fallback, PRODUCT_IMAGES[(i + 1) % PRODUCT_IMAGES.length]];
     const specSheet = getSpecSheet(entry.model);
     return {
       id: i + 1,
@@ -119,7 +124,7 @@ export function buildRealProductCatalog(): Product[] {
       detail: entry.desc,
       specs: specSheet?.summary ?? SERIES_SPEC_SUMMARY[entry.productLine],
       image: img,
-      gallery: [img, PRODUCT_IMAGES[(i + 1) % PRODUCT_IMAGES.length]],
+      gallery,
       series: entry.series,
       productLine: entry.productLine,
       seriesGroup: meta.seriesGroup,

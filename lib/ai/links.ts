@@ -1,4 +1,5 @@
 import type { CaseItem, DownloadItem, Product } from "@/data/mock";
+import { matchProductsByModelCodes } from "@/lib/ai/synonyms";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
 
 export type AiLink = {
@@ -11,12 +12,20 @@ export function buildAiLinks(
   products: Product[],
   cases: CaseItem[],
   downloads: DownloadItem[],
-  locale: "zh" | "en"
+  locale: "zh" | "en",
+  focusModels?: string[]
 ): AiLink[] {
   const links: AiLink[] = [];
   const seen = new Set<string>();
 
-  for (const p of products.slice(0, 4)) {
+  let productPool = products;
+  if (focusModels?.length) {
+    const matched = matchProductsByModelCodes(products, focusModels);
+    if (matched.length) productPool = matched;
+  }
+
+  const productLimit = focusModels?.length === 1 ? 1 : 4;
+  for (const p of productPool.slice(0, productLimit)) {
     const key = `p-${p.id}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -26,21 +35,31 @@ export function buildAiLinks(
       href: `/products/${p.id}`,
     });
 
-    const sub = PRODUCT_SUB_SERIES.find((s) => s.slug === p.productLine);
-    if (sub) {
-      const seriesKey = `s-${sub.slug}`;
-      if (!seen.has(seriesKey)) {
-        seen.add(seriesKey);
-        links.push({
-          type: "series",
-          label: sub.label[locale],
-          href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
-        });
+    if (!focusModels?.length) {
+      const sub = PRODUCT_SUB_SERIES.find((s) => s.slug === p.productLine);
+      if (sub) {
+        const seriesKey = `s-${sub.slug}`;
+        if (!seen.has(seriesKey)) {
+          seen.add(seriesKey);
+          links.push({
+            type: "series",
+            label: sub.label[locale],
+            href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
+          });
+        }
       }
     }
   }
 
-  for (const c of cases.slice(0, 3)) {
+  let casePool = cases;
+  if (focusModels?.length) {
+    const matchedCases = cases.filter((c) =>
+      focusModels.some((code) => c.products.toUpperCase().includes(code))
+    );
+    if (matchedCases.length) casePool = matchedCases;
+  }
+
+  for (const c of casePool.slice(0, 3)) {
     const key = `c-${c.id}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -51,7 +70,8 @@ export function buildAiLinks(
     });
   }
 
-  for (const d of downloads.slice(0, 2)) {
+  const downloadLimit = focusModels?.length ? 0 : 2;
+  for (const d of downloads.slice(0, downloadLimit)) {
     const key = `d-${d.id}`;
     if (seen.has(key)) continue;
     seen.add(key);

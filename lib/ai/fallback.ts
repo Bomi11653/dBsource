@@ -1,7 +1,11 @@
 import type { CaseItem, DownloadItem, Locale, Product } from "@/data/mock";
 import type { ConfiguratorScene } from "@/data/configurator-templates";
 import { recommendSystem } from "@/lib/configurator";
-import { matchSceneTag } from "@/lib/ai/synonyms";
+import {
+  extractModelCodes,
+  matchProductsByModelCodes,
+  matchSceneTag,
+} from "@/lib/ai/synonyms";
 import { isComplexProjectQuery } from "@/lib/sales-routing";
 
 export type FallbackResult = {
@@ -79,32 +83,22 @@ export function generateFallbackReply(
     };
   }
 
-  const parts: string[] = [];
-  const intro =
-    locale === "zh"
-      ? "AI 服务暂不可用，根据站内资料为您整理："
-      : "AI is offline — here's what we found on-site:";
+  const modelCodes = extractModelCodes(message);
+  let products = ctx.products;
+  let cases = ctx.cases;
 
-  if (ctx.products.length) {
-    const label = locale === "zh" ? "相关产品" : "Products";
-    parts.push(
-      `${label}:\n${ctx.products
-        .slice(0, 4)
-        .map((p) => `· ${p.model} — ${p.name[locale]}`)
-        .join("\n")}`
-    );
-  }
-  if (ctx.cases.length) {
-    const label = locale === "zh" ? "相关案例" : "Cases";
-    parts.push(
-      `${label}:\n${ctx.cases
-        .slice(0, 3)
-        .map((c) => `· ${c.title[locale]}`)
-        .join("\n")}`
-    );
+  if (modelCodes.length) {
+    const matched = matchProductsByModelCodes(ctx.products, modelCodes);
+    if (matched.length) {
+      products = matched.slice(0, modelCodes.length === 1 ? 1 : 4);
+      const matchedCases = ctx.cases.filter((c) =>
+        modelCodes.some((code) => c.products.toUpperCase().includes(code))
+      );
+      if (matchedCases.length) cases = matchedCases.slice(0, 3);
+    }
   }
 
-  if (!parts.length) {
+  if (!products.length && !cases.length) {
     return {
       reply:
         locale === "zh"
@@ -114,8 +108,20 @@ export function generateFallbackReply(
     };
   }
 
-  return {
-    reply: `${intro}\n\n${parts.join("\n\n")}`,
-    needsHuman,
-  };
+  const intro =
+    locale === "zh"
+      ? "AI 服务暂不可用，根据站内资料为您整理如下，请点击下方链接查看详情："
+      : "AI is offline. See related items below — tap a link for details:";
+
+  if (products.length === 1) {
+    const p = products[0];
+    const desc = p.desc[locale].slice(0, 120);
+    const detail =
+      locale === "zh"
+        ? `\n\n${p.model}：${desc}`
+        : `\n\n${p.model}: ${desc}`;
+    return { reply: intro + detail, needsHuman };
+  }
+
+  return { reply: intro, needsHuman };
 }

@@ -75,7 +75,8 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
             { label: t.contact.salesTitle, targetId: "contact-sales" },
             { label: t.guide.productsSpeaker, href: "/products" },
           ]}
-          className="mt-8 justify-center"
+          layout="stack"
+          className="mt-8 items-center"
         />
       </section>
 

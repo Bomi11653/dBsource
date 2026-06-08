@@ -17,9 +17,11 @@ const TYPE_LABEL: Record<AiLink["type"], { zh: string; en: string }> = {
 export default function AiAdvisorLinks({
   links,
   onNavigate,
+  prominent,
 }: {
   links: AiLink[];
   onNavigate?: () => void;
+  prominent?: boolean;
 }) {
   const { locale, t } = useI18n();
   const { related, actions } = splitAiLinks(links);
@@ -36,7 +38,11 @@ export default function AiAdvisorLinks({
                 key={`${link.type}-${link.href}-${link.label}`}
                 href={link.href}
                 onClick={onNavigate}
-                className="inline-flex items-center gap-1 max-w-full text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-gray-200 hover:border-brand-gold/30 hover:text-white transition-colors"
+                className={`inline-flex items-center gap-1 max-w-full text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+                  prominent
+                    ? "border-brand-gold/40 bg-brand-gold/10 text-white hover:bg-brand-gold/20"
+                    : "border-white/10 bg-white/5 text-gray-200 hover:border-brand-gold/30 hover:text-white"
+                }`}
               >
                 <span className="text-[9px] uppercase opacity-60 shrink-0">
                   {TYPE_LABEL[link.type][locale]}

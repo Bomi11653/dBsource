@@ -213,11 +213,16 @@ export function searchProducts(list: Product[], query: string): Product[] {
   });
 }
 
-/** Cover + gallery from CMS; deduped, any count (0 → fallback to cover only). */
+/** Cover + gallery from CMS; URL-deduped, any count (0 → fallback to cover only). */
 export function getProductGallery(product: Product): string[] {
-  const gallery = (product.gallery ?? []).filter(Boolean);
+  const seen = new Set<string>();
+  const gallery = (product.gallery ?? []).filter((url) => {
+    if (!url || seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
   if (gallery.length > 0) {
-    if (product.image && !gallery.includes(product.image)) {
+    if (product.image && !seen.has(product.image)) {
       return [product.image, ...gallery];
     }
     return gallery;
