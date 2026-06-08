@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "qr_codes",
+  "info": {
+    "singularName": "qr-code",
+    "pluralName": "qr-codes",
+    "displayName": "⑤ 二维码 QRCode",
+    "description": "官网页脚+联系页 · Footer & contact QR codes"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "labelZh": {
+      "type": "string",
+      "required": true
+    },
+    "labelEn": {
+      "type": "string",
+      "required": true
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "required": true
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "leads",
+  "info": {
+    "singularName": "lead",
+    "pluralName": "leads",
+    "displayName": "⑧ 询盘 Lead",
+    "description": "联系表单提交 · Contact form submissions"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "company": { "type": "string" },
+    "email": { "type": "email" },
+    "phone": { "type": "string" },
+    "message": { "type": "text", "required": true },
+    "status": {
+      "type": "enumeration",
+      "enum": ["new", "read", "archived"],
+      "default": "new"
+    }
+  }
+}

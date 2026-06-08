@@ -1,0 +1,87 @@
+{
+  "kind": "collectionType",
+  "collectionName": "products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "① 产品 Product",
+    "description": "官网 /products 产品中心 · Product catalog"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "model": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "nameZh": {
+      "type": "string",
+      "required": true
+    },
+    "nameEn": {
+      "type": "string",
+      "required": true
+    },
+    "descZh": {
+      "type": "text",
+      "required": true
+    },
+    "descEn": {
+      "type": "text",
+      "required": true
+    },
+    "detailZh": {
+      "type": "text"
+    },
+    "detailEn": {
+      "type": "text"
+    },
+    "specsZh": {
+      "type": "text"
+    },
+    "specsEn": {
+      "type": "text"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "gallery": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images"]
+    },
+    "seriesZh": {
+      "type": "string"
+    },
+    "seriesEn": {
+      "type": "string"
+    },
+    "productLine": {
+      "type": "enumeration",
+      "enum": [
+        "la", "lw", "mi", "do", "sol", "k", "re", "p",
+        "driver", "electronics", "accessory", "tour",
+        "unit48", "suite", "turnkey"
+      ],
+      "required": true
+    },
+    "seriesGroup": {
+      "type": "enumeration",
+      "enum": ["speaker", "dsp", "software", "engineering"],
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["speaker", "dsp", "software"],
+      "required": true
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

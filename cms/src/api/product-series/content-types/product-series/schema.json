@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "product_series",
+  "info": {
+    "singularName": "product-series",
+    "pluralName": "product-series-configs",
+    "displayName": "⑨ 产品系列 ProductSeries",
+    "description": "产品导航系列配置 · Product navigation taxonomy"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "slug": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "seriesGroup": {
+      "type": "enumeration",
+      "enum": ["speaker", "dsp", "software", "engineering"],
+      "required": true
+    },
+    "nameZh": {
+      "type": "string",
+      "required": true
+    },
+    "nameEn": {
+      "type": "string",
+      "required": true
+    },
+    "modelPrefix": {
+      "type": "string",
+      "required": true
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    },
+    "visible": {
+      "type": "boolean",
+      "default": true
+    },
+    "featuredProductId": {
+      "type": "integer"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "about_sections",
+  "info": {
+    "singularName": "about-section",
+    "pluralName": "about-sections",
+    "displayName": "⑥ 关于 AboutSection",
+    "description": "官网 /about 关于我们配图 · About page sections"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "sectionKey": {
+      "type": "enumeration",
+      "enum": [
+        "brandIntro",
+        "origin",
+        "dbcoverHome",
+        "dbcoverEq",
+        "dbcoverSpl",
+        "focus",
+        "unit48Hardware",
+        "unit48Layout",
+        "unit48Eq"
+      ],
+      "required": true,
+      "unique": true
+    },
+    "titleZh": {
+      "type": "string"
+    },
+    "titleEn": {
+      "type": "string"
+    },
+    "bodyZh": {
+      "type": "richtext"
+    },
+    "bodyEn": {
+      "type": "richtext"
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

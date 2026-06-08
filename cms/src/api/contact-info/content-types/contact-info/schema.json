@@ -1,0 +1,24 @@
+{
+  "kind": "singleType",
+  "collectionName": "contact_infos",
+  "info": {
+    "singularName": "contact-info",
+    "pluralName": "contact-infos",
+    "displayName": "⑦ 联系 ContactInfo",
+    "description": "官网页脚+联系页 · Company contact details"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "companyZh": { "type": "string", "required": true },
+    "companyEn": { "type": "string", "required": true },
+    "phones": { "type": "text", "required": true },
+    "email": { "type": "email", "required": true },
+    "addressZh": { "type": "string", "required": true },
+    "addressEn": { "type": "string", "required": true },
+    "mapQuery": { "type": "string", "required": true },
+    "footerIntroZh": { "type": "text" },
+    "footerIntroEn": { "type": "text" }
+  }
+}

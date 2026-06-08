@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "scenes",
+  "info": {
+    "singularName": "scene",
+    "pluralName": "scenes",
+    "displayName": "④ 场景 Scene",
+    "description": "官网首页「应用场景」3 张卡片 · Home application scenes"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nameZh": {
+      "type": "string",
+      "required": true
+    },
+    "nameEn": {
+      "type": "string",
+      "required": true
+    },
+    "descZh": {
+      "type": "text",
+      "required": true
+    },
+    "descEn": {
+      "type": "text",
+      "required": true
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "required": true
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "downloads",
+  "info": {
+    "singularName": "download",
+    "pluralName": "downloads",
+    "displayName": "③ 下载 Download",
+    "description": "官网 /downloads 下载中心 · Software & catalogs"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nameZh": {
+      "type": "string",
+      "required": true
+    },
+    "nameEn": {
+      "type": "string",
+      "required": true
+    },
+    "size": {
+      "type": "string"
+    },
+    "fileUrl": {
+      "type": "string",
+      "required": true
+    },
+    "file": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images", "files", "videos", "audios"]
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["software", "catalog"],
+      "required": true
+    },
+    "subCategory": {
+      "type": "enumeration",
+      "enum": [
+        "v225a", "dbcover-mac", "dbcover-win", "unit48", "soloc",
+        "preset-pack", "sol12sa", "v415a", "catalog-cn", "catalog-en", "case-study"
+      ],
+      "required": true
+    },
+    "cover": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

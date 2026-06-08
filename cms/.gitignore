@@ -1,0 +1,38 @@
+############################
+# Dependencies & build
+############################
+node_modules/
+dist/
+build/
+.strapi/
+.cache/
+
+############################
+# Environment & secrets
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# Database & runtime
+############################
+.tmp/
+*.db
+*.sqlite
+*.sqlite3
+
+############################
+# Uploads (restore via seed or Strapi export)
+############################
+public/uploads/*
+!public/uploads/.gitkeep
+
+############################
+# OS / IDE
+############################
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

@@ -1,0 +1,88 @@
+{
+  "kind": "collectionType",
+  "collectionName": "cases",
+  "info": {
+    "singularName": "case",
+    "pluralName": "cases",
+    "displayName": "② 案例 Case",
+    "description": "官网 /cases 工程案例 · Engineering & performance projects"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "legacyId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["engineering", "performance"],
+      "required": true
+    },
+    "sceneSlug": {
+      "type": "enumeration",
+      "enum": [
+        "stadium", "festival", "livehouse",
+        "convention", "corporate", "auditorium"
+      ],
+      "required": true
+    },
+    "titleZh": {
+      "type": "string",
+      "required": true
+    },
+    "titleEn": {
+      "type": "string",
+      "required": true
+    },
+    "descZh": {
+      "type": "text",
+      "required": true
+    },
+    "descEn": {
+      "type": "text",
+      "required": true
+    },
+    "detailZh": {
+      "type": "richtext"
+    },
+    "detailEn": {
+      "type": "richtext"
+    },
+    "sceneZh": {
+      "type": "string",
+      "required": true
+    },
+    "sceneEn": {
+      "type": "string",
+      "required": true
+    },
+    "products": {
+      "type": "string",
+      "required": true
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"],
+      "required": true
+    },
+    "gallery": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images"]
+    },
+    "highlightsZh": {
+      "type": "json"
+    },
+    "highlightsEn": {
+      "type": "json"
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
