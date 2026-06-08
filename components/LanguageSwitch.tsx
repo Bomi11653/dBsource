@@ -10,7 +10,7 @@ export default function LanguageSwitch() {
     <button
       type="button"
       onClick={() => setLocale(lang)}
-      className={`px-2.5 py-1 text-xs tracking-wider transition-colors ${
+      className={`min-h-[44px] min-w-[44px] px-3 text-xs tracking-wider transition-colors touch-active ${
         locale === lang
           ? "text-white font-medium"
           : "text-gray-500 hover:text-gray-300"
@@ -23,7 +23,7 @@ export default function LanguageSwitch() {
 
   return (
     <div
-      className="flex items-center border border-white/20 rounded overflow-hidden"
+      className="flex items-center border border-white/20 rounded-lg overflow-hidden"
       aria-label="Language"
     >
       {btn("zh", t.nav.langZh)}

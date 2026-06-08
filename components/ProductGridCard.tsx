@@ -16,13 +16,13 @@ export default function ProductGridCard({
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group flex flex-col h-full bg-black/80 border border-white/10 rounded-lg overflow-hidden hover:border-brand-gold/25 hover:shadow-[0_8px_32px_rgba(46,184,150,0.12)] transition-all duration-300 hover:scale-[1.03]"
+      className="group card-touch flex flex-col h-full bg-black/80 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/25 hover:shadow-[0_8px_32px_rgba(46,184,150,0.12)] transition-all duration-300 md:hover:scale-[1.02]"
     >
-      <div className="relative shrink-0" style={{ height: 160 }}>
+      <div className="relative shrink-0" style={{ height: 180 }}>
         <SafeImage
           src={product.image}
           alt={product.name[locale]}
-          frameHeight={160}
+          frameHeight={180}
           sizes="(max-width: 640px) 100vw, 25vw"
           loading="lazy"
           className="opacity-85 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
@@ -33,9 +33,9 @@ export default function ProductGridCard({
           </span>
         )}
       </div>
-      <div className="p-4 flex flex-col flex-1 justify-between">
+      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className="text-sm font-light leading-snug line-clamp-2 group-hover:text-white transition-colors">
+          <h2 className="text-base sm:text-sm font-medium sm:font-light leading-snug line-clamp-2 group-hover:text-white transition-colors">
             {product.name[locale]}
           </h2>
           <p className="text-brand-gold text-xs font-mono mt-1">{product.model}</p>

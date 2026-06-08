@@ -46,13 +46,16 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
       : t.cases.performanceSubtitle;
 
   return (
-    <div className="bg-black text-white pt-28 min-h-screen px-6 md:px-10 pb-20 max-w-5xl mx-auto">
+    <div className="bg-black text-white pt-24 sm:pt-28 min-h-screen page-x pb-page-safe max-w-5xl mx-auto">
       <PageHeader
+        compact
         title={title}
         subtitle={subtitle}
         guide={
-          <BrowseGuide
-            title={t.guide.exploreTitle}
+          <div className="hidden md:block">
+            <BrowseGuide
+              layout="scroll"
+              title={t.guide.exploreTitle}
             items={[
               { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
               { label: t.guide.casesPerformance, href: "/cases?type=performance" },
@@ -60,7 +63,8 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
               { label: t.guide.productsSpeaker, href: "/products" },
             ]}
             className="mt-6"
-          />
+            />
+          </div>
         }
       />
       <div className="space-y-8">

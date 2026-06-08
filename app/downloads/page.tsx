@@ -5,7 +5,8 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata(
   "下载中心",
-  "调音软件、系统配置工具与产品画册下载"
+  "调音软件、系统配置工具与产品画册下载",
+  "/downloads"
 );
 
 export default async function DownloadsPage() {

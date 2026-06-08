@@ -1,4 +1,4 @@
-import type { CaseItem } from "./mock";
+import type { CaseItem, Product } from "./mock";
 import { PRODUCT_SPEC_SHEETS, type ProductSpecSheet } from "./product-specs";
 
 export type HomeFeaturedSpecPage = {
@@ -50,6 +50,31 @@ export const HOME_FEATURED_PRODUCTS: HomeFeaturedProduct[] = [
     detailHref: "/products/46",
   },
 ];
+
+export function resolveProductHref(
+  products: Product[],
+  modelHint: string,
+  fallbackId: number
+): string {
+  const hint = modelHint.toUpperCase();
+  const match =
+    products.find((p) => p.model.toUpperCase() === hint) ||
+    products.find((p) => p.model.toUpperCase().startsWith(hint)) ||
+    products.find(
+      (p) => p.name.en.toUpperCase().includes(hint) || p.name.zh.includes(modelHint)
+    );
+  return match ? `/products/${match.id}` : `/products/${fallbackId}`;
+}
+
+export function buildHomeFeaturedProducts(products: Product[]): HomeFeaturedProduct[] {
+  return HOME_FEATURED_PRODUCTS.map((item) => ({
+    ...item,
+    detailHref:
+      item.id === "v212"
+        ? resolveProductHref(products, "V212", 44)
+        : resolveProductHref(products, "VIT", 46),
+  }));
+}
 
 export function getHomeFeaturedCase(cases: CaseItem[]): CaseItem | undefined {
   return cases.find((c) => c.id === 6) ?? cases[0];

@@ -35,14 +35,15 @@ export default function ProductSearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={t.products.searchPlaceholder}
-          className="w-full rounded-2xl border border-white/15 bg-white/5 py-3.5 pl-12 pr-4 text-sm text-white placeholder:text-gray-500 outline-none transition-colors focus:border-[#2eb896]/50 focus:bg-white/[0.07]"
+          className="w-full min-h-[48px] rounded-2xl border border-white/15 bg-white/5 py-3 pl-12 pr-12 text-base text-white placeholder:text-gray-500 outline-none transition-colors focus:border-[#2eb896]/50 focus:bg-white/[0.07]"
           autoComplete="off"
+          enterKeyHint="search"
         />
         {value.trim() && (
           <button
             type="button"
             onClick={() => onChange("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-xs text-gray-400 hover:text-white"
+            className="touch-target touch-active absolute right-1 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full text-gray-400 hover:text-white"
             aria-label={t.products.searchClear}
           >
             ×
@@ -50,7 +51,7 @@ export default function ProductSearchBar({
         )}
       </div>
       {value.trim() ? (
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-gray-500">
           {t.products.searchResults.replace("{count}", String(resultCount))}
         </p>
       ) : null}

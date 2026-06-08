@@ -10,11 +10,25 @@
 }
 
 @layer base {
+  html {
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     @apply bg-black text-white antialiased;
     font-family: var(--font-main);
     letter-spacing: 0.02em;
     line-height: 1.7;
+    overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
   }
 
   h1,
@@ -54,13 +68,19 @@
   }
 }
 
-/* 防止 next/image fill 在样式未加载时撑满视口 */
+/* 防止普通 img 溢出；fill 布局图片不受 max-width 限制（iOS Safari 必需） */
 img {
   max-width: 100%;
+  height: auto;
 }
-[style*="position: relative"] img[data-nimg="fill"],
-.relative[style*="height"] img {
+
+img[data-nimg="fill"],
+.relative img[data-nimg="fill"],
+[style*="position: relative"] img[data-nimg="fill"] {
   max-width: none;
+  max-height: none;
+  height: 100%;
+  width: 100%;
 }
 
 ::selection {
@@ -113,6 +133,19 @@ img {
   animation: hero-fade-in 0.8s ease-out 0.15s both;
 }
 
+.hero-wave-fallback {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 40%, rgba(46, 184, 150, 0.25), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 30% 60%, rgba(201, 169, 98, 0.15), transparent 60%),
+    linear-gradient(180deg, #0a0a0a 0%, #000 100%);
+  animation: hero-wave-drift 8s ease-in-out infinite alternate;
+}
+
+@keyframes hero-wave-drift {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.04) translateY(-1%); }
+}
+
 /* 滚动进入：默认可见，仅增强动效 */
 .reveal-on-scroll {
   opacity: 1;
@@ -150,6 +183,146 @@ img {
 @media (prefers-reduced-motion: reduce) {
   .scroll-guide-chevron {
     animation: none;
+  }
+}
+
+/* 移动端视口高度（避免 iOS 地址栏跳动） */
+.h-screen-safe {
+  height: 100dvh;
+  height: 100svh;
+}
+
+.min-h-screen-safe {
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+@supports not (height: 100dvh) {
+  .h-screen-safe {
+    height: 100vh;
+  }
+
+  .min-h-screen-safe {
+    min-height: 100vh;
+  }
+}
+
+/* 安全区（刘海 / 底部横条） */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Apple 级触控：44px 最小点击区 + 无高亮闪烁 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .touch-active:active {
+    opacity: 0.72;
+    transition: opacity 0.12s ease-out;
+  }
+}
+
+/* 移动端导航抽屉滚动 */
+.mobile-nav-scroll {
+  max-height: calc(100dvh - 4.25rem - env(safe-area-inset-top, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 全站移动端排版系统 */
+.page-x {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 640px) {
+  .page-x {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 768px) {
+  .page-x {
+    padding-left: max(2.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(2.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+.section-y {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .section-y {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+.pb-page-safe {
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+
+.scroll-mt-nav {
+  scroll-margin-top: calc(4.25rem + env(safe-area-inset-top, 0px) + 0.75rem);
+}
+
+/* 横向滑动筛选条（手机单手浏览） */
+.filter-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-radius: 9999px;
+  touch-action: manipulation;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .card-touch:active {
+    transform: scale(0.98);
+    transition: transform 0.12s ease-out;
   }
 }
 

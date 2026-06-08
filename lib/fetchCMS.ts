@@ -1,5 +1,6 @@
 import {
   cases,
+  contactInfo,
   downloads,
   products,
   qrCodes,
@@ -7,10 +8,12 @@ import {
 } from "@/data/mock";
 import { aboutImages, type AboutImages } from "@/data/about";
 import { applyCaseImages, sortCases } from "@/lib/cases";
-import { fetchStrapiCollection, getCmsUrl } from "@/lib/strapi-client";
+import { isCmsAvailable } from "@/lib/cms-health";
+import { fetchStrapiCollection, fetchStrapiSingle, getCmsUrl } from "@/lib/strapi-client";
 import {
   mapStrapiAboutSections,
   mapStrapiCase,
+  mapStrapiContactInfo,
   mapStrapiDownload,
   mapStrapiProduct,
   mapStrapiQR,
@@ -18,6 +21,11 @@ import {
 } from "@/lib/strapi-mapper";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+
+async function preferMockData(): Promise<boolean> {
+  if (USE_MOCK) return true;
+  return !(await isCmsAvailable());
+}
 
 const CASES_QUERY =
   "/cases?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc";
@@ -33,7 +41,7 @@ const ABOUT_QUERY =
   "/about-sections?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
 
 export async function getProducts() {
-  if (USE_MOCK) return products;
+  if (await preferMockData()) return products;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(
@@ -53,7 +61,7 @@ export async function getProductById(id: number) {
 }
 
 export async function getCases() {
-  if (USE_MOCK) {
+  if (await preferMockData()) {
     return sortCases(applyCaseImages(cases));
   }
 
@@ -75,7 +83,7 @@ export async function getCaseById(id: number) {
 }
 
 export async function getDownloads() {
-  if (USE_MOCK) return downloads;
+  if (await preferMockData()) return downloads;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiDownload>[0]>(
@@ -90,7 +98,7 @@ export async function getDownloads() {
 }
 
 export async function getScenes() {
-  if (USE_MOCK) return scenes;
+  if (await preferMockData()) return scenes;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiScene>[0]>(
@@ -105,7 +113,7 @@ export async function getScenes() {
 }
 
 export async function getQRCodes() {
-  if (USE_MOCK) return qrCodes;
+  if (await preferMockData()) return qrCodes;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(
@@ -120,7 +128,7 @@ export async function getQRCodes() {
 }
 
 export async function getAboutImages(): Promise<AboutImages> {
-  if (USE_MOCK) return aboutImages;
+  if (await preferMockData()) return aboutImages;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiAboutSections>[0][number]>(
@@ -132,4 +140,18 @@ export async function getAboutImages(): Promise<AboutImages> {
   }
 
   return aboutImages;
+}
+
+export async function getContactInfo() {
+  if (await preferMockData()) return contactInfo;
+
+  const doc = await fetchStrapiSingle<Parameters<typeof mapStrapiContactInfo>[0]>(
+    "/contact-info"
+  );
+
+  if (doc) {
+    return mapStrapiContactInfo(doc, contactInfo);
+  }
+
+  return contactInfo;
 }

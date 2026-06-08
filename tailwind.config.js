@@ -10,8 +10,8 @@ module.exports = {
         brand: { gold: "#2eb896", muted: "#141414" },
       },
       fontFamily: {
-        sans: ["var(--font-main)"],
-        serif: ["var(--font-accent)"],
+        sans: ["var(--font-inter)", "var(--font-source-han-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "var(--font-source-han-serif)", "serif"],
       },
       letterSpacing: {
         body: "0.02em",
@@ -24,5 +24,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography"), require("@tailwindcss/forms")],
 };

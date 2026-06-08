@@ -35,7 +35,7 @@ function StickyCaseVisual({
   const textOpacity = useTransform(scrollYProgress, [0, 0.2, 0.45], [0, 1, 0]);
 
   return (
-    <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+    <div className="sticky top-0 h-screen-safe flex items-center justify-center overflow-hidden">
       <motion.div className="absolute inset-0" style={{ scale, opacity }}>
         <Image
           src={caseItem.image}
@@ -81,7 +81,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
   if (!heroCase) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-400">
-        No cases
+        {t.cases.noCases}
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
   return (
     <div ref={containerRef} className="bg-black text-white">
       {/* 第一屏：品牌标题 + 彝族新年晚会现场背景 */}
-      <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-screen-safe flex flex-col items-center justify-center overflow-hidden">
         <Image
           src="/images/cases/cases-hero-bg.png"
           alt=""
@@ -104,7 +104,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl md:text-7xl font-light tracking-tight text-center drop-shadow-lg"
+            className="text-4xl sm:text-5xl md:text-7xl font-light tracking-tight text-center drop-shadow-lg"
           >
             {t.cases.title}
           </motion.h1>
@@ -123,6 +123,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             className="mt-8"
           >
             <BrowseGuide
+              layout="stack"
               title={t.guide.exploreTitle}
               items={[
                 { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
@@ -142,7 +143,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       </section>
 
       {/* 第二屏：Sticky 全屏视觉（Apple 核心） */}
-      <section id="cases-story" className="h-[220vh] relative scroll-mt-28">
+      <section id="cases-story" className="h-[160vh] md:h-[220vh] relative scroll-mt-24 md:scroll-mt-28">
         <StickyCaseVisual
           caseItem={heroCase}
           locale={locale}
@@ -152,7 +153,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       </section>
 
       {/* 第三屏：项目背景 + 图文 */}
-      <section className="min-h-screen grid md:grid-cols-2 items-center gap-12 md:gap-20 px-6 md:px-20 py-24">
+      <section className="min-h-screen-safe grid md:grid-cols-2 items-center gap-8 md:gap-20 px-4 sm:px-6 md:px-20 py-16 md:py-24">
         <motion.div
           initial={{ opacity: 0, x: -60 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -250,7 +251,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
         >
           {t.cases.stat1Label}
         </motion.p>
-        <div className="grid grid-cols-3 gap-8 md:gap-16 mt-16 max-w-3xl w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 md:gap-16 mt-12 md:mt-16 max-w-3xl w-full">
           {[
             { value: t.cases.stat2, label: t.cases.stat2Label },
             { value: t.cases.stat3, label: t.cases.stat3Label },
@@ -262,9 +263,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 + i * 0.1 }}
-              className="border border-white/10 rounded-xl py-8 px-4"
+              className="border border-white/10 rounded-xl py-6 sm:py-8 px-4"
             >
-              <p className="text-2xl md:text-3xl font-light text-brand-gold">{item.value}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-light text-brand-gold">{item.value}</p>
               <p className="text-xs text-gray-500 mt-2 uppercase tracking-wider">{item.label}</p>
             </motion.div>
           ))}
@@ -280,41 +281,15 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
         </motion.p>
       </section>
 
-      {/* 全部案例入口 */}
-      <section className="px-6 md:px-20 py-24 border-t border-white/10">
-        <h3 className="text-2xl font-light text-center mb-12">
-          {locale === "zh" ? "全部案例" : "All Projects"}
-        </h3>
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {cases.map((item) => (
-            <Link
-              key={item.id}
-              href={`/cases/${item.id}`}
-              className="group border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors"
-            >
-              <div className="relative aspect-[16/10] bg-zinc-900">
-                <Image src={item.image} alt={item.title[locale]} fill className="object-cover" />
-              </div>
-              <div className="p-5">
-                <span className="text-xs text-brand-gold uppercase tracking-wider">
-                  {item.scene[locale]}
-                </span>
-                <h4 className="text-lg font-light mt-2 group-hover:text-brand-gold transition-colors">
-                  {item.title[locale]}
-                </h4>
-                <p className="text-gray-500 text-sm mt-2 line-clamp-2">{item.desc[locale]}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 更多案例条 */}
+      {/* 更多案例 */}
       {moreCases.length > 0 && (
         <section className="px-6 md:px-20 py-24 border-t border-white/10 space-y-16">
-          <h3 className="text-2xl font-light text-center text-gray-400">
-            {locale === "zh" ? "更多案例" : "More Projects"}
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <h3 className="text-2xl font-light text-gray-400">{t.cases.moreProjects}</h3>
+            <Link href="/cases?type=engineering" className="text-sm text-brand-gold hover:underline">
+              {t.cases.viewAllProjects} →
+            </Link>
+          </div>
           {moreCases.map((item, index) => (
             <motion.article
               key={item.id}

@@ -1,4 +1,5 @@
 import type { DownloadItem, Locale } from "@/data/mock";
+import { downloads as downloadCatalog } from "@/data/mock";
 
 export type DownloadTab = "software" | "catalog";
 
@@ -22,6 +23,12 @@ export interface DownloadSubCategory {
 }
 
 export const DOWNLOAD_TABS: DownloadTab[] = ["software", "catalog"];
+
+/** 各 Tab 在导航与列表中的固定顺序 */
+export const DOWNLOAD_TAB_ORDER: Record<DownloadTab, number[]> = {
+  software: [1, 2, 3, 4, 5, 6, 7, 8],
+  catalog: [9, 10, 11],
+};
 
 export const DOWNLOAD_SUB_CATEGORIES: DownloadSubCategory[] = [
   { slug: "v225a", tab: "software", label: { zh: "V225A", en: "V225A" } },
@@ -71,6 +78,29 @@ export const DOWNLOAD_SUB_CATEGORIES: DownloadSubCategory[] = [
 
 export function getDownloadSubCategoriesForTab(tab: DownloadTab): DownloadSubCategory[] {
   return DOWNLOAD_SUB_CATEGORIES.filter((d) => d.tab === tab);
+}
+
+/** 导航子项：按 Tab 列出具体下载文件（与工程案例子目录逻辑一致） */
+export function getDownloadsForTab(
+  tab: DownloadTab,
+  list: DownloadItem[] = downloadCatalog
+): DownloadItem[] {
+  const order = DOWNLOAD_TAB_ORDER[tab];
+  const byId = new Map(list.filter((d) => d.type === tab).map((d) => [d.id, d]));
+  return order.map((id) => byId.get(id)).filter((d): d is DownloadItem => Boolean(d));
+}
+
+export function getDownloadMegaLinks(
+  tab: DownloadTab,
+  locale: Locale,
+  list?: DownloadItem[]
+): { key: string; href: string; label: string }[] {
+  const source = list?.length ? list : downloadCatalog;
+  return getDownloadsForTab(tab, source).map((d) => ({
+    key: String(d.id),
+    href: `/downloads?tab=${d.type}&file=${d.id}`,
+    label: d.name[locale],
+  }));
 }
 
 export function getDownloadSubCategoryBySlug(slug: string): DownloadSubCategory | undefined {

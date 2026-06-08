@@ -19,32 +19,32 @@ export default function CaseCard({
   return (
     <Link
       href={`/cases/${item.id}`}
-      className="group block"
+      className="group card-touch block"
     >
-      <article className="flex flex-col md:flex-row gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors">
+      <article className="flex flex-col md:flex-row gap-0 md:gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors active:border-brand-gold/20">
         {emptyImage ? (
           <div
-            className="md:w-72 shrink-0 bg-zinc-900/70 border-r border-white/5"
-            style={{ minHeight: 192 }}
+            className="w-full md:w-72 shrink-0 bg-zinc-900/70 md:border-r border-white/5"
+            style={{ minHeight: 200 }}
             aria-hidden
           />
         ) : (
-          <div className="md:w-72 shrink-0" style={{ minHeight: 192 }}>
+          <div className="w-full md:w-72 shrink-0">
             <SafeImage
               src={item.image}
               alt={item.title[locale]}
-              frameHeight={192}
+              frameHeight={200}
               frameWidth="100%"
               sizes="(max-width: 768px) 100vw, 33vw"
               loading="lazy"
             />
           </div>
         )}
-        <div className="p-6 flex flex-col justify-center">
+        <div className="p-4 sm:p-6 flex flex-col justify-center">
           <span className="text-xs text-brand-gold uppercase tracking-wider">
             {item.scene[locale]}
           </span>
-          <h2 className="text-2xl font-light mt-2 group-hover:text-brand-gold transition-colors">
+          <h2 className="text-xl sm:text-2xl font-light mt-2 group-hover:text-brand-gold transition-colors leading-snug">
             {item.title[locale]}
           </h2>
           <p className="text-sm text-gray-500 font-mono mt-2">{item.products}</p>

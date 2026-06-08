@@ -1,19 +1,21 @@
 "use client";
 
 import { usePageTransition } from "@/components/PageTransitionProvider";
-import type { CaseType, ProductSeriesGroup } from "@/data/mock";
+import type { CaseType, DownloadItem, ProductSeriesGroup } from "@/data/mock";
 import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
 import {
   DOWNLOAD_TABS,
-  downloadSubCategoryLabel,
-  getDownloadSubCategoriesForTab,
+  getDownloadMegaLinks,
   type DownloadTab,
 } from "@/lib/downloads";
+import { useSiteData } from "@/components/SiteDataProvider";
 import {
-  getSubSeriesForGroup,
-  PRODUCT_SERIES_GROUPS,
-  subSeriesLabel,
-} from "@/lib/products";
+  getSubSeriesForGroupFromConfig,
+  getVisibleSeriesGroups,
+  seriesEntryLabel,
+} from "@/lib/series-config";
+import { useSeriesConfig } from "@/components/SeriesConfigProvider";
+import GlobalSearch from "@/components/GlobalSearch";
 import LanguageSwitch from "./LanguageSwitch";
 import { useI18n } from "./I18nProvider";
 import { AnimatePresence, motion } from "framer-motion";
@@ -127,6 +129,8 @@ function ProductsMegaPanel({
   seriesLabels,
   locale,
   t,
+  seriesConfig,
+  visibleGroups,
 }: {
   activeSeries: ProductSeriesGroup;
   onSeriesHover: (series: ProductSeriesGroup) => void;
@@ -134,12 +138,14 @@ function ProductsMegaPanel({
   seriesLabels: Record<ProductSeriesGroup, string>;
   locale: "zh" | "en";
   t: ReturnType<typeof useI18n>["t"];
+  seriesConfig: ReturnType<typeof useSeriesConfig>;
+  visibleGroups: ProductSeriesGroup[];
 }) {
-  const subItems = getSubSeriesForGroup(activeSeries);
+  const subItems = getSubSeriesForGroupFromConfig(activeSeries, seriesConfig);
   const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
     key: sub.slug,
     href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
-    label: subSeriesLabel(sub, locale),
+    label: seriesEntryLabel(sub, locale),
   }));
   const firstColumnCount = activeSeries === "speaker" ? 5 : subLinks.length;
 
@@ -152,7 +158,7 @@ function ProductsMegaPanel({
         onNavigate={onNavigate}
       >
         <ul className="space-y-1">
-          {PRODUCT_SERIES_GROUPS.map((series) => (
+          {visibleGroups.map((series) => (
             <li key={series}>
               <Link
                 href={`/products?series=${series}`}
@@ -245,27 +251,29 @@ function DownloadsMegaPanel({
   onNavigate,
   locale,
   t,
+  downloads,
 }: {
   activeTab: DownloadTab;
   onTabHover: (tab: DownloadTab) => void;
   onNavigate: (e: React.MouseEvent, href: string) => void;
   locale: "zh" | "en";
   t: ReturnType<typeof useI18n>["t"];
+  downloads: DownloadItem[];
 }) {
-  const subItems = getDownloadSubCategoriesForTab(activeTab);
   const tabLabels: Record<DownloadTab, string> = {
     software: t.downloads.software,
     catalog: t.downloads.catalog,
   };
-  const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
-    key: sub.slug,
-    href: `/downloads?tab=${sub.tab}&sub=${sub.slug}`,
-    label: downloadSubCategoryLabel(sub, locale),
-  }));
+  const subLinks: MegaLinkItem[] = getDownloadMegaLinks(activeTab, locale, downloads);
 
   return (
     <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
-      <MegaMainColumn exploreLabel={t.nav.megaExplore} onNavigate={onNavigate}>
+      <MegaMainColumn
+        exploreLabel={t.nav.megaExplore}
+        viewAllHref="/downloads"
+        viewAllLabel={t.nav.megaViewAllDownloads}
+        onNavigate={onNavigate}
+      >
         <ul className="space-y-1">
           {DOWNLOAD_TABS.map((tab) => (
             <li key={tab}>
@@ -288,8 +296,8 @@ function DownloadsMegaPanel({
       <MegaSubColumns
         title={tabLabels[activeTab]}
         links={subLinks}
-        firstColumnCount={2}
-        restColumnSize={2}
+        firstColumnCount={subLinks.length || 1}
+        restColumnSize={3}
         onNavigate={onNavigate}
       />
     </div>
@@ -298,6 +306,9 @@ function DownloadsMegaPanel({
 
 export default function Navbar() {
   const { locale, t } = useI18n();
+  const { downloads } = useSiteData();
+  const seriesConfig = useSeriesConfig();
+  const visibleGroups = getVisibleSeriesGroups(seriesConfig);
   const pathname = usePathname();
   const { navigateWithTransition } = usePageTransition();
   const [megaOpen, setMegaOpen] = useState<MegaMenu>(null);
@@ -305,6 +316,7 @@ export default function Navbar() {
   const [activeCaseType, setActiveCaseType] = useState<CaseType>("engineering");
   const [activeDownloadTab, setActiveDownloadTab] = useState<DownloadTab>("software");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSection, setMobileSection] = useState<MegaMenu>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const seriesLabels: Record<ProductSeriesGroup, string> = {
@@ -335,7 +347,39 @@ export default function Navbar() {
   useEffect(() => {
     setMegaOpen(null);
     setMobileOpen(false);
+    setMobileSection(null);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMobileOpen(false);
+        setMobileSection(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = {
+      overflow: style.overflow,
+      position: style.position,
+      top: style.top,
+      width: style.width,
+    };
+    style.overflow = "hidden";
+    style.position = "fixed";
+    style.top = `-${scrollY}px`;
+    style.width = "100%";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      style.overflow = prev.overflow;
+      style.position = prev.position;
+      style.top = prev.top;
+      style.width = prev.width;
+      window.scrollTo(0, scrollY);
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     return () => {
@@ -381,10 +425,10 @@ export default function Navbar() {
 
   return (
     <header
-      className="fixed top-0 w-full z-50 bg-black/45 backdrop-blur-xl border-b border-white/10"
+      className="fixed top-0 w-full z-50 bg-black/45 backdrop-blur-xl border-b border-white/10 safe-top safe-x"
       onMouseLeave={scheduleCloseMega}
     >
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-6 md:px-10 h-[4.25rem]">
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 md:px-10 h-[4.25rem]">
         <Link
           href="/"
           onClick={(e) => handleNavClick(e, "/")}
@@ -450,14 +494,35 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <GlobalSearch />
           <LanguageSwitch />
           <button
             type="button"
-            className="lg:hidden text-xs border border-white/20 px-3 py-1.5 rounded"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Menu"
+            className="lg:hidden touch-target touch-active flex items-center justify-center rounded-lg border border-white/20 text-white"
+            onClick={() => {
+              setMobileOpen((v) => !v);
+              if (mobileOpen) setMobileSection(null);
+            }}
+            aria-label={mobileOpen ? t.nav.menuClose : t.nav.menuOpen}
+            aria-expanded={mobileOpen}
           >
-            {mobileOpen ? "✕" : "☰"}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+              {mobileOpen ? (
+                <path
+                  d="M5 5l10 10M15 5L5 15"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="M3 6h14M3 10h14M3 14h14"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
           </button>
         </div>
       </div>
@@ -481,6 +546,8 @@ export default function Navbar() {
                   seriesLabels={seriesLabels}
                   locale={locale}
                   t={t}
+                  seriesConfig={seriesConfig}
+                  visibleGroups={visibleGroups}
                 />
               )}
 
@@ -502,6 +569,7 @@ export default function Navbar() {
                   onNavigate={handleNavClick}
                   locale={locale}
                   t={t}
+                  downloads={downloads}
                 />
               )}
             </div>
@@ -511,109 +579,177 @@ export default function Navbar() {
 
       <AnimatePresence>
         {mobileOpen && (
+          <>
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px]"
+              aria-label={t.nav.menuClose}
+              onClick={() => {
+                setMobileOpen(false);
+                setMobileSection(null);
+              }}
+            />
           <motion.nav
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="lg:hidden overflow-hidden border-t border-white/10 bg-black/95"
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:hidden relative z-50 overflow-hidden border-t border-white/10 bg-black/95"
           >
-            <div className="px-6 py-4 space-y-4 text-sm">
-              <Link href="/" onClick={(e) => handleNavClick(e, "/")} className="block py-2">
+            <div className="mobile-nav-scroll px-4 sm:px-6 py-3 safe-bottom text-sm">
+              <Link
+                href="/"
+                onClick={(e) => handleNavClick(e, "/")}
+                className="flex items-center min-h-[44px] py-2 text-base touch-active"
+              >
                 {t.nav.home}
               </Link>
-              <Link href="/about" onClick={(e) => handleNavClick(e, "/about")} className="block py-2">
+              <Link
+                href="/about"
+                onClick={(e) => handleNavClick(e, "/about")}
+                className="flex items-center min-h-[44px] py-2 text-base touch-active"
+              >
                 {t.nav.about}
               </Link>
-              <div>
-                <Link href="/products" onClick={(e) => handleNavClick(e, "/products")} className="block py-2 font-medium">
-                  {t.nav.products}
-                </Link>
-                {PRODUCT_SERIES_GROUPS.map((s) => (
-                  <div key={s}>
+
+              {(
+                [
+                  { key: "products" as const, href: "/products", label: t.nav.products },
+                  { key: "cases" as const, href: "/cases", label: t.nav.cases },
+                  { key: "downloads" as const, href: "/downloads", label: t.nav.downloads },
+                ] as const
+              ).map((section) => (
+                <div key={section.key} className="border-t border-white/10">
+                  <div className="flex items-center">
                     <Link
-                      href={`/products?series=${s}`}
-                      onClick={(e) => handleNavClick(e, `/products?series=${s}`)}
-                      className="block py-2 pl-3 text-gray-300 font-medium"
+                      href={section.href}
+                      onClick={(e) => handleNavClick(e, section.href)}
+                      className="flex-1 flex items-center min-h-[44px] py-2 text-base font-medium touch-active"
                     >
-                      {seriesLabels[s]}
+                      {section.label}
                     </Link>
-                    {getSubSeriesForGroup(s).map((sub) => (
-                      <Link
-                        key={sub.slug}
-                        href={`/products?series=${sub.seriesGroup}&sub=${sub.slug}`}
-                        onClick={(e) =>
-                          handleNavClick(
-                            e,
-                            `/products?series=${sub.seriesGroup}&sub=${sub.slug}`
-                          )
-                        }
-                        className="block py-1.5 pl-6 text-gray-500 text-xs"
-                      >
-                        {subSeriesLabel(sub, locale)}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div>
-                <Link href="/cases" onClick={(e) => handleNavClick(e, "/cases")} className="block py-2 font-medium">
-                  {t.nav.cases}
-                </Link>
-                {CASE_TYPES.map((c) => (
-                  <div key={c}>
-                    <Link
-                      href={`/cases?type=${c}`}
-                      onClick={(e) => handleNavClick(e, `/cases?type=${c}`)}
-                      className="block py-2 pl-3 text-gray-300 font-medium"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileSection((prev) =>
+                          prev === section.key ? null : section.key
+                        )
+                      }
+                      aria-expanded={mobileSection === section.key}
+                      aria-label={`${section.label} submenu`}
+                      className="touch-target touch-active flex items-center justify-center text-gray-400"
                     >
-                      {caseLabels[c]}
-                    </Link>
-                    {getCaseMegaLinks(c, locale).map((sub) => (
-                      <Link
-                        key={sub.key}
-                        href={sub.href}
-                        onClick={(e) => handleNavClick(e, sub.href)}
-                        className="block py-1.5 pl-6 text-gray-500 text-xs"
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden
+                        className={`transition-transform duration-200 ${
+                          mobileSection === section.key ? "rotate-180" : ""
+                        }`}
                       >
-                        {sub.label}
-                      </Link>
-                    ))}
+                        <path
+                          d="M4 6l4 4 4-4"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                ))}
-              </div>
-              <div>
-                <Link href="/downloads" onClick={(e) => handleNavClick(e, "/downloads")} className="block py-2 font-medium">
-                  {t.nav.downloads}
-                </Link>
-                {DOWNLOAD_TABS.map((tab) => (
-                  <div key={tab}>
-                    <Link
-                      href={`/downloads?tab=${tab}`}
-                      onClick={(e) => handleNavClick(e, `/downloads?tab=${tab}`)}
-                      className="block py-2 pl-3 text-gray-300 font-medium"
-                    >
-                      {tab === "software" ? t.downloads.software : t.downloads.catalog}
-                    </Link>
-                    {getDownloadSubCategoriesForTab(tab).map((sub) => (
-                      <Link
-                        key={sub.slug}
-                        href={`/downloads?tab=${sub.tab}&sub=${sub.slug}`}
-                        onClick={(e) =>
-                          handleNavClick(e, `/downloads?tab=${sub.tab}&sub=${sub.slug}`)
-                        }
-                        className="block py-1.5 pl-6 text-gray-500 text-xs"
-                      >
-                        {downloadSubCategoryLabel(sub, locale)}
-                      </Link>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <Link href="/contact" onClick={(e) => handleNavClick(e, "/contact")} className="block py-2">
+                  {mobileSection === section.key && (
+                    <div className="pb-3 pl-3 space-y-0.5">
+                      {section.key === "products" &&
+                        visibleGroups.map((s) => (
+                          <div key={s}>
+                            <Link
+                              href={`/products?series=${s}`}
+                              onClick={(e) => handleNavClick(e, `/products?series=${s}`)}
+                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
+                            >
+                              {seriesLabels[s]}
+                            </Link>
+                            {getSubSeriesForGroupFromConfig(s, seriesConfig).map((sub) => (
+                              <Link
+                                key={sub.slug}
+                                href={`/products?series=${sub.seriesGroup}&sub=${sub.slug}`}
+                                onClick={(e) =>
+                                  handleNavClick(
+                                    e,
+                                    `/products?series=${sub.seriesGroup}&sub=${sub.slug}`
+                                  )
+                                }
+                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
+                              >
+                                {seriesEntryLabel(sub, locale)}
+                              </Link>
+                            ))}
+                          </div>
+                        ))}
+                      {section.key === "cases" &&
+                        CASE_TYPES.map((c) => (
+                          <div key={c}>
+                            <Link
+                              href={`/cases?type=${c}`}
+                              onClick={(e) => handleNavClick(e, `/cases?type=${c}`)}
+                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
+                            >
+                              {caseLabels[c]}
+                            </Link>
+                            {getCaseMegaLinks(c, locale).map((sub) => (
+                              <Link
+                                key={sub.key}
+                                href={sub.href}
+                                onClick={(e) => handleNavClick(e, sub.href)}
+                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        ))}
+                      {section.key === "downloads" &&
+                        DOWNLOAD_TABS.map((tab) => (
+                          <div key={tab}>
+                            <Link
+                              href={`/downloads?tab=${tab}`}
+                              onClick={(e) => handleNavClick(e, `/downloads?tab=${tab}`)}
+                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
+                            >
+                              {tab === "software" ? t.downloads.software : t.downloads.catalog}
+                            </Link>
+                            {getDownloadMegaLinks(tab, locale, downloads).map((sub) => (
+                              <Link
+                                key={sub.key}
+                                href={sub.href}
+                                onClick={(e) => handleNavClick(e, sub.href)}
+                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <Link
+                href="/contact"
+                onClick={(e) => handleNavClick(e, "/contact")}
+                className="flex items-center min-h-[44px] py-2 text-base border-t border-white/10 touch-active"
+              >
                 {t.nav.contact}
               </Link>
             </div>
           </motion.nav>
+          </>
         )}
       </AnimatePresence>
     </header>

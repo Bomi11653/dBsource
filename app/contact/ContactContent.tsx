@@ -1,22 +1,41 @@
 "use client";
 
-import BrowseGuide from "@/components/BrowseGuide";
-import { contactInfo, type QRItem } from "@/data/mock";
+import type { ContactInfo } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
-import { SafeImageContain } from "@/components/SafeImage";
+import BrowseGuide from "@/components/BrowseGuide";
+import SalesContactCards from "@/components/SalesContactCards";
 import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default function ContactContent({ qrItems }: { qrItems: QRItem[] }) {
+export default function ContactContent({ contact }: { contact: ContactInfo }) {
   const { locale, t } = useI18n();
+  const searchParams = useSearchParams();
+  const productModel = searchParams.get("product") ?? "";
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(contactInfo.mapQuery)}&output=embed&z=15`;
+  const mapSrc =`https://www.google.com/maps?q=${encodeURIComponent(contact.mapQuery)}&output=embed&z=15`;
+  const defaultMessage = productModel
+    ? locale === "zh"
+      ? `我想咨询产品型号：${productModel}`
+      : `I would like to inquire about model: ${productModel}`
+    : "";
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    setSent(false);
     const fd = new FormData(e.currentTarget);
+
+    const honeypot = String(fd.get("website") ?? "");
+    if (honeypot) {
+      setLoading(false);
+      setSent(true);
+      return;
+    }
+
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -27,12 +46,17 @@ export default function ContactContent({ qrItems }: { qrItems: QRItem[] }) {
           email: fd.get("email"),
           phone: fd.get("phone"),
           message: fd.get("message"),
+          product: fd.get("product") || undefined,
         }),
       });
       const data = await res.json();
-      if (data.ok) setSent(true);
+      if (data.ok) {
+        setSent(true);
+      } else {
+        setError(data.message || t.contact.submitError);
+      }
     } catch {
-      setSent(true);
+      setError(t.contact.submitError);
     } finally {
       setLoading(false);
     }
@@ -40,128 +64,110 @@ export default function ContactContent({ qrItems }: { qrItems: QRItem[] }) {
 
   return (
     <div className="bg-black text-white">
-      <section className="pt-32 pb-16 px-6 text-center hero-fade-in">
-        <h1 className="text-4xl md:text-6xl font-light">{t.contact.title}</h1>
-        <p className="text-gray-400 mt-4 text-lg max-w-2xl mx-auto">{t.contact.subtitle}</p>
+      <section className="pt-24 sm:pt-28 pb-12 page-x text-center hero-fade-in">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-light leading-snug">{t.contact.title}</h1>
+        <p className="text-gray-400 mt-4 max-w-2xl mx-auto">{t.contact.subtitle}</p>
         <BrowseGuide
           title={t.guide.exploreTitle}
           items={[
             { label: t.guide.contactForm, targetId: "contact-form" },
             { label: t.guide.contactInfo, targetId: "contact-info" },
-            { label: t.guide.contactMap, targetId: "contact-map" },
+            { label: t.contact.salesTitle, targetId: "contact-sales" },
             { label: t.guide.productsSpeaker, href: "/products" },
           ]}
-          className="mt-8 items-center"
+          className="mt-8 justify-center"
         />
       </section>
 
-      <section className="max-w-6xl mx-auto px-6 md:px-10 pb-16 grid md:grid-cols-2 gap-10 md:gap-14">
-        <form
-          id="contact-form"
-          onSubmit={handleSubmit}
-          className="space-y-4 bg-white/5 border border-white/10 p-8 rounded-2xl reveal-on-scroll"
-        >
-          <h2 className="text-lg font-light mb-2">{t.contact.formTitle}</h2>
-          <input
-            name="name"
-            required
-            placeholder={t.contact.name}
-            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-3 focus:border-brand-gold/50 outline-none"
-          />
-          <input
-            name="phone"
-            type="tel"
-            placeholder={t.contact.tel}
-            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-3 focus:border-brand-gold/50 outline-none"
-          />
-          <input
-            name="email"
-            type="email"
-            placeholder={t.contact.email}
-            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-3 focus:border-brand-gold/50 outline-none"
-          />
-          <input
-            name="company"
-            placeholder={t.contact.company}
-            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-3 focus:border-brand-gold/50 outline-none"
-          />
-          <textarea
-            name="message"
-            required
-            rows={4}
-            placeholder={t.contact.message}
-            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-3 focus:border-brand-gold/50 outline-none resize-none"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-brand-gold/90 text-black font-medium tracking-wider hover:bg-brand-gold transition-colors disabled:opacity-50"
-          >
-            {loading ? "..." : t.contact.submit}
-          </button>
-          {sent && <p className="text-green-400 text-sm text-center">{t.contact.success}</p>}
-        </form>
-
-        <div className="space-y-6 reveal-on-scroll">
-          <div
-            id="contact-map"
-            className="relative w-full h-64 md:h-80 rounded-2xl overflow-hidden border border-white/10 scroll-mt-28"
-          >
-            <iframe
-              title="map"
-              src={mapSrc}
-              className="absolute inset-0 w-full h-full border-0 grayscale opacity-80"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-          <div
-            id="contact-info"
-            className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3 text-gray-300 scroll-mt-28"
-          >
-            <p className="text-white font-light text-lg">{contactInfo.company[locale]}</p>
-            {contactInfo.phones.map((phone) => (
-              <p key={phone}>
-                <span className="text-gray-500">{t.contact.phone}：</span>
-                <a href={`tel:${phone}`} className="hover:text-brand-gold ml-1">
-                  {phone}
-                </a>
-              </p>
-            ))}
-            <p>
-              <span className="text-gray-500">{t.contact.email}：</span>
-              <a href={`mailto:${contactInfo.email}`} className="hover:text-brand-gold ml-1">
-                {contactInfo.email}
-              </a>
-            </p>
-            <p>
-              <span className="text-gray-500">{t.contact.address}：</span>
-              {contactInfo.address[locale]}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-4xl mx-auto px-6 pb-24">
-        <p className="text-center text-xs text-gray-500 tracking-[0.3em] uppercase mb-8">
-          {t.contact.qrTitle}
-        </p>
-        <div className="flex justify-center gap-6 overflow-x-auto pb-4">
-          {qrItems.map((qr) => (
-            <div key={qr.id} className="flex flex-col items-center gap-2 shrink-0 group">
-              <SafeImageContain
-                src={qr.image}
-                alt={qr.label[locale]}
-                size={112}
-                className="rounded-xl border border-white/10 transition-transform group-hover:scale-105"
-              />
-              <span className="text-xs text-gray-500">{qr.label[locale]}</span>
+      <section id="contact-form" className="page-x pb-16 scroll-mt-nav">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-16">
+          <div className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+            <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+            {productModel ? (
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">{t.contact.productLabel}</label>
+                <input
+                  name="product"
+                  defaultValue={productModel}
+                  readOnly
+                  className="w-full rounded-xl border border-brand-gold/30 bg-brand-gold/5 px-4 py-3 text-sm text-brand-gold"
+                />
+              </div>
+            ) : null}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">{t.contact.name}</label>
+              <input name="name" required className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
             </div>
-          ))}
-        </div>
-      </section>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">{t.contact.company}</label>
+              <input name="company" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">{t.contact.email}</label>
+                <input name="email" type="email" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">{t.contact.phone}</label>
+                <input name="phone" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">{t.contact.message}</label>
+              <textarea
+                name="message"
+                required
+                rows={5}
+                defaultValue={defaultMessage}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm resize-y min-h-[120px]"
+              />
+            </div>
+            {error ? <p className="text-sm text-red-400">{error}</p> : null}
+            {sent ? (
+              <p className="text-sm text-brand-gold">{t.contact.sent}</p>
+            ) : (
+              <button
+                type="submit"
+                disabled={loading}
+                className="min-h-[48px] px-8 rounded-xl bg-brand-gold/90 text-black font-medium hover:bg-brand-gold transition-colors disabled:opacity-60 touch-active"
+              >
+                {loading ? t.contact.sending : t.contact.submit}
+              </button>
+            )}
+            </form>
+          </div>
 
-      <p className="text-xs text-gray-600 text-center px-6 pb-12">{t.contact.disclaimer}</p>
+          <div id="contact-info" className="space-y-8 scroll-mt-nav">
+            <div className="rounded-2xl border border-white/10 p-6 sm:p-8 space-y-4">
+              <h2 className="text-xl font-medium">{contact.company[locale]}</h2>
+              <p className="text-gray-400 text-sm leading-relaxed">{contact.address[locale]}</p>
+              <div className="space-y-2 text-sm">
+                {contact.phones.map((phone) => (
+                  <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block text-brand-gold hover:underline">
+                    {phone}
+                  </a>
+                ))}
+                <a href={`mailto:${contact.email}`} className="block text-gray-300 hover:text-white">
+                  {contact.email}
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10]">
+              <iframe
+                title={contact.company[locale]}
+                src={mapSrc}
+                className="w-full h-full min-h-[240px] border-0 grayscale opacity-80"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+        </div>
+
+        <SalesContactCards />
+      </section>
     </div>
   );
 }

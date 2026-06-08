@@ -101,7 +101,16 @@ export interface QRItem {
   image: string;
 }
 
-export const contactInfo = {
+export type ContactInfo = {
+  company: { zh: string; en: string };
+  phones: string[];
+  email: string;
+  address: { zh: string; en: string };
+  mapQuery: string;
+  footerIntro: { zh: string; en: string };
+};
+
+export const contactInfo: ContactInfo = {
   company: {
     zh: "东莞新声电子科技有限公司",
     en: "Dongguan Xinsheng Electronics Technology Co., Ltd.",
@@ -113,6 +122,10 @@ export const contactInfo = {
     en: "No.1 Xinfeng West 3rd Rd, Mowu, Wanjiang, Dongguan, Guangdong",
   },
   mapQuery: "广东省东莞市万江街道莫屋新丰西三路1号",
+  footerIntro: {
+    zh: "dBsource 专注专业音响系统研发与工程交付，为演出、体育、政企等场景提供从设计到调试的一站式声场解决方案。",
+    en: "dBsource delivers professional audio systems and turnkey sound solutions for live events, sports venues and corporate projects.",
+  },
 };
 
 /** 画册真实型号目录（B 端 + C 端） */

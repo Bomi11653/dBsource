@@ -73,7 +73,7 @@ export function SafeImageContain({
         src={src}
         alt={alt}
         fill
-        unoptimized
+        sizes={`${size}px`}
         className="object-contain"
         style={{ objectFit: "contain" }}
       />

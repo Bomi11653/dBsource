@@ -10,6 +10,7 @@ export {
   getScenes,
   getQRCodes,
   getAboutImages,
+  getContactInfo,
 } from "./fetchCMS";
 
 export { PRODUCTS_PAGE_SIZE } from "@/data/mock";
@@ -24,7 +25,7 @@ export type {
   QRItem,
 } from "@/data/mock";
 
-const CMS_URL = process.env.CMS_URL || "http://localhost:1337";
+import { postStrapiDocument } from "./strapi-client";
 
 export async function submitContactLead(payload: {
   name: string;
@@ -32,15 +33,22 @@ export async function submitContactLead(payload: {
   email?: string;
   company?: string;
   message: string;
+  product?: string;
 }) {
-  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false") {
+  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+  if (useMock) {
     console.info("[Mock Lead]", payload);
     return { ok: true };
   }
-  const res = await fetch(`${CMS_URL}/api/leads`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: payload }),
+
+  const ok = await postStrapiDocument("leads", {
+    name: payload.name,
+    phone: payload.phone ?? "",
+    email: payload.email ?? "",
+    company: payload.company ?? "",
+    message: payload.message,
+    status: "new",
   });
-  return { ok: res.ok };
+
+  return { ok };
 }

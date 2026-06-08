@@ -3,22 +3,36 @@
 import type { DownloadItem } from "@/data/mock";
 import {
   filterDownloads,
+  getDownloadSubCategoriesForTab,
   getDownloadSubCategoryBySlug,
+  downloadSubCategoryLabel,
   type DownloadSubCategorySlug,
   type DownloadTab,
 } from "@/lib/downloads";
 import Image from "next/image";
 import { useI18n } from "./I18nProvider";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [tab, setTab] = useState<DownloadTab>("software");
   const [subCategory, setSubCategory] = useState<DownloadSubCategorySlug | "all">("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const rowRefs = useRef<Record<number, HTMLLIElement | null>>({});
+
+  const syncUrl = useCallback(
+    (next: { tab: DownloadTab; sub: DownloadSubCategorySlug | "all" }) => {
+      const params = new URLSearchParams();
+      params.set("tab", next.tab);
+      if (next.sub !== "all") params.set("sub", next.sub);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router]
+  );
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -47,6 +61,8 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
       }, 300);
     }
   }, [searchParams, tab, items]);
+
+  const subOptions = getDownloadSubCategoriesForTab(tab);
 
   const filtered = filterDownloads(
     items,
@@ -82,7 +98,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   return (
     <div>
-      <div className="flex gap-4 mb-10">
+      <div className="flex gap-2 sm:gap-4 mb-6 md:mb-8">
         {(["software", "catalog"] as const).map((key) => (
           <button
             key={key}
@@ -90,8 +106,9 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             onClick={() => {
               setTab(key);
               setSubCategory("all");
+              syncUrl({ tab: key, sub: "all" });
             }}
-            className={`px-5 py-2 text-sm border transition-colors ${
+            className={`flex-1 min-h-[48px] px-4 py-2.5 text-sm border rounded-lg transition-colors touch-active ${
               tab === key
                 ? "border-brand-gold text-white bg-brand-gold/5"
                 : "border-white/10 text-gray-400 hover:text-white"
@@ -102,6 +119,42 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
         ))}
       </div>
 
+      {subOptions.length > 0 ? (
+        <div className="filter-scroll flex gap-2 mb-8 md:mb-10 pb-1">
+          <button
+            type="button"
+            onClick={() => {
+              setSubCategory("all");
+              syncUrl({ tab, sub: "all" });
+            }}
+            className={`filter-chip touch-active px-4 py-2 text-sm rounded-lg border ${
+              subCategory === "all"
+                ? "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
+                : "border-white/10 text-gray-400"
+            }`}
+          >
+            {t.products.filterAll}
+          </button>
+          {subOptions.map((sub) => (
+            <button
+              key={sub.slug}
+              type="button"
+              onClick={() => {
+                setSubCategory(sub.slug);
+                syncUrl({ tab, sub: sub.slug });
+              }}
+              className={`filter-chip touch-active px-4 py-2 text-sm rounded-lg border whitespace-nowrap ${
+                subCategory === sub.slug
+                  ? "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
+                  : "border-white/10 text-gray-400"
+              }`}
+            >
+              {downloadSubCategoryLabel(sub, locale)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <ul className="space-y-2">
         {filtered.map((file) => (
           <li
@@ -109,10 +162,10 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             ref={(el) => {
               rowRefs.current[file.id] = el;
             }}
-            className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 py-4 hover:bg-white/[0.02] px-2 transition-colors rounded-lg"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/10 py-4 hover:bg-white/[0.02] px-2 transition-colors rounded-lg"
           >
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="relative w-[96px] h-[38px] md:w-[120px] md:h-[47px] shrink-0 rounded-lg overflow-hidden border border-white/10 bg-white/5">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="relative w-[112px] h-[44px] md:w-[120px] md:h-[47px] shrink-0 rounded-lg overflow-hidden border border-white/10 bg-white/5">
                 <Image
                   src={file.cover}
                   alt=""
@@ -128,18 +181,20 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => handleShare(file)}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+                className="flex-1 sm:flex-none min-h-[44px] px-4 text-sm text-gray-400 hover:text-white transition-colors touch-active rounded-lg border border-white/10 sm:border-0"
               >
                 {copiedId === file.id ? t.downloads.shareCopied : t.downloads.share}
               </button>
               <a
                 href={file.url}
-                className="text-white text-sm hover:underline"
-                download
+                className="flex-1 sm:flex-none inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-brand-gold/90 text-black text-sm font-medium hover:bg-brand-gold transition-colors touch-active"
+                download={file.url !== "#"}
+                target={file.url.startsWith("http") ? "_blank" : undefined}
+                rel={file.url.startsWith("http") ? "noopener noreferrer" : undefined}
               >
                 {t.downloads.download} ↓
               </a>

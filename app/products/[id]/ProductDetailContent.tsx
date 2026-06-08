@@ -42,20 +42,28 @@ export default function ProductDetailContent({
         <h1 className="text-4xl md:text-5xl font-medium mb-2">{product.name[locale]}</h1>
         <p className="text-brand-gold font-mono text-lg mb-8">{product.model}</p>
         <p className="text-gray-400 leading-relaxed max-w-3xl text-lg">{body}</p>
-        <BrowseGuide
-          title={t.guide.exploreTitle}
-          items={[
-            { label: t.guide.productGallery, targetId: "product-gallery" },
-            ...(stackedPages || specSheet
-              ? [{ label: t.guide.productSpecs, targetId: "product-specs" }]
-              : []),
-            ...(relatedCases.length
-              ? [{ label: t.guide.productCases, targetId: "product-cases" }]
-              : []),
-            { label: t.guide.productsSpeaker, href: "/products" },
-          ]}
-          className="mt-8"
-        />
+        <div className="mt-8 flex flex-wrap gap-4">
+          <Link
+            href={`/contact?product=${encodeURIComponent(product.model)}`}
+            className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-xl bg-brand-gold/90 text-black text-sm font-medium hover:bg-brand-gold transition-colors touch-active"
+          >
+            {t.products.requestQuote}
+          </Link>
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.productGallery, targetId: "product-gallery" },
+              ...(stackedPages || specSheet || product.specs
+                ? [{ label: t.guide.productSpecs, targetId: "product-specs" }]
+                : []),
+              ...(relatedCases.length
+                ? [{ label: t.guide.productCases, targetId: "product-cases" }]
+                : []),
+              { label: t.guide.productsSpeaker, href: "/products" },
+            ]}
+            className=""
+          />
+        </div>
         {product.specs && (
           <p className="text-sm text-gray-500 font-mono mt-6 border-t border-white/10 pt-6">
             {product.specs[locale]}
@@ -108,14 +116,12 @@ export default function ProductDetailContent({
         }}
       />
 
-      {(stackedPages || specSheet) && (
+      {(stackedPages || specSheet || product.specs) && (
         <section
           id="product-specs"
-          className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
+          className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
         >
-          <h2 className="text-2xl font-medium mb-8">
-            {locale === "zh" ? "技术规格" : "Technical Specifications"}
-          </h2>
+          <h2 className="text-2xl font-medium mb-8">{t.products.specsTitle}</h2>
           {stackedPages ? (
             <StackedSpecPanel pages={stackedPages} locale={locale} />
           ) : specSheet ? (
@@ -143,13 +149,18 @@ export default function ProductDetailContent({
                 </table>
               </div>
             </>
+          ) : product.specs ? (
+            <pre className="whitespace-pre-wrap text-sm text-gray-300 font-mono leading-relaxed rounded-xl border border-white/10 p-5 bg-white/[0.02]">
+              {product.specs[locale]}
+            </pre>
           ) : null}
         </section>
       )}
 
+      {relatedCases.length > 0 && (
       <section
         id="product-cases"
-        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28"
+        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28 page-x"
       >
         <h2 className="text-2xl font-medium mb-8">{t.products.detailCases}</h2>
         <div className="grid md:grid-cols-2 gap-8">
@@ -176,6 +187,7 @@ export default function ProductDetailContent({
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

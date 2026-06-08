@@ -51,7 +51,7 @@ function Wave() {
 
 function ShaderHero() {
   return (
-    <div className="relative h-screen w-full bg-black">
+    <div className="relative h-screen-safe w-full bg-black">
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50 }}
         dpr={[1, 1.5]}

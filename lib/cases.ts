@@ -56,19 +56,14 @@ export function getScrollStoryLayout(cases: CaseItem[]) {
   const profile = byId.get(CASE_SCROLL_PROFILE_ID) ?? cases[1];
   const spotlight = byId.get(CASE_SCROLL_SPOTLIGHT_ID) ?? cases[2];
 
-  const seen = new Set<number>();
+  const featuredIds = new Set(
+    [hero?.id, profile?.id, spotlight?.id].filter((id): id is number => id != null)
+  );
+
   const moreCases: CaseItem[] = [];
-  for (const id of CASE_TYPE_ORDER.performance) {
-    const item = byId.get(id);
-    if (item && !seen.has(id)) {
-      moreCases.push(item);
-      seen.add(id);
-    }
-  }
   for (const item of cases) {
-    if (!seen.has(item.id)) {
+    if (!featuredIds.has(item.id)) {
       moreCases.push(item);
-      seen.add(item.id);
     }
   }
 

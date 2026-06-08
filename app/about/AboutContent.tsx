@@ -22,7 +22,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
   return (
     <div className="bg-black text-white">
       {/* Section 1 — 品牌起源 */}
-      <section className="px-6 md:px-10 pt-32 pb-32 md:pb-40">
+      <section className="page-x pt-24 sm:pt-28 pb-16 md:pb-40">
         <div className="max-w-5xl mx-auto">
           <SectionLabel>{t.about.label}</SectionLabel>
           <BrowseGuide
@@ -76,7 +76,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
       </section>
 
       {/* Section 2 — 系统能力（分开展示） */}
-      <section id="about-system" className="px-6 md:px-10 py-32 md:py-40 border-t border-white/5 scroll-mt-28">
+      <section id="about-system" className="page-x py-16 md:py-40 border-t border-white/5 scroll-mt-nav">
         <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
           <div className="max-w-2xl reveal-on-scroll">
             <SectionLabel>02</SectionLabel>
@@ -130,7 +130,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
       </section>
 
       {/* Section 3 — Focus 软件 */}
-      <section className="px-6 md:px-10 py-32 md:py-40 border-t border-white/5">
+      <section className="page-x py-16 md:py-40 border-t border-white/5">
         <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
           <div className="max-w-2xl reveal-on-scroll">
             <SectionLabel>03</SectionLabel>
@@ -155,7 +155,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
       </section>
 
       {/* Section 4 — DSP 硬件 */}
-      <section id="about-dsp" className="px-6 md:px-10 py-32 md:pb-48 border-t border-white/5 scroll-mt-28">
+      <section id="about-dsp" className="page-x py-16 md:pb-48 border-t border-white/5 scroll-mt-nav">
         <div className="max-w-6xl mx-auto space-y-12 md:space-y-16">
           <div className="max-w-2xl reveal-on-scroll">
             <SectionLabel>04</SectionLabel>
@@ -187,7 +187,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
       </section>
 
       {/* 信任背书条 */}
-      <section className="px-6 md:px-10 pb-24">
+      <section className="page-x pb-page-safe">
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 border-t border-white/10 pt-16">
           {t.about.stats.map((stat) => (
             <div

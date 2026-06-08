@@ -16,7 +16,7 @@ export default function HomeFeaturedProductCard({
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-[1.75rem] min-h-[360px] md:min-h-[480px] flex flex-col items-center justify-between text-center px-6 pt-10 md:pt-12 pb-10 md:pb-12 border border-white/10 transition-all duration-500 ease-out hover:-translate-y-1 hover:border-[#2eb896]/35 hover:shadow-[0_24px_60px_rgba(46,184,150,0.12)] cursor-pointer ${
+      className={`group card-touch relative overflow-hidden rounded-2xl md:rounded-[1.75rem] min-h-[300px] md:min-h-[480px] flex flex-col items-center justify-between text-center px-5 sm:px-6 pt-8 md:pt-12 pb-8 md:pb-12 border border-white/10 transition-all duration-500 ease-out md:hover:-translate-y-1 md:hover:border-[#2eb896]/35 md:hover:shadow-[0_24px_60px_rgba(46,184,150,0.12)] cursor-pointer ${
         index === 0
           ? "bg-gradient-to-b from-zinc-800/90 to-zinc-950"
           : "bg-gradient-to-b from-slate-800/80 via-zinc-900 to-black"
@@ -34,7 +34,7 @@ export default function HomeFeaturedProductCard({
       />
 
       <div className="relative z-[2] pointer-events-none flex flex-col items-center w-full">
-        <h3 className="text-2xl md:text-4xl font-semibold tracking-tight text-white transition-transform duration-500 group-hover:scale-[1.02]">
+        <h3 className="text-xl sm:text-2xl md:text-4xl font-semibold tracking-tight text-white md:group-hover:scale-[1.02] transition-transform duration-500">
           {product.name[locale]}
         </h3>
         <p className="text-sm md:text-base text-gray-400 mt-3 max-w-sm leading-relaxed group-hover:text-gray-300 transition-colors">
@@ -58,16 +58,16 @@ export default function HomeFeaturedProductCard({
         </div>
       </div>
 
-      <div className="relative z-[2] flex flex-wrap items-center justify-center gap-3">
+      <div className="relative z-[2] flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 w-full max-w-sm pointer-events-auto">
         <Link
           href={product.detailHref}
-          className="relative z-[3] inline-flex items-center rounded-full bg-[#2eb896] px-5 py-2 text-sm font-medium text-black hover:opacity-90 transition-all group-hover:shadow-[0_0_20px_rgba(46,184,150,0.35)]"
+          className="relative z-[3] inline-flex items-center justify-center min-h-[48px] rounded-full bg-[#2eb896] px-5 py-2.5 text-sm font-medium text-black hover:opacity-90 transition-all touch-active md:group-hover:shadow-[0_0_20px_rgba(46,184,150,0.35)]"
         >
           {t.home.learnMore}
         </Link>
         <Link
           href="/products?series=speaker&sub=tour"
-          className="relative z-[3] inline-flex items-center rounded-full border border-white/30 px-5 py-2 text-sm text-white hover:bg-white/10 transition-colors group-hover:border-white/50"
+          className="relative z-[3] inline-flex items-center justify-center min-h-[48px] rounded-full border border-white/30 px-5 py-2.5 text-sm text-white hover:bg-white/10 transition-colors touch-active md:group-hover:border-white/50"
         >
           {t.home.exploreProducts}
         </Link>

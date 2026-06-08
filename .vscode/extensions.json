@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "rangav.vscode-thunder-client",
+    "Prisma.prisma",
+    "github.copilot",
+    "yoavbls.pretty-ts-errors",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+    "kamikillerto.vscode-colorize",
+    "antfu.iconify",
+    "csstools.postcss",
+    "christian-kohler.path-intellisense",
+    "pkief.material-icon-theme"
+  ]
+}

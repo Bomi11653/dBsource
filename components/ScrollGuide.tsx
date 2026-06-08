@@ -30,7 +30,7 @@ export default function ScrollGuide({
       className={`pointer-events-auto group flex flex-col items-center gap-2 text-gray-400 hover:text-white transition-colors ${className}`}
     >
       <span className="text-xs tracking-[0.28em] uppercase">{label}</span>
-      <span className="scroll-guide-chevron flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm group-hover:border-white/40">
+      <span className="scroll-guide-chevron touch-target flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-sm group-hover:border-white/40">
         <svg
           width="14"
           height="14"

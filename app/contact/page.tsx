@@ -1,7 +1,8 @@
 import ContactContent from "./ContactContent";
 import SiteFooter from "@/components/SiteFooter";
-import { getQRCodes } from "@/lib/cms";
+import { getContactInfo } from "@/lib/cms";
 import { pageMetadata } from "@/lib/seo";
+import { Suspense } from "react";
 
 export const metadata = pageMetadata(
   "联系我们",
@@ -10,11 +11,13 @@ export const metadata = pageMetadata(
 );
 
 export default async function ContactPage() {
-  const qrItems = await getQRCodes();
+  const contact = await getContactInfo();
 
   return (
     <main className="min-h-screen">
-      <ContactContent qrItems={qrItems} />
+      <Suspense fallback={<div className="pt-28 page-x text-gray-500">Loading…</div>}>
+        <ContactContent contact={contact} />
+      </Suspense>
       <SiteFooter />
     </main>
   );

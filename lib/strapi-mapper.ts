@@ -11,6 +11,7 @@ import type {
   SceneItem,
 } from "@/data/mock";
 import type { AboutImages } from "@/data/about";
+import { toPublicMediaUrl } from "@/lib/media-url";
 
 type StrapiMedia = {
   url?: string;
@@ -94,8 +95,8 @@ export function resolveMediaUrl(
   media?: StrapiMedia | null
 ): string {
   if (!media?.url) return "";
-  if (media.url.startsWith("http")) return media.url;
-  return `${cmsUrl}${media.url}`;
+  const raw = media.url.startsWith("http") ? media.url : `${cmsUrl}${media.url.startsWith("/") ? "" : "/"}${media.url}`;
+  return toPublicMediaUrl(cmsUrl, raw);
 }
 
 function richtextToPlain(value: unknown): string | undefined {
@@ -248,5 +249,48 @@ export function mapStrapiAboutSections(
       get("unit48Layout", fallback.dsp[1]),
       get("unit48Eq", fallback.dsp[2]),
     ],
+  };
+}
+
+export type ContactInfoData = {
+  company: { zh: string; en: string };
+  phones: string[];
+  email: string;
+  address: { zh: string; en: string };
+  mapQuery: string;
+  footerIntro: { zh: string; en: string };
+};
+
+type StrapiContactDoc = {
+  companyZh: string;
+  companyEn: string;
+  phones: string;
+  email: string;
+  addressZh: string;
+  addressEn: string;
+  mapQuery: string;
+  footerIntroZh?: string | null;
+  footerIntroEn?: string | null;
+};
+
+export function mapStrapiContactInfo(
+  doc: StrapiContactDoc,
+  fallback: ContactInfoData
+): ContactInfoData {
+  const phones = doc.phones
+    .split(/[\n,，;；]+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  return {
+    company: { zh: doc.companyZh, en: doc.companyEn },
+    phones: phones.length ? phones : fallback.phones,
+    email: doc.email || fallback.email,
+    address: { zh: doc.addressZh, en: doc.addressEn },
+    mapQuery: doc.mapQuery || fallback.mapQuery,
+    footerIntro: {
+      zh: doc.footerIntroZh || fallback.footerIntro.zh,
+      en: doc.footerIntroEn || fallback.footerIntro.en,
+    },
   };
 }

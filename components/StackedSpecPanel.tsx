@@ -31,7 +31,7 @@ export default function StackedSpecPanel({
               key={page.model}
               type="button"
               onClick={() => setActivePage(i)}
-              className={`px-3 py-1.5 text-xs font-mono rounded-full transition-colors ${
+              className={`min-h-[40px] px-3 py-2 text-xs font-mono rounded-full transition-colors touch-active ${
                 activePage === i
                   ? "bg-[#2eb896] text-black"
                   : "border border-white/20 text-gray-400 hover:text-white hover:border-white/40"
@@ -44,8 +44,8 @@ export default function StackedSpecPanel({
         <div className="px-4 md:px-5 py-3 border-b border-white/5">
           <p className="text-xs text-brand-gold/80 font-mono">{sheet.summary[locale]}</p>
         </div>
-        <div className="overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[280px]">
             <tbody>
               {sheet.rows.map((row, i) => (
                 <tr

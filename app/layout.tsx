@@ -1,8 +1,16 @@
-import Navbar from "@/components/Navbar";
+import AdminAwareChrome from "@/components/AdminAwareChrome";
+import Analytics from "@/components/Analytics";
+import JsonLd from "@/components/JsonLd";
 import PageTransitionProvider from "@/components/PageTransitionProvider";
+import { SeriesConfigProvider } from "@/components/SeriesConfigProvider";
+import { SiteDataProvider } from "@/components/SiteDataProvider";
+import SmoothScroll from "@/components/SmoothScroll";
 import { I18nProvider } from "@/components/I18nProvider";
-import { siteConfig } from "@/lib/seo";
+import { getCases, getDownloads, getProducts } from "@/lib/cms";
+import { organizationJsonLd, siteConfig } from "@/lib/seo";
+import { getSeriesConfig } from "@/lib/series-config";
 import { Inter, Noto_Sans_SC, Noto_Serif_SC, Playfair_Display } from "next/font/google";
+import type { Viewport } from "next";
 import "./globals.css";
 
 const fontMainLatin = Inter({
@@ -32,6 +40,13 @@ const fontAccentCJK = Noto_Serif_SC({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
+
 export const metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -43,13 +58,19 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const [products, cases, downloads] = await Promise.all([
+    getProducts(),
+    getCases(),
+    getDownloads(),
+  ]);
+  const seriesConfig = await getSeriesConfig(products);
+
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
-        {/* CSS chunk 加载失败时的兜底，避免白底蓝链 */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -64,11 +85,17 @@ export default function RootLayout({
       <body
         className={`${fontMainLatin.variable} ${fontAccentLatin.variable} ${fontMainCJK.variable} ${fontAccentCJK.variable} font-sans antialiased bg-black text-white`}
       >
+        <JsonLd data={organizationJsonLd()} />
+        <Analytics />
         <I18nProvider>
-          <PageTransitionProvider>
-            <Navbar />
-            {children}
-          </PageTransitionProvider>
+          <SeriesConfigProvider config={seriesConfig}>
+            <SiteDataProvider products={products} cases={cases} downloads={downloads}>
+              <PageTransitionProvider>
+                <SmoothScroll />
+                <AdminAwareChrome>{children}</AdminAwareChrome>
+              </PageTransitionProvider>
+            </SiteDataProvider>
+          </SeriesConfigProvider>
         </I18nProvider>
       </body>
     </html>
