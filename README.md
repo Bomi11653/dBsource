@@ -19,7 +19,19 @@ Windows 可双击上级目录的 `修复预览崩溃.bat`。
 - Next.js 14 · TypeScript · Tailwind CSS
 - Three.js / React Three Fiber（首页声波）
 - Framer Motion（案例滚动叙事）
-- Mock CMS，可接 Strapi
+- Strapi 5 CMS（`cms/` 目录）
+
+## CMS 后台
+
+```bash
+cd cms
+npm install
+cp .env.example .env   # 填写密钥
+npm run develop
+```
+
+Strapi 管理：http://localhost:1337/admin  
+自建内容后台：http://127.0.0.1:3003/admin/login
 
 ## 环境变量
 
