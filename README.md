@@ -1,4 +1,4 @@
-# dBsource Pro
+# dBsource
 
 东莞新声电子科技有限公司 — 专业音响品牌官网（Next.js 14）。
 

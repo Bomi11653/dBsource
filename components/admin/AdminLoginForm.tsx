@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import BrandLogo from "@/components/BrandLogo";
 import { inputClass } from "@/components/admin/AdminFields";
 
 export default function AdminLoginForm({ nextPath }: { nextPath: string }) {
@@ -33,6 +34,9 @@ export default function AdminLoginForm({ nextPath }: { nextPath: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+      <div className="flex justify-center mb-6">
+        <BrandLogo variant="admin" className="h-16" />
+      </div>
       <label className="block text-sm text-gray-400">
         访问密码
         <input

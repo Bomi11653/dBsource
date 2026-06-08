@@ -2,6 +2,7 @@
 
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { cn } from "@/lib/utils";
+import BrandLogo from "@/components/BrandLogo";
 import {
   Briefcase,
   Download,
@@ -39,9 +40,9 @@ export default function AdminShell({
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex">
       <aside className="w-56 shrink-0 border-r border-white/10 bg-black/60 p-4 flex flex-col gap-1">
-        <Link href="/admin" className="flex items-center gap-2 px-3 py-3 mb-4 text-brand-gold font-medium">
-          <LayoutDashboard size={18} />
-          dBsource 后台
+        <Link href="/admin" className="flex flex-col items-center gap-2 px-3 py-3 mb-4">
+          <BrandLogo variant="admin" />
+          <span className="text-xs text-gray-400">内容后台</span>
         </Link>
         {ADMIN_SECTIONS.map((section) => {
           const Icon = ICONS[section.icon as keyof typeof ICONS] ?? LayoutDashboard;

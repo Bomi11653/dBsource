@@ -56,6 +56,10 @@ export const metadata = {
   description: siteConfig.description,
   keywords: ["专业音响", "线阵列", "dBsource", "音响工程", "东莞新声电子"],
   robots: { index: true, follow: true },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/brand/logo.png",
+  },
 };
 
 export default async function RootLayout({

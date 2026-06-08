@@ -15,11 +15,11 @@ import {
   seriesEntryLabel,
 } from "@/lib/series-config";
 import { useSeriesConfig } from "@/components/SeriesConfigProvider";
+import BrandLogo from "@/components/BrandLogo";
 import GlobalSearch from "@/components/GlobalSearch";
 import LanguageSwitch from "./LanguageSwitch";
 import { useI18n } from "./I18nProvider";
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -434,14 +434,7 @@ export default function Navbar() {
           onClick={(e) => handleNavClick(e, "/")}
           className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
         >
-          <Image
-            src="/brand/logo.png"
-            alt="dBsource"
-            width={120}
-            height={40}
-            className="h-8 md:h-9 w-auto object-contain"
-            priority
-          />
+          <BrandLogo variant="nav" priority />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">

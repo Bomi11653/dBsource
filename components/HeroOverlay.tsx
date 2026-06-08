@@ -1,9 +1,9 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
 import BrowseGuide from "@/components/BrowseGuide";
 import ScrollGuide from "@/components/ScrollGuide";
 import { useI18n } from "./I18nProvider";
-import Image from "next/image";
 
 /** 与 WebGL 背景分离，避免语言切换时重绘 Canvas 导致动画卡住 */
 export default function HeroOverlay() {
@@ -15,14 +15,7 @@ export default function HeroOverlay() {
         {t.hero.slogan}
       </h1>
       <div className="hero-fade-in-delay flex flex-col items-center w-full">
-        <Image
-          src="/brand/logo.png"
-          alt="dBsource"
-          width={112}
-          height={48}
-          className="h-[2.4rem] md:h-[3.2rem] lg:h-[3.6rem] w-auto object-contain drop-shadow-[0_0_24px_rgba(255,255,255,0.15)]"
-          priority
-        />
+        <BrandLogo variant="hero" priority />
         <BrowseGuide
           title={t.guide.exploreTitle}
           items={[

@@ -1,7 +1,7 @@
 "use client";
 
+import BrandLogo from "@/components/BrandLogo";
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
 
 interface Props {
   show: boolean;
@@ -18,14 +18,7 @@ export default function LogoTransition({ show }: Props) {
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black"
         >
-          <Image
-            src="/brand/logo.png"
-            alt="dBsource"
-            width={200}
-            height={80}
-            className="h-16 w-auto object-contain"
-            priority
-          />
+          <BrandLogo variant="transition" priority />
         </motion.div>
       )}
     </AnimatePresence>

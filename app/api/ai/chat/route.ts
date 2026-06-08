@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 
   const enrichedMessage = augmentUserMessage(message, pageContext, locale);
-  const ctx = await retrieveContext(enrichedMessage, locale);
+  const ctx = await retrieveContext(enrichedMessage, locale, pageContext);
   const links = buildAiLinks(ctx.products, ctx.cases, ctx.downloads, locale);
   const { remaining: peekRemaining } = peekAiRateLimit(ip);
 
