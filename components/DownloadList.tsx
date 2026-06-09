@@ -72,8 +72,10 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   const shareLink = useCallback((file: DownloadItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/downloads?tab=${file.type}&file=${file.id}`;
+    return `${origin}/api/downloads/${file.id}/file`;
   }, []);
+
+  const downloadHref = useCallback((file: DownloadItem) => `/api/downloads/${file.id}/file`, []);
 
   const handleShare = useCallback(
     async (file: DownloadItem) => {
@@ -190,11 +192,8 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                 {copiedId === file.id ? t.downloads.shareCopied : t.downloads.share}
               </button>
               <a
-                href={file.url}
+                href={downloadHref(file)}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-brand-gold/90 text-black text-sm font-medium hover:bg-brand-gold transition-colors touch-active"
-                download={file.url !== "#"}
-                target={file.url.startsWith("http") ? "_blank" : undefined}
-                rel={file.url.startsWith("http") ? "noopener noreferrer" : undefined}
               >
                 {t.downloads.download} ↓
               </a>

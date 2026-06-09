@@ -82,6 +82,8 @@ export interface DownloadItem {
   id: number;
   name: { zh: string; en: string };
   size: string;
+  /** 用户下载时保留的原始文件名 */
+  fileName?: string;
   url: string;
   type: "software" | "catalog";
   subCategory: DownloadSubSlug;

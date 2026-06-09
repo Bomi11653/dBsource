@@ -34,7 +34,7 @@ const QR_QUERY =
 const SCENES_QUERY =
   "/scenes?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
 const DOWNLOADS_QUERY =
-  "/downloads?populate[cover][fields][0]=url&populate[file][fields][0]=url&sort[0]=sortOrder:asc";
+  "/downloads?populate[cover][fields][0]=url&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size&sort[0]=sortOrder:asc";
 const PRODUCTS_QUERY =
   "/products?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=100";
 const ABOUT_QUERY =

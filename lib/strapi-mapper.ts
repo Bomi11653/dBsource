@@ -11,10 +11,13 @@ import type {
   SceneItem,
 } from "@/data/mock";
 import type { AboutImages } from "@/data/about";
+import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { toPublicMediaUrl } from "@/lib/media-url";
 
 type StrapiMedia = {
   url?: string;
+  name?: string;
+  size?: number;
 };
 
 type StrapiCaseDoc = {
@@ -57,6 +60,7 @@ type StrapiDownloadDoc = {
   nameZh: string;
   nameEn: string;
   size?: string | null;
+  fileName?: string | null;
   fileUrl: string;
   file?: StrapiMedia | null;
   type: string;
@@ -180,10 +184,18 @@ export function mapStrapiDownload(
   index: number
 ): DownloadItem {
   const fileFromMedia = doc.file ? resolveMediaUrl(cmsUrl, doc.file) : "";
+  const fileName =
+    doc.fileName?.trim() ||
+    doc.file?.name?.trim() ||
+    undefined;
   return {
     id: doc.sortOrder ?? index + 1,
     name: { zh: doc.nameZh, en: doc.nameEn },
-    size: doc.size ?? "—",
+    size:
+      typeof doc.file?.size === "number"
+        ? formatStrapiMediaSize(doc.file.size)
+        : doc.size?.trim() || "—",
+    fileName,
     url: fileFromMedia || doc.fileUrl || "#",
     type: doc.type as DownloadItem["type"],
     subCategory: doc.subCategory as DownloadItem["subCategory"],

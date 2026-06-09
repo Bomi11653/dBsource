@@ -4,15 +4,23 @@ import {
   AdminBanner,
   Field,
   ImageUploadField,
+  GalleryUploadField,
+  FileUploadField,
+  ReadOnlyField,
   SaveButton,
+  SelectField,
   inputClass,
 } from "@/components/admin/AdminFields";
+import { ADMIN_SECTIONS } from "@/lib/admin-sections";
+import { DOWNLOAD_SUB_CATEGORIES } from "@/lib/downloads";
+import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { sectionToCollection } from "@/lib/strapi-admin";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { ChevronDown, ExternalLink, Eye, RefreshCw, Search, X } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-type StrapiMedia = { id?: number; url?: string };
+type StrapiMedia = { id?: number; url?: string; size?: number };
 type StrapiRow = Record<string, unknown> & {
   documentId?: string;
   id?: number;
@@ -44,6 +52,51 @@ function setDraft(
   return { ...drafts, [id]: { ...drafts[id], ...patch } };
 }
 
+function rowTitle(draft: StrapiRow): string {
+  return (
+    getText(draft, "titleZh") ||
+    getText(draft, "nameZh") ||
+    getText(draft, "model") ||
+    getText(draft, "labelZh") ||
+    getText(draft, "sectionKey") ||
+    docId(draft)
+  );
+}
+
+function rowSubtitle(section: string, draft: StrapiRow): string | null {
+  if (section === "downloads") {
+    const size = getText(draft, "size");
+    const fileName = getText(draft, "fileName");
+    return [size && size !== "—" ? size : null, fileName].filter(Boolean).join(" · ") || null;
+  }
+  if (section === "products") return getText(draft, "model") || null;
+  if (section === "cases") return getText(draft, "products") || null;
+  return null;
+}
+
+function rowSearchText(section: string, draft: StrapiRow): string {
+  return [
+    rowTitle(draft),
+    rowSubtitle(section, draft),
+    getText(draft, "nameEn"),
+    getText(draft, "titleEn"),
+    getText(draft, "model"),
+    getText(draft, "slug"),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+const CREATABLE_SECTIONS = new Set([
+  "products",
+  "series",
+  "cases",
+  "downloads",
+  "about",
+  "qr",
+]);
+
 export default function AdminSectionEditor({
   section,
   tokenReady,
@@ -60,6 +113,24 @@ export default function AdminSectionEditor({
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [contactDraft, setContactDraft] = useState<StrapiRow | null>(null);
   const [leads, setLeads] = useState<StrapiRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
+  const [showHint, setShowHint] = useState(true);
+
+  const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
+
+  useEffect(() => {
+    if (localStorage.getItem("dbsource-admin-hint") === "hidden") setShowHint(false);
+  }, []);
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((row) => {
+      const draft = drafts[docId(row)] ?? row;
+      return rowSearchText(section, draft).includes(q);
+    });
+  }, [rows, drafts, search, section]);
 
   const load = useCallback(async () => {
     if (!tokenReady) {
@@ -98,7 +169,11 @@ export default function AdminSectionEditor({
       setRows(list);
       const init: Record<string, StrapiRow> = {};
       list.forEach((r) => {
-        init[docId(r)] = { ...r };
+        const row = { ...r };
+        if (section === "downloads" && typeof (row.file as StrapiMedia)?.size === "number") {
+          row.size = formatStrapiMediaSize((row.file as StrapiMedia).size!);
+        }
+        init[docId(r)] = row;
       });
       setDrafts(init);
       if (list[0]) setOpenId(docId(list[0]));
@@ -128,8 +203,13 @@ export default function AdminSectionEditor({
     delete payload.publishedAt;
     delete payload.locale;
     delete payload.localizations;
-    if (payload.image && typeof payload.image === "object") {
+    if (payload.image === null) {
+      payload.image = null;
+    } else if (payload.image && typeof payload.image === "object") {
       payload.image = (payload.image as StrapiMedia).id ?? payload.image;
+    }
+    if (payload.cover === null) {
+      payload.cover = null;
     }
     if (payload.cover && typeof payload.cover === "object") {
       payload.cover = (payload.cover as StrapiMedia).id ?? payload.cover;
@@ -150,7 +230,14 @@ export default function AdminSectionEditor({
     setSavingId(null);
     if (json.ok) {
       setMessage({ type: "ok", text: "已保存并发布到网站" });
-      load();
+      setRows((prev) =>
+        prev.map((r) => (docId(r) === id ? { ...draft, documentId: r.documentId ?? draft.documentId } : r))
+      );
+      setDirtyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     } else {
       setMessage({ type: "error", text: json.error || "保存失败" });
     }
@@ -174,6 +261,7 @@ export default function AdminSectionEditor({
   async function createRow() {
     if (!collection || collection === "contact-info") return;
     setSavingId("new");
+    const maxLegacyId = rows.reduce((m, r) => Math.max(m, Number(r.legacyId) || 0), 0);
     const defaults: Record<string, Record<string, unknown>> = {
       products: {
         model: "NEW-MODEL",
@@ -194,6 +282,40 @@ export default function AdminSectionEditor({
         modelPrefix: "XX",
         sortOrder: rows.length + 1,
         visible: true,
+      },
+      cases: {
+        legacyId: maxLegacyId + 1,
+        type: "engineering",
+        sceneSlug: "stadium",
+        titleZh: "新案例",
+        titleEn: "New Case",
+        descZh: "案例简介",
+        descEn: "Case summary",
+        sceneZh: "体育场馆",
+        sceneEn: "Stadium",
+        products: "",
+        sortOrder: rows.length + 1,
+      },
+      downloads: {
+        nameZh: "新下载项",
+        nameEn: "New Download",
+        size: "",
+        fileName: "",
+        fileUrl: "#",
+        type: "software",
+        subCategory: "v225a",
+        sortOrder: rows.length + 1,
+      },
+      "about-sections": {
+        sectionKey: `section-${Date.now()}`,
+        titleZh: "新区块",
+        titleEn: "New Section",
+        sortOrder: rows.length + 1,
+      },
+      "qr-codes": {
+        labelZh: "新二维码",
+        labelEn: "New QR",
+        sortOrder: rows.length + 1,
       },
     };
     const res = await fetch(`/api/admin/${collection}`, {
@@ -247,7 +369,12 @@ export default function AdminSectionEditor({
   }
 
   if (loading) {
-    return <p className="text-sm text-gray-500">加载内容中…</p>;
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <RefreshCw size={14} className="animate-spin" />
+        加载内容中…
+      </div>
+    );
   }
 
   return (
@@ -256,9 +383,72 @@ export default function AdminSectionEditor({
         <AdminBanner variant={message.type === "ok" ? "ok" : "error"}>{message.text}</AdminBanner>
       ) : null}
 
-      <AdminBanner variant="warn">
-        在此修改并上传后点击「保存并发布」，网站约 1 分钟内自动更新（无需打开 Strapi 后台）。
-      </AdminBanner>
+      {showHint ? (
+        <AdminBanner variant="warn">
+          <div className="flex items-start justify-between gap-3">
+            <p>修改后点击「保存并发布」即可同步官网，约 1 分钟内生效。</p>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("dbsource-admin-hint", "hidden");
+                setShowHint(false);
+              }}
+              className="shrink-0 text-amber-200/60 hover:text-white"
+              aria-label="关闭提示"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </AdminBanner>
+      ) : null}
+
+      {section !== "contact" ? (
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              className={cn(inputClass, "pl-9")}
+              placeholder="搜索条目名称、型号…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              {filteredRows.length}/{rows.length} 条
+            </span>
+            {previewHref ? (
+              <Link
+                href={previewHref}
+                target="_blank"
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-white/15 text-gray-300 hover:border-brand-gold/40 hover:text-brand-gold transition-colors"
+              >
+                <Eye size={14} />
+                预览页面
+                <ExternalLink size={10} />
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={load}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-white/15 text-gray-400 hover:text-white transition-colors"
+            >
+              <RefreshCw size={14} />
+              刷新
+            </button>
+            {CREATABLE_SECTIONS.has(section) ? (
+              <button
+                type="button"
+                onClick={createRow}
+                disabled={savingId === "new"}
+                className="text-sm px-4 py-2 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
+              >
+                {savingId === "new" ? "创建中…" : "+ 新增"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {section === "contact" && contactDraft ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
@@ -334,54 +524,60 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
-      {section !== "contact" ? (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={createRow}
-            disabled={savingId === "new" || !["products", "series"].includes(section)}
-            className="text-sm px-4 py-2 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {savingId === "new" ? "创建中…" : "+ 新增条目"}
-          </button>
-        </div>
-      ) : null}
-
       {section !== "contact"
-        ? rows.map((row) => {
+        ? filteredRows.map((row) => {
             const id = docId(row);
             const draft = drafts[id] ?? row;
             const isOpen = openId === id;
-            const title =
-              getText(draft, "titleZh") ||
-              getText(draft, "nameZh") ||
-              getText(draft, "model") ||
-              getText(draft, "labelZh") ||
-              getText(draft, "sectionKey") ||
-              id;
+            const title = rowTitle(draft);
+            const subtitle = rowSubtitle(section, draft);
+            const isDirty = dirtyIds.has(id);
 
             return (
-              <div key={id} className="rounded-2xl border border-white/10 overflow-hidden">
+              <div
+                key={id}
+                className={cn(
+                  "rounded-2xl border overflow-hidden transition-colors",
+                  isOpen ? "border-brand-gold/25 bg-white/[0.02]" : "border-white/10"
+                )}
+              >
                 <button
                   type="button"
                   onClick={() => setOpenId(isOpen ? null : id)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/[0.03] transition-colors"
+                  className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-white/[0.03] transition-colors"
                 >
-                  <span className="font-medium">{title}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{title}</span>
+                      {isDirty ? (
+                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                          未保存
+                        </span>
+                      ) : null}
+                    </div>
+                    {subtitle ? (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{subtitle}</p>
+                    ) : null}
+                  </div>
                   <ChevronDown
                     size={18}
-                    className={cn("text-gray-500 transition-transform", isOpen && "rotate-180")}
+                    className={cn("text-gray-500 shrink-0 transition-transform", isOpen && "rotate-180")}
                   />
                 </button>
 
                 {isOpen ? (
                   <div className="px-5 pb-5 space-y-4 border-t border-white/10 pt-4">
-                    {renderFields(section, draft, (patch) =>
-                      setDrafts((d) => setDraft(d, id, patch))
-                    )}
-                    <div className="flex flex-wrap gap-3">
-                      <SaveButton saving={savingId === id} onClick={() => saveRow(id)} />
-                      {["products", "series"].includes(section) ? (
+                    {renderFields(section, draft, (patch) => {
+                      setDrafts((d) => setDraft(d, id, patch));
+                      setDirtyIds((prev) => new Set(prev).add(id));
+                    })}
+                    <div className="sticky bottom-0 flex flex-wrap items-center gap-3 pt-2 pb-1 bg-zinc-950/90 backdrop-blur-sm border-t border-white/5 -mx-5 px-5">
+                      <SaveButton
+                        saving={savingId === id}
+                        onClick={() => saveRow(id)}
+                        label={isDirty ? "保存并发布" : "保存并发布"}
+                      />
+                      {CREATABLE_SECTIONS.has(section) ? (
                         <button
                           type="button"
                           onClick={() => deleteRow(id)}
@@ -390,6 +586,15 @@ export default function AdminSectionEditor({
                           删除
                         </button>
                       ) : null}
+                      {previewHref && section === "downloads" ? (
+                        <Link
+                          href={`${previewHref}?file=${draft.sortOrder ?? ""}`}
+                          target="_blank"
+                          className="text-xs text-gray-500 hover:text-brand-gold ml-auto"
+                        >
+                          在官网查看此条目 →
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
                 ) : null}
@@ -397,6 +602,10 @@ export default function AdminSectionEditor({
             );
           })
         : null}
+
+      {section !== "contact" && rows.length > 0 && filteredRows.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-8">没有匹配的条目，请换个关键词</p>
+      ) : null}
     </div>
   );
 }
@@ -437,6 +646,7 @@ function renderFields(
         label="场景图片"
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+        onRemoved={() => onChange({ image: null })}
       />
     );
   }
@@ -452,7 +662,34 @@ function renderFields(
     fields.push(textField("specsZh", "规格（中文）", true));
     fields.push(textField("specsEn", "规格（英文）", true));
     fields.push(
-      <Field key="productLine" label="产品系列 (productLine)">
+      <SelectField
+        key="seriesGroup"
+        label="产品大类"
+        value={getText(draft, "seriesGroup") || "speaker"}
+        onChange={(v) => onChange({ seriesGroup: v })}
+        options={[
+          { value: "speaker", label: "音箱" },
+          { value: "dsp", label: "处理器" },
+          { value: "software", label: "软件" },
+          { value: "engineering", label: "工程" },
+        ]}
+      />
+    );
+    fields.push(
+      <SelectField
+        key="category"
+        label="前台分类"
+        value={getText(draft, "category") || "speaker"}
+        onChange={(v) => onChange({ category: v })}
+        options={[
+          { value: "speaker", label: "音箱" },
+          { value: "dsp", label: "处理器" },
+          { value: "software", label: "软件" },
+        ]}
+      />
+    );
+    fields.push(
+      <Field key="productLine" label="系列标识（如 la、sol、unit）">
         <input
           className={inputClass}
           value={getText(draft, "productLine")}
@@ -461,37 +698,7 @@ function renderFields(
       </Field>
     );
     fields.push(
-      <Field key="seriesGroup" label="大类 (seriesGroup)">
-        <select
-          className={inputClass}
-          value={getText(draft, "seriesGroup") || "speaker"}
-          onChange={(e) => onChange({ seriesGroup: e.target.value })}
-        >
-          {["speaker", "dsp", "software", "engineering"].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </Field>
-    );
-    fields.push(
-      <Field key="category" label="分类 (category)">
-        <select
-          className={inputClass}
-          value={getText(draft, "category") || "speaker"}
-          onChange={(e) => onChange({ category: e.target.value })}
-        >
-          {["speaker", "dsp", "software"].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </Field>
-    );
-    fields.push(
-      <Field key="sortOrder" label="排序 (sortOrder)">
+      <Field key="sortOrder" label="排序（数字越小越靠前）">
         <input
           type="number"
           className={inputClass}
@@ -506,18 +713,17 @@ function renderFields(
         label="封面图"
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+        onRemoved={() => onChange({ image: null })}
       />
     );
     fields.push(
-      <ImageUploadField
-        key="gallery"
-        label="产品图集（上传后追加一张，保存生效）"
-        currentUrl={mediaUrl((draft.gallery as StrapiMedia[])?.slice(-1)[0])}
-        onUploaded={(mediaId, url) => {
-          const prev = (draft.gallery as StrapiMedia[]) ?? [];
-          onChange({ gallery: [...prev, { id: mediaId, url }] });
-        }}
-      />
+      <div key="gallery" className="sm:col-span-2">
+        <GalleryUploadField
+          label="产品图集"
+          items={(draft.gallery as StrapiMedia[]) ?? []}
+          onChange={(gallery) => onChange({ gallery })}
+        />
+      </div>
     );
   }
 
@@ -525,47 +731,116 @@ function renderFields(
     fields.push(textField("titleZh", "标题（中文）"));
     fields.push(textField("titleEn", "标题（英文）"));
     fields.push(textField("descZh", "摘要（中文）", true));
-    fields.push(textField("products", "设备配置"));
+    fields.push(textField("descEn", "摘要（英文）", true));
+    fields.push(
+      <SelectField
+        key="type"
+        label="案例类型"
+        value={getText(draft, "type") || "engineering"}
+        onChange={(v) => onChange({ type: v })}
+        options={[
+          { value: "engineering", label: "工程案例" },
+          { value: "performance", label: "演出案例" },
+        ]}
+      />
+    );
+    fields.push(textField("products", "设备配置（型号列表）"));
     fields.push(
       <ImageUploadField
         key="image"
         label="封面图"
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+        onRemoved={() => onChange({ image: null })}
       />
     );
     fields.push(
-      <ImageUploadField
-        key="gallery"
-        label="案例图集（上传追加）"
-        currentUrl={mediaUrl((draft.gallery as StrapiMedia[])?.slice(-1)[0])}
-        onUploaded={(mediaId, url) => {
-          const prev = (draft.gallery as StrapiMedia[]) ?? [];
-          onChange({ gallery: [...prev, { id: mediaId, url }] });
-        }}
-      />
+      <div key="gallery" className="sm:col-span-2">
+        <GalleryUploadField
+          label="案例图集"
+          items={(draft.gallery as StrapiMedia[]) ?? []}
+          onChange={(gallery) => onChange({ gallery })}
+        />
+      </div>
     );
   }
 
   if (section === "downloads") {
-    fields.push(textField("nameZh", "名称（中文）"));
-    fields.push(textField("nameEn", "名称（英文）"));
-    fields.push(textField("size", "文件大小"));
-    fields.push(textField("fileUrl", "外链地址（可选，上传文件可留 #）"));
+    fields.push(textField("nameZh", "前台显示名称（中文）"));
+    fields.push(textField("nameEn", "前台显示名称（英文）"));
     fields.push(
-      <ImageUploadField
-        key="cover"
-        label="封面图"
-        currentUrl={mediaUrl(draft.cover as StrapiMedia)}
-        onUploaded={(mediaId, url) => onChange({ cover: { id: mediaId, url } })}
+      <SelectField
+        key="type"
+        label="所属 Tab"
+        value={getText(draft, "type") || "software"}
+        onChange={(v) => onChange({ type: v })}
+        options={[
+          { value: "software", label: "软件下载" },
+          { value: "catalog", label: "产品画册" },
+        ]}
+      />
+    );
+    fields.push(
+      <SelectField
+        key="subCategory"
+        label="子分类（导航筛选）"
+        value={getText(draft, "subCategory") || "v225a"}
+        onChange={(v) => onChange({ subCategory: v })}
+        options={DOWNLOAD_SUB_CATEGORIES.map((s) => ({
+          value: s.slug,
+          label: `${s.label.zh} · ${s.tab === "software" ? "软件" : "画册"}`,
+        }))}
+      />
+    );
+    fields.push(
+      <Field key="sortOrder" label="排序 ID（分享/下载链接用此数字）">
+        <input
+          type="number"
+          className={inputClass}
+          value={String(draft.sortOrder ?? "")}
+          onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
+        />
+      </Field>
+    );
+    fields.push(
+      <div key="file-upload" className="sm:col-span-2">
+        <FileUploadField
+          label="下载文件（PDF / ZIP / 安装包）"
+          currentUrl={mediaUrl(draft.file as StrapiMedia)}
+          onUploaded={(mediaId, url, meta) =>
+            onChange({
+              file: { id: mediaId, url },
+              fileUrl: url,
+              size: meta.sizeLabel,
+              fileName: meta.fileName,
+            })
+          }
+        />
+      </div>
+    );
+    fields.push(
+      <ReadOnlyField
+        key="size"
+        label="文件大小"
+        value={getText(draft, "size")}
+        hint="上传后自动识别"
+      />
+    );
+    fields.push(
+      <ReadOnlyField
+        key="fileName"
+        label="用户下载时的文件名"
+        value={getText(draft, "fileName")}
+        hint="与上传时一致，无需手改"
       />
     );
     fields.push(
       <ImageUploadField
-        key="file"
-        label="下载文件（PDF/ZIP/安装包）"
-        currentUrl={mediaUrl(draft.file as StrapiMedia)}
-        onUploaded={(mediaId, url) => onChange({ file: { id: mediaId, url }, fileUrl: url })}
+        key="cover"
+        label="列表封面图"
+        currentUrl={mediaUrl(draft.cover as StrapiMedia)}
+        onUploaded={(mediaId, url) => onChange({ cover: { id: mediaId, url } })}
+        onRemoved={() => onChange({ cover: null })}
       />
     );
   }
@@ -580,6 +855,7 @@ function renderFields(
         label="配图"
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+        onRemoved={() => onChange({ image: null })}
       />
     );
   }
@@ -647,6 +923,7 @@ function renderFields(
         label="二维码图片"
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+        onRemoved={() => onChange({ image: null })}
       />
     );
   }

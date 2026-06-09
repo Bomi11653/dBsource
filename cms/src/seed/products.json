@@ -16,9 +16,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LA206/cover.jpg",
-    "gallery": [
-      "/images/products/LA206/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 2,
@@ -37,9 +35,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LA115S/cover.jpg",
-    "gallery": [
-      "/images/products/LA115S/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 3,
@@ -59,9 +55,7 @@
     "category": "speaker",
     "image": "/images/products/LA208/cover.jpg",
     "gallery": [
-      "/images/products/LA208/gallery/01.jpg",
-      "/images/products/LA208/gallery/02.jpg",
-      "/images/products/LA208/gallery/03.png"
+      "/images/products/LA208/gallery/01.png"
     ]
   },
   {
@@ -82,8 +76,7 @@
     "category": "speaker",
     "image": "/images/products/LA118S/cover.jpg",
     "gallery": [
-      "/images/products/LA118S/gallery/01.jpg",
-      "/images/products/LA118S/gallery/02.png"
+      "/images/products/LA118S/gallery/01.jpg"
     ]
   },
   {
@@ -129,8 +122,7 @@
     "category": "speaker",
     "image": "/images/products/LA118W/cover.jpg",
     "gallery": [
-      "/images/products/LA118W/gallery/01.jpg",
-      "/images/products/LA118W/gallery/02.jpg"
+      "/images/products/LA118W/gallery/01.jpg"
     ]
   },
   {
@@ -173,9 +165,7 @@
     "category": "speaker",
     "image": "/images/products/LA212/cover.jpg",
     "gallery": [
-      "/images/products/LA212/gallery/01.png",
-      "/images/products/LA212/gallery/02.png",
-      "/images/products/LA212/gallery/03.png"
+      "/images/products/LA212/gallery/01.png"
     ]
   },
   {
@@ -195,9 +185,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LA218S/cover.jpg",
-    "gallery": [
-      "/images/products/LA218S/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 10,
@@ -216,9 +204,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW210L/cover.jpg",
-    "gallery": [
-      "/images/products/LW210L/gallery/01.jpg"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 11,
@@ -239,8 +225,7 @@
     "image": "/images/products/LW18S/cover.jpg",
     "gallery": [
       "/images/products/LW18S/gallery/01.png",
-      "/images/products/LW18S/gallery/02.png",
-      "/images/products/LW18S/gallery/03.png"
+      "/images/products/LW18S/gallery/02.png"
     ]
   },
   {
@@ -261,8 +246,7 @@
     "category": "speaker",
     "image": "/images/products/LW6/cover.jpg",
     "gallery": [
-      "/images/products/LW6/gallery/01.jpg",
-      "/images/products/LW6/gallery/02.jpg"
+      "/images/products/LW6/gallery/01.jpg"
     ]
   },
   {
@@ -282,9 +266,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW8/cover.jpg",
-    "gallery": [
-      "/images/products/LW8/gallery/01.jpg"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 14,
@@ -303,9 +285,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW12/cover.jpg",
-    "gallery": [
-      "/images/products/LW12/gallery/01.jpg"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 15,
@@ -325,8 +305,7 @@
     "category": "speaker",
     "image": "/images/products/LW15/cover.jpg",
     "gallery": [
-      "/images/products/LW15/gallery/01.jpg",
-      "/images/products/LW15/gallery/02.jpg"
+      "/images/products/LW15/gallery/01.jpg"
     ]
   },
   {
@@ -346,9 +325,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW208/cover.jpg",
-    "gallery": [
-      "/images/products/LW208/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 17,
@@ -367,9 +344,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW212/cover.jpg",
-    "gallery": [
-      "/images/products/LW212/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 18,
@@ -388,9 +363,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/LW215/cover.jpg",
-    "gallery": [
-      "/images/products/LW215/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 19,
@@ -410,8 +383,7 @@
     "category": "speaker",
     "image": "/images/products/MI12/cover.jpg",
     "gallery": [
-      "/images/products/MI12/gallery/01.png",
-      "/images/products/MI12/gallery/02.png"
+      "/images/products/MI12/gallery/01.png"
     ]
   },
   {
@@ -432,8 +404,7 @@
     "category": "speaker",
     "image": "/images/products/MI15/cover.jpg",
     "gallery": [
-      "/images/products/MI15/gallery/01.png",
-      "/images/products/MI15/gallery/02.png"
+      "/images/products/MI15/gallery/01.png"
     ]
   },
   {
@@ -454,9 +425,7 @@
     "category": "speaker",
     "image": "/images/products/DO106/cover.jpg",
     "gallery": [
-      "/images/products/DO106/gallery/01.jpg",
-      "/images/products/DO106/gallery/02.jpg",
-      "/images/products/DO106/gallery/03.png"
+      "/images/products/DO106/gallery/01.jpg"
     ]
   },
   {
@@ -478,8 +447,7 @@
     "image": "/images/products/DO108/cover.jpg",
     "gallery": [
       "/images/products/DO108/gallery/01.jpg",
-      "/images/products/DO108/gallery/02.jpg",
-      "/images/products/DO108/gallery/03.png"
+      "/images/products/DO108/gallery/02.jpg"
     ]
   },
   {
@@ -501,9 +469,7 @@
     "image": "/images/products/DO110/cover.jpg",
     "gallery": [
       "/images/products/DO110/gallery/01.jpg",
-      "/images/products/DO110/gallery/02.png",
-      "/images/products/DO110/gallery/03.png",
-      "/images/products/DO110/gallery/04.png"
+      "/images/products/DO110/gallery/02.png"
     ]
   },
   {
@@ -524,8 +490,7 @@
     "category": "speaker",
     "image": "/images/products/DO112/cover.jpg",
     "gallery": [
-      "/images/products/DO112/gallery/01.jpg",
-      "/images/products/DO112/gallery/02.png"
+      "/images/products/DO112/gallery/01.jpg"
     ]
   },
   {
@@ -545,9 +510,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/DO115/cover.jpg",
-    "gallery": [
-      "/images/products/DO115/gallery/01.jpg"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 26,
@@ -567,9 +530,7 @@
     "category": "speaker",
     "image": "/images/products/DO115H/cover.jpg",
     "gallery": [
-      "/images/products/DO115H/gallery/01.png",
-      "/images/products/DO115H/gallery/02.png",
-      "/images/products/DO115H/gallery/03.jpg"
+      "/images/products/DO115H/gallery/01.jpg"
     ]
   },
   {
@@ -589,10 +550,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/DO215/cover.jpg",
-    "gallery": [
-      "/images/products/DO215/gallery/01.png",
-      "/images/products/DO215/gallery/02.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 28,
@@ -613,8 +571,7 @@
     "image": "/images/products/DO115S/cover.jpg",
     "gallery": [
       "/images/products/DO115S/gallery/01.jpg",
-      "/images/products/DO115S/gallery/02.png",
-      "/images/products/DO115S/gallery/03.png"
+      "/images/products/DO115S/gallery/02.png"
     ]
   },
   {
@@ -635,9 +592,7 @@
     "category": "speaker",
     "image": "/images/products/DO118S/cover.jpg",
     "gallery": [
-      "/images/products/DO118S/gallery/01.jpg",
-      "/images/products/DO118S/gallery/02.png",
-      "/images/products/DO118S/gallery/03.png"
+      "/images/products/DO118S/gallery/01.jpg"
     ]
   },
   {
@@ -659,8 +614,7 @@
     "image": "/images/products/DO218S/cover.jpg",
     "gallery": [
       "/images/products/DO218S/gallery/01.png",
-      "/images/products/DO218S/gallery/02.jpg",
-      "/images/products/DO218S/gallery/03.png"
+      "/images/products/DO218S/gallery/02.png"
     ]
   },
   {
@@ -681,8 +635,7 @@
     "category": "speaker",
     "image": "/images/products/SOL403/cover.jpg",
     "gallery": [
-      "/images/products/SOL403/gallery/01.png",
-      "/images/products/SOL403/gallery/02.png"
+      "/images/products/SOL403/gallery/01.png"
     ]
   },
   {
@@ -703,8 +656,7 @@
     "category": "speaker",
     "image": "/images/products/SOL405/cover.jpg",
     "gallery": [
-      "/images/products/SOL405/gallery/01.png",
-      "/images/products/SOL405/gallery/02.png"
+      "/images/products/SOL405/gallery/01.png"
     ]
   },
   {
@@ -725,8 +677,7 @@
     "category": "speaker",
     "image": "/images/products/SOL407/cover.jpg",
     "gallery": [
-      "/images/products/SOL407/gallery/01.png",
-      "/images/products/SOL407/gallery/02.png"
+      "/images/products/SOL407/gallery/01.png"
     ]
   },
   {
@@ -747,8 +698,7 @@
     "category": "speaker",
     "image": "/images/products/K10/cover.jpg",
     "gallery": [
-      "/images/products/K10/gallery/01.png",
-      "/images/products/K10/gallery/02.png"
+      "/images/products/K10/gallery/01.png"
     ]
   },
   {
@@ -768,9 +718,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/K12/cover.jpg",
-    "gallery": [
-      "/images/products/K12/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 36,
@@ -789,9 +737,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/K212S/cover.jpg",
-    "gallery": [
-      "/images/products/K212S/gallery/01.jpg"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 37,
@@ -810,9 +756,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/K18S/cover.jpg",
-    "gallery": [
-      "/images/products/K18S/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 38,
@@ -831,9 +775,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/RE8/cover.jpg",
-    "gallery": [
-      "/images/products/RE8/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 39,
@@ -852,9 +794,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/RE10/cover.jpg",
-    "gallery": [
-      "/images/products/RE10/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 40,
@@ -873,9 +813,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/RE12/cover.jpg",
-    "gallery": [
-      "/images/products/RE12/gallery/01.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 41,
@@ -894,10 +832,7 @@
     "seriesGroup": "speaker",
     "category": "speaker",
     "image": "/images/products/RE15/cover.jpg",
-    "gallery": [
-      "/images/products/RE15/gallery/01.png",
-      "/images/products/RE15/gallery/02.png"
-    ]
+    "gallery": []
   },
   {
     "sortOrder": 42,
@@ -966,7 +901,7 @@
       "/images/products/V212/gallery/03.png",
       "/images/products/V212/gallery/04.png",
       "/images/products/V212/gallery/05.png",
-      "/images/products/V212/gallery/06.png",
+      "/images/products/V212/gallery/06.jpg",
       "/images/products/V212/gallery/07.jpg",
       "/images/products/V212/gallery/08.jpg",
       "/images/products/V212/gallery/09.jpg",
@@ -1038,8 +973,7 @@
       "/images/products/V212/gallery/75.jpg",
       "/images/products/V212/gallery/76.jpg",
       "/images/products/V212/gallery/77.jpg",
-      "/images/products/V212/gallery/78.jpg",
-      "/images/products/V212/gallery/79.jpg"
+      "/images/products/V212/gallery/78.jpg"
     ]
   },
   {
@@ -1085,8 +1019,7 @@
       "/images/products/V221S/gallery/23.jpg",
       "/images/products/V221S/gallery/24.jpg",
       "/images/products/V221S/gallery/25.jpg",
-      "/images/products/V221S/gallery/26.jpg",
-      "/images/products/V221S/gallery/27.jpg"
+      "/images/products/V221S/gallery/26.jpg"
     ]
   },
   {
@@ -1185,8 +1118,7 @@
       "/images/products/206M/gallery/54.jpg",
       "/images/products/206M/gallery/55.jpg",
       "/images/products/206M/gallery/56.jpg",
-      "/images/products/206M/gallery/57.jpg",
-      "/images/products/206M/gallery/58.jpg"
+      "/images/products/206M/gallery/57.jpg"
     ]
   },
   {
@@ -1339,8 +1271,7 @@
     "category": "dsp",
     "image": "/images/products/Unit48/cover.jpg",
     "gallery": [
-      "/images/products/Unit48/gallery/01.png",
-      "/images/products/Unit48/gallery/02.jpg"
+      "/images/products/Unit48/gallery/01.png"
     ]
   },
   {

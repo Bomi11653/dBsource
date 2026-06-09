@@ -78,7 +78,7 @@ export function buildAiLinks(
     links.push({
       type: "download",
       label: d.name[locale],
-      href: `/downloads?tab=${d.type}&file=${d.id}`,
+      href: `/api/downloads/${d.id}/file`,
     });
   }
 

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: Props) {
     cases:
       "?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=100",
     downloads:
-      "?populate[cover][fields][0]=url&populate[file][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=100",
+      "?populate[cover][fields][0]=url&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size&sort[0]=sortOrder:asc&pagination[pageSize]=100",
     scenes: "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
     "about-sections": "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
     "qr-codes": "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
