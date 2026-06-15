@@ -33,7 +33,7 @@ export default function StackedSpecPanel({
               onClick={() => setActivePage(i)}
               className={`min-h-[40px] px-3 py-2 text-xs font-mono rounded-full transition-colors touch-active ${
                 activePage === i
-                  ? "bg-[#2eb896] text-black"
+                  ? "bg-white text-black"
                   : "border border-white/20 text-gray-400 hover:text-white hover:border-white/40"
               }`}
             >

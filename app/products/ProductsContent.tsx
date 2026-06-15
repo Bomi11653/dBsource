@@ -14,14 +14,13 @@ import {
   filterProducts,
   searchProducts,
   type CategoryFilter,
-  type ProductSubSeriesSlug,
   type SeriesTab,
 } from "@/lib/products";
 import { getSubSeriesBySlugFromConfig } from "@/lib/series-config";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const VALID_SERIES: SeriesTab[] = ["all", "speaker", "dsp", "software", "engineering"];
+const VALID_SERIES: SeriesTab[] = ["all", "speaker", "dsp", "software"];
 
 export default function ProductsContent({ products }: { products: Product[] }) {
   const { locale, t } = useI18n();
@@ -32,13 +31,13 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [seriesTab, setSeriesTab] = useState<SeriesTab>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [subSeries, setSubSeries] = useState<ProductSubSeriesSlug | "all">("all");
+  const [subSeries, setSubSeries] = useState<string | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const syncUrl = useCallback(
     (next: {
       series: SeriesTab;
-      sub: ProductSubSeriesSlug | "all";
+      sub: string | "all";
       category: CategoryFilter;
       q: string;
       page: number;
@@ -69,7 +68,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
     }
 
     if (sub && getSubSeriesBySlugFromConfig(sub, seriesConfig)) {
-      setSubSeries(sub as ProductSubSeriesSlug);
+      setSubSeries(sub);
     } else {
       setSubSeries("all");
     }
@@ -130,7 +129,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   );
 
   const handleSubSeriesChange = useCallback(
-    (sub: ProductSubSeriesSlug | "all") => {
+    (sub: string | "all") => {
       setSubSeries(sub);
       setCurrentPage(1);
       syncUrl({ series: seriesTab, sub, category: categoryFilter, q: searchQuery, page: 1 });
@@ -158,7 +157,6 @@ export default function ProductsContent({ products }: { products: Product[] }) {
               { label: t.guide.productsSpeaker, href: "/products?series=speaker" },
               { label: t.guide.productsDsp, href: "/products?series=dsp" },
               { label: t.guide.productsSoftware, href: "/products?series=software" },
-              { label: t.guide.productsCases, href: "/cases" },
             ]}
             className="mt-6"
           />

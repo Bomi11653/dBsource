@@ -102,6 +102,7 @@ export function sectionToCollection(section: string): AdminCollection | "contact
     about: "about-sections",
     qr: "qr-codes",
     contact: "contact-info",
+    leads: "leads",
     series: "product-series-configs",
   };
   return map[section] ?? null;

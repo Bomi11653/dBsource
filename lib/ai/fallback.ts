@@ -65,10 +65,14 @@ export function generateFallbackReply(
     const result = recommendSystem(
       {
         scene,
-        areaSqm: area,
-        seats,
+        areaSqm: area ?? (scene === "stadium" ? 6000 : 400),
+        ceilingHeightM: scene === "stadium" ? 12 : 6,
+        seats: seats ?? (scene === "stadium" ? 5000 : 500),
+        usages: scene === "conference" ? ["meeting"] : ["performance"],
+        installMethod: "fixed",
+        lowFrequency: scene === "conference" ? "light" : "standard",
         hasBand: /乐队|band/i.test(message),
-        needsRecording: /录播|recording/i.test(message),
+        needsExpansion: /扩展|扩容|future|expansion/i.test(message),
         budget: "standard",
       },
       ctx.products

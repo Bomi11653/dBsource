@@ -52,6 +52,15 @@ export type LeadRow = {
   createdAt?: string;
 };
 
+export type LeadDashboard = {
+  total: number;
+  byStatus: Record<string, number>;
+  qualifiedRate: number;
+  winRate: number;
+  topSources: Array<{ source: string; count: number }>;
+  topCountries: Array<{ country: string; count: number }>;
+};
+
 export async function getAdminLeads(): Promise<LeadRow[]> {
   const token = process.env.STRAPI_API_TOKEN;
   if (!token) return [];
@@ -79,4 +88,61 @@ export async function getAdminLeads(): Promise<LeadRow[]> {
     status: row.status,
     createdAt: row.createdAt,
   }));
+}
+
+export async function getLeadDashboard(): Promise<LeadDashboard> {
+  const token = process.env.STRAPI_API_TOKEN;
+  if (!token) {
+    return {
+      total: 0,
+      byStatus: {},
+      qualifiedRate: 0,
+      winRate: 0,
+      topSources: [],
+      topCountries: [],
+    };
+  }
+
+  const json = await fetchStrapiWithToken<{
+    data?: Array<{
+      status?: string;
+      utmSource?: string;
+      country?: string;
+    }>;
+  }>("/leads?sort[0]=createdAt:desc&pagination[pageSize]=500", token);
+
+  const rows = json?.data ?? [];
+  const byStatus: Record<string, number> = {};
+  const sourceCount = new Map<string, number>();
+  const countryCount = new Map<string, number>();
+
+  for (const row of rows) {
+    const status = row.status || "new";
+    byStatus[status] = (byStatus[status] ?? 0) + 1;
+
+    const source = (row.utmSource || "direct").trim() || "direct";
+    sourceCount.set(source, (sourceCount.get(source) ?? 0) + 1);
+
+    const country = (row.country || "unknown").trim() || "unknown";
+    countryCount.set(country, (countryCount.get(country) ?? 0) + 1);
+  }
+
+  const total = rows.length;
+  const qualified = (byStatus.qualified ?? 0) + (byStatus.quoted ?? 0) + (byStatus.won ?? 0);
+  const won = byStatus.won ?? 0;
+
+  return {
+    total,
+    byStatus,
+    qualifiedRate: total > 0 ? Math.round((qualified / total) * 1000) / 10 : 0,
+    winRate: total > 0 ? Math.round((won / total) * 1000) / 10 : 0,
+    topSources: [...sourceCount.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([source, count]) => ({ source, count })),
+    topCountries: [...countryCount.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([country, count]) => ({ country, count })),
+  };
 }

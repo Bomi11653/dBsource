@@ -1,7 +1,11 @@
+ "use client";
+
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const LOGO_SRC = "/brand/logo.png";
+const CMS_BASE = (process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337").replace(/\/$/, "");
 
 const variants = {
   nav: {
@@ -39,10 +43,34 @@ export default function BrandLogo({
   priority?: boolean;
 }) {
   const { width, height, className: variantClass } = variants[variant];
+  const [logoSrc, setLogoSrc] = useState(LOGO_SRC);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch(`${CMS_BASE}/api/global-setting?populate[logo][fields][0]=url`, {
+      cache: "no-store",
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!mounted || !json?.data) return;
+        const raw = json.data.logo?.url as string | undefined;
+        if (!raw) return;
+        const next = raw.startsWith("http")
+          ? raw
+          : `${CMS_BASE}${raw.startsWith("/") ? "" : "/"}${raw}`;
+        setLogoSrc(next || LOGO_SRC);
+      })
+      .catch(() => {
+        /* fallback to local logo */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <Image
-      src={LOGO_SRC}
+      src={logoSrc}
       alt="dBsource"
       width={width}
       height={height}

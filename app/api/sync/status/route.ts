@@ -4,7 +4,7 @@ import { getCmsUrl } from "@/lib/strapi-client";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
   const cmsUrl = getCmsUrl();
   const cmsOnline = useMock ? false : await isCmsAvailable();
 

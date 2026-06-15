@@ -4,22 +4,7 @@ import { cases, products } from "@/data/mock";
 export type SeriesTab = "all" | ProductSeriesGroup;
 export type CategoryFilter = "all" | ProductCategory;
 
-export type ProductSubSeriesSlug =
-  | "la"
-  | "lw"
-  | "mi"
-  | "do"
-  | "sol"
-  | "k"
-  | "re"
-  | "p"
-  | "driver"
-  | "electronics"
-  | "accessory"
-  | "tour"
-  | "unit48"
-  | "suite"
-  | "turnkey";
+export type ProductSubSeriesSlug = string;
 
 export interface ProductSubSeries {
   slug: ProductSubSeriesSlug;
@@ -137,11 +122,11 @@ export const PRODUCT_SUB_SERIES: ProductSubSeries[] = [
   },
 ];
 
+/** 前台只展示三大类板块：音箱系列 / 电子周边 / 软件 */
 export const PRODUCT_SERIES_GROUPS: ProductSeriesGroup[] = [
   "speaker",
   "dsp",
   "software",
-  "engineering",
 ];
 
 export function getSubSeriesForGroup(group: ProductSeriesGroup): ProductSubSeries[] {

@@ -12,13 +12,14 @@ import {
   HomeScenes,
 } from "@/components/HomeSections";
 import SiteFooter from "@/components/SiteFooter";
-import { getCases, getProducts, getScenes } from "@/lib/fetchCMS";
+import { getCases, getContactInfo, getProducts, getScenes } from "@/lib/fetchCMS";
 
 export default async function HomePage() {
-  const [scenes, cases, products] = await Promise.all([
+  const [scenes, cases, products, contactInfo] = await Promise.all([
     getScenes(),
     getCases(),
     getProducts(),
+    getContactInfo(),
   ]);
 
   return (
@@ -26,7 +27,7 @@ export default async function HomePage() {
       <Hero />
       <HomeScenes scenes={scenes} />
       <HomeProductsPreview products={products} />
-      <HomeCasesPreview cases={cases} />
+      <HomeCasesPreview cases={cases} featuredCaseOverride={contactInfo.homeFeaturedCase} />
       <SiteFooter />
     </main>
   );

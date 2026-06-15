@@ -3,7 +3,7 @@ import { SCENE_TAGS, SEARCH_SYNONYMS } from "@/data/ai-synonyms";
 /** 从用户问题中提取产品型号（如 DO106、LA206） */
 export function extractModelCodes(query: string): string[] {
   const matches = query.match(/\b[A-Za-z]{1,5}\d{2,4}[A-Za-z]?\b/g) ?? [];
-  return [...new Set(matches.map((m) => m.toUpperCase()))];
+  return Array.from(new Set(matches.map((m) => m.toUpperCase())));
 }
 
 /** 按型号精确匹配产品；单型号查询时只返回完全一致的型号 */

@@ -32,6 +32,17 @@ async function notifyLead(payload: Record<string, string>) {
   }
 }
 
+function normalizeText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function resolveMarketFromHost(host: string): "cn" | "global" | "all" {
+  const lowered = host.toLowerCase();
+  if (lowered.includes("cn.")) return "cn";
+  if (lowered.includes("global.") || lowered.includes("en.")) return "global";
+  return "all";
+}
+
 export async function POST(request: NextRequest) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -46,9 +57,26 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const name = String(body.name ?? "").trim();
-  const message = String(body.message ?? "").trim();
-  const product = body.product ? String(body.product).trim() : "";
+  const name = normalizeText(body.name);
+  const message = normalizeText(body.message);
+  const product = normalizeText(body.product);
+  const landingPage = normalizeText(body.landingPage);
+  const referrer = normalizeText(body.referrer || request.headers.get("referer"));
+  const language = normalizeText(body.language || request.headers.get("accept-language"));
+  const country =
+    normalizeText(body.country) ||
+    normalizeText(
+      request.headers.get("x-vercel-ip-country") ||
+        request.headers.get("cf-ipcountry") ||
+        request.headers.get("x-country-code")
+    );
+  const host = normalizeText(request.headers.get("x-forwarded-host") || request.headers.get("host"));
+  const market = resolveMarketFromHost(host);
+  const utmSource = normalizeText(body.utmSource);
+  const utmMedium = normalizeText(body.utmMedium);
+  const utmCampaign = normalizeText(body.utmCampaign);
+  const utmTerm = normalizeText(body.utmTerm);
+  const utmContent = normalizeText(body.utmContent);
 
   if (!name || !message) {
     return NextResponse.json(
@@ -60,9 +88,9 @@ export async function POST(request: NextRequest) {
   const intent = scoreLeadIntent({
     name,
     message,
-    company: body.company ? String(body.company) : undefined,
-    email: body.email ? String(body.email) : undefined,
-    phone: body.phone ? String(body.phone) : undefined,
+    company: normalizeText(body.company) || undefined,
+    email: normalizeText(body.email) || undefined,
+    phone: normalizeText(body.phone) || undefined,
     product: product || undefined,
   });
   const intentTag = `[意向:${intentLabel(intent, "zh")}]`;
@@ -71,11 +99,23 @@ export async function POST(request: NextRequest) {
 
   const result = await submitContactLead({
     name,
-    company: body.company ? String(body.company) : undefined,
-    email: body.email ? String(body.email) : undefined,
-    phone: body.phone ? String(body.phone) : undefined,
+    company: normalizeText(body.company) || undefined,
+    email: normalizeText(body.email) || undefined,
+    phone: normalizeText(body.phone) || undefined,
     message: fullMessage,
     product: product || undefined,
+    intentScore: intent,
+    intentTag: intentLabel(intent, "zh"),
+    language: language || undefined,
+    country: country || undefined,
+    market,
+    utmSource: utmSource || undefined,
+    utmMedium: utmMedium || undefined,
+    utmCampaign: utmCampaign || undefined,
+    utmTerm: utmTerm || undefined,
+    utmContent: utmContent || undefined,
+    landingPage: landingPage || undefined,
+    referrer: referrer || undefined,
   });
 
   if (!result.ok) {
@@ -87,10 +127,14 @@ export async function POST(request: NextRequest) {
 
   await notifyLead({
     name,
-    company: String(body.company ?? ""),
-    email: String(body.email ?? ""),
-    phone: String(body.phone ?? ""),
+    company: normalizeText(body.company),
+    email: normalizeText(body.email),
+    phone: normalizeText(body.phone),
     product,
+    country,
+    market,
+    utmSource,
+    landingPage,
     message: fullMessage,
   });
 

@@ -35,7 +35,7 @@ function CopyPhone({ phone }: { phone: string }) {
         {phone}
       </a>
       {copied ? (
-        <Check size={13} className="text-emerald-400 shrink-0" aria-hidden />
+        <Check size={13} className="text-white shrink-0" aria-hidden />
       ) : (
         <Copy size={13} className="text-gray-500 group-hover:text-brand-gold shrink-0" aria-hidden />
       )}

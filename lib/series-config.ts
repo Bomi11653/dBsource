@@ -24,7 +24,7 @@ type StrapiSeriesDoc = {
   featuredProductId?: number | null;
 };
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA !== "false";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export function subSeriesMatchesProduct(sub: ProductSubSeries, product: Product): boolean {
   return (
@@ -44,6 +44,55 @@ function defaultSeriesConfig(): SeriesConfigEntry[] {
     visible: true,
     sortOrder: index,
   }));
+}
+
+function normalizeSlug(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "series";
+}
+
+function inferModelPrefix(model: string): string {
+  const matched = model.trim().match(/^[A-Za-z0-9]+/);
+  return matched?.[0] || model.trim();
+}
+
+function inferSeriesFromProducts(
+  products: Product[],
+  existing: SeriesConfigEntry[]
+): SeriesConfigEntry[] {
+  const known = new Set(existing.map((entry) => entry.slug));
+  let sortOrderBase =
+    existing.length > 0 ? Math.max(...existing.map((entry) => entry.sortOrder)) + 1 : 0;
+  const inferred: SeriesConfigEntry[] = [];
+
+  for (const product of products) {
+    if (!PRODUCT_SERIES_GROUPS.includes(product.seriesGroup)) continue;
+    if (!product.productLine?.trim()) continue;
+
+    const slug = normalizeSlug(product.productLine);
+    if (known.has(slug)) continue;
+
+    const labelZh = product.series?.zh?.trim() || product.productLine;
+    const labelEn = product.series?.en?.trim() || product.productLine.toUpperCase();
+    const modelPrefix = inferModelPrefix(product.model);
+
+    inferred.push({
+      slug,
+      seriesGroup: product.seriesGroup,
+      label: { zh: labelZh, en: labelEn },
+      modelPrefix,
+      featuredProductId: product.id,
+      visible: true,
+      sortOrder: sortOrderBase++,
+    });
+    known.add(slug);
+  }
+
+  return inferred;
 }
 
 function mapStrapiSeries(doc: StrapiSeriesDoc, index: number): SeriesConfigEntry {
@@ -71,8 +120,9 @@ export async function fetchSeriesConfigFromCMS(): Promise<SeriesConfigEntry[] | 
 export async function getSeriesConfig(products: Product[]): Promise<SeriesConfigEntry[]> {
   const cmsSeries = await fetchSeriesConfigFromCMS();
   const base = cmsSeries ?? defaultSeriesConfig();
+  const merged = [...base, ...inferSeriesFromProducts(products, base)];
 
-  return base
+  return merged
     .filter((sub) => sub.visible !== false)
     .filter((sub) => subSeriesHasProducts(sub, products))
     .sort((a, b) => a.sortOrder - b.sortOrder);

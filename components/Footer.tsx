@@ -1,15 +1,17 @@
 "use client";
 
-import type { ContactInfo, QRItem } from "@/data/mock";
+import type { ContactInfo, QRItem, SocialLinkItem } from "@/data/mock";
 import QRCarousel from "./QRCarousel";
 import { useI18n } from "./I18nProvider";
 
 export default function Footer({
   qrItems,
   contact,
+  socialLinks,
 }: {
   qrItems: QRItem[];
   contact: ContactInfo;
+  socialLinks?: SocialLinkItem[];
 }) {
   const { locale, t } = useI18n();
 
@@ -48,7 +50,7 @@ export default function Footer({
         <p className="text-gray-400 text-sm leading-relaxed">{contact.footerIntro[locale]}</p>
       </div>
 
-      <QRCarousel items={qrItems} />
+      <QRCarousel items={qrItems} socialLinks={socialLinks} />
 
       <p className="text-xs text-gray-500 pb-page-safe text-center px-6">{t.footer.rights}</p>
     </footer>

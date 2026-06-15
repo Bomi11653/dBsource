@@ -1,4 +1,5 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
+import { translateCaseZhToEn } from "@/lib/ai/admin-content";
 import { ADMIN_COLLECTIONS, adminStrapiRequest, type AdminCollection } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -17,10 +18,30 @@ export async function PUT(request: NextRequest, { params }: Props) {
   }
 
   const body = await request.json();
+  const data: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+
+  if (params.collection === "cases") {
+    const titleZh = String(data.titleZh ?? "").trim();
+    const descZh = String(data.descZh ?? "").trim();
+    const titleEn = String(data.titleEn ?? "").trim();
+    const descEn = String(data.descEn ?? "").trim();
+    if (titleZh && descZh && (!titleEn || !descEn)) {
+      try {
+        const translated = await translateCaseZhToEn({ titleZh, descZh });
+        if (translated) {
+          if (!titleEn) data.titleEn = translated.titleEn;
+          if (!descEn) data.descEn = translated.descEn;
+        }
+      } catch {
+        // Ignore AI errors and keep user-provided fields unchanged.
+      }
+    }
+  }
+
   const result = await adminStrapiRequest(
     "PUT",
     `/${params.collection}/${params.documentId}`,
-    { data: { ...body, publishedAt: new Date().toISOString() } }
+    { data: { ...data, publishedAt: new Date().toISOString() } }
   );
   return NextResponse.json(result, { status: result.ok ? 200 : 502 });
 }

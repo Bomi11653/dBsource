@@ -35,7 +35,16 @@ export function extractAdminToken(request: NextRequest): string | null {
 }
 
 export function assertAdminRequest(request: NextRequest): NextResponse | null {
-  if (!isAdminAuthEnabled()) return null;
+  if (!isAdminAuthEnabled()) {
+    /* 本地开发免登录；生产环境必须配置 ADMIN_TOKEN，否则锁定全部后台接口 */
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { ok: false, error: "生产环境未配置 ADMIN_TOKEN，后台接口已锁定" },
+        { status: 401 }
+      );
+    }
+    return null;
+  }
   if (verifyAdminToken(extractAdminToken(request))) return null;
   return unauthorizedAdminResponse();
 }

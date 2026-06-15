@@ -23,7 +23,7 @@ export default function AiSalesShortcuts({
       <Link
         href={salesContactAnchor()}
         onClick={onNavigate}
-        className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+        className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors"
       >
         <MessageCircle size={12} />
         {t.ai.wechatSales}
@@ -33,7 +33,7 @@ export default function AiSalesShortcuts({
         target="_blank"
         rel="noopener noreferrer"
         onClick={onNavigate}
-        className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full border border-[#25D366]/30 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+        className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors"
       >
         WhatsApp
       </a>

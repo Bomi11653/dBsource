@@ -1,6 +1,6 @@
 "use client";
 
-import { HOME_FEATURED_PRODUCTS, buildHomeFeaturedProducts, getHomeFeaturedCaseWithImage } from "@/data/home-featured";
+import { buildHomeFeaturedProducts, getHomeFeaturedCaseWithImage } from "@/data/home-featured";
 import type { CaseItem, Product, SceneItem } from "@/data/mock";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
@@ -67,9 +67,20 @@ export function HomeProductsPreview({ products }: { products: Product[] }) {
   );
 }
 
-export function HomeCasesPreview({ cases }: { cases: CaseItem[] }) {
+export function HomeCasesPreview({
+  cases,
+  featuredCaseOverride,
+}: {
+  cases: CaseItem[];
+  featuredCaseOverride?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+    desc?: { zh: string; en: string };
+    image?: string;
+  };
+}) {
   const { locale, t } = useI18n();
-  const featured = getHomeFeaturedCaseWithImage(cases);
+  const featured = getHomeFeaturedCaseWithImage(cases, featuredCaseOverride);
 
   return (
     <section

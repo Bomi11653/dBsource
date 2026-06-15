@@ -2,9 +2,11 @@
 
 import Lenis from "lenis";
 import { useEffect } from "react";
+import { usePerformanceMode } from "@/components/PerformanceModeProvider";
 
-function shouldUseSmoothScroll() {
+function shouldUseSmoothScroll(resolvedMode: "high" | "lite") {
   if (typeof window === "undefined") return false;
+  if (resolvedMode === "lite") return false;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
   if (window.matchMedia("(pointer: coarse)").matches) return false;
   if (window.matchMedia("(max-width: 1023px)").matches) return false;
@@ -12,8 +14,10 @@ function shouldUseSmoothScroll() {
 }
 
 export default function SmoothScroll() {
+  const { resolvedMode } = usePerformanceMode();
+
   useEffect(() => {
-    if (!shouldUseSmoothScroll()) return;
+    if (!shouldUseSmoothScroll(resolvedMode)) return;
 
     const lenis = new Lenis({
       duration: 1.1,
@@ -33,7 +37,7 @@ export default function SmoothScroll() {
       cancelAnimationFrame(frame);
       lenis.destroy();
     };
-  }, []);
+  }, [resolvedMode]);
 
   return null;
 }

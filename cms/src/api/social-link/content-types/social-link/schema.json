@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "social_links",
+  "info": {
+    "singularName": "social-link",
+    "pluralName": "social-links",
+    "displayName": "⑫ 社媒链接 SocialLink",
+    "description": "公众号、抖音、视频号链接和二维码"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "platformKey": {
+      "type": "enumeration",
+      "enum": ["wechat", "douyin", "channels"],
+      "required": true
+    },
+    "labelZh": {
+      "type": "string",
+      "required": true
+    },
+    "labelEn": {
+      "type": "string",
+      "required": true
+    },
+    "url": {
+      "type": "string"
+    },
+    "qrImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

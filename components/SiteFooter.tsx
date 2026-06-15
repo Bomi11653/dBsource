@@ -1,7 +1,11 @@
 import Footer from "./Footer";
-import { getContactInfo, getQRCodes } from "@/lib/fetchCMS";
+import { getContactInfo, getQRCodes, getSocialLinks } from "@/lib/fetchCMS";
 
 export default async function SiteFooter() {
-  const [qrItems, contact] = await Promise.all([getQRCodes(), getContactInfo()]);
-  return <Footer qrItems={qrItems} contact={contact} />;
+  const [qrItems, contact, socialLinks] = await Promise.all([
+    getQRCodes(),
+    getContactInfo(),
+    getSocialLinks(),
+  ]);
+  return <Footer qrItems={qrItems} contact={contact} socialLinks={socialLinks} />;
 }

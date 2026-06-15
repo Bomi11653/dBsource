@@ -1,7 +1,8 @@
 "use client";
 
 import { usePageTransition } from "@/components/PageTransitionProvider";
-import type { CaseType, DownloadItem, ProductSeriesGroup } from "@/data/mock";
+import { usePerformanceMode } from "@/components/PerformanceModeProvider";
+import type { CaseItem, CaseType, DownloadItem, ProductSeriesGroup } from "@/data/mock";
 import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
 import {
   DOWNLOAD_TABS,
@@ -196,6 +197,7 @@ function CasesMegaPanel({
   caseLabels,
   locale,
   t,
+  cases,
 }: {
   activeType: CaseType;
   onTypeHover: (type: CaseType) => void;
@@ -203,9 +205,14 @@ function CasesMegaPanel({
   caseLabels: Record<CaseType, string>;
   locale: "zh" | "en";
   t: ReturnType<typeof useI18n>["t"];
+  cases: CaseItem[];
 }) {
-  const subLinks: MegaLinkItem[] = getCaseMegaLinks(activeType, locale);
+  const subLinks: MegaLinkItem[] = getCaseMegaLinks(activeType, locale, cases);
   const firstColumnCount = 3;
+  const columns =
+    subLinks.length > firstColumnCount
+      ? splitIntoMegaColumns(subLinks, firstColumnCount, 2)
+      : [subLinks];
 
   return (
     <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
@@ -234,13 +241,33 @@ function CasesMegaPanel({
         </ul>
       </MegaMainColumn>
 
-      <MegaSubColumns
-        title={caseLabels[activeType]}
-        links={subLinks}
-        firstColumnCount={firstColumnCount}
-        restColumnSize={2}
-        onNavigate={onNavigate}
-      />
+      <div className="flex gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-start flex-1 min-w-0">
+        {columns.map((column, columnIndex) => (
+          <div key={columnIndex} className="min-w-[180px] max-w-[240px]">
+            {columnIndex === 0 ? (
+              <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{caseLabels[activeType]}</p>
+            ) : (
+              <p className="text-[11px] mb-4 tracking-wide opacity-0 select-none" aria-hidden="true">
+                {caseLabels[activeType]}
+              </p>
+            )}
+            <ul className="space-y-1">
+              {column.map((link) => (
+                <li key={link.key}>
+                  <Link
+                    href={link.href}
+                    onClick={(e) => onNavigate(e, link.href)}
+                    className="block py-1.5 text-base md:text-lg text-gray-300 hover:text-white transition-colors whitespace-normal break-words leading-snug"
+                    title={link.label}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -306,7 +333,8 @@ function DownloadsMegaPanel({
 
 export default function Navbar() {
   const { locale, t } = useI18n();
-  const { downloads } = useSiteData();
+  const { resolvedMode } = usePerformanceMode();
+  const { downloads, cases } = useSiteData();
   const seriesConfig = useSeriesConfig();
   const visibleGroups = getVisibleSeriesGroups(seriesConfig);
   const pathname = usePathname();
@@ -422,6 +450,7 @@ export default function Navbar() {
     { href: "/about", key: "about" as const },
     { href: "/contact", key: "contact" as const },
   ];
+  const shouldAnimate = resolvedMode === "high";
 
   return (
     <header
@@ -523,10 +552,10 @@ export default function Navbar() {
       <AnimatePresence>
         {megaOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -6 }}
+            initial={shouldAnimate ? { opacity: 0, y: -6 } : { opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.2 }}
+            exit={shouldAnimate ? { opacity: 0, y: -6 } : { opacity: 1, y: 0 }}
+            transition={{ duration: shouldAnimate ? 0.2 : 0 }}
             className="hidden lg:block absolute left-0 right-0 top-full border-t border-white/10 bg-[#1d1d1f]/95 backdrop-blur-2xl"
             onMouseEnter={() => openMega(megaOpen)}
           >
@@ -552,6 +581,7 @@ export default function Navbar() {
                   caseLabels={caseLabels}
                   locale={locale}
                   t={t}
+                  cases={cases}
                 />
               )}
 
@@ -575,9 +605,9 @@ export default function Navbar() {
           <>
             <motion.button
               type="button"
-              initial={{ opacity: 0 }}
+              initial={shouldAnimate ? { opacity: 0 } : { opacity: 1 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={shouldAnimate ? { opacity: 0 } : { opacity: 1 }}
               className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px]"
               aria-label={t.nav.menuClose}
               onClick={() => {
@@ -586,10 +616,10 @@ export default function Navbar() {
               }}
             />
           <motion.nav
-            initial={{ height: 0, opacity: 0 }}
+            initial={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
             animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            exit={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
+            transition={{ duration: shouldAnimate ? 0.22 : 0, ease: [0.22, 1, 0.36, 1] }}
             className="lg:hidden relative z-50 overflow-hidden border-t border-white/10 bg-black/95"
           >
             <div className="mobile-nav-scroll px-4 sm:px-6 py-3 safe-bottom text-sm">
@@ -694,12 +724,12 @@ export default function Navbar() {
                             >
                               {caseLabels[c]}
                             </Link>
-                            {getCaseMegaLinks(c, locale).map((sub) => (
+                            {getCaseMegaLinks(c, locale, cases).map((sub) => (
                               <Link
                                 key={sub.key}
                                 href={sub.href}
                                 onClick={(e) => handleNavClick(e, sub.href)}
-                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
+                                className="flex min-h-[44px] py-2 pl-4 pr-2 text-gray-400 text-sm touch-active leading-snug break-words"
                               >
                                 {sub.label}
                               </Link>

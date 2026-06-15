@@ -6,6 +6,9 @@ type SafeImageProps = Omit<ImageProps, "fill"> & {
   /** 容器固定高度（px），防止 fill 布局在 CSS 未加载时撑满视口 */
   frameHeight?: number;
   frameWidth?: string;
+  /** contain：完整显示图片不裁切 */
+  fit?: "cover" | "contain";
+  frameClassName?: string;
 };
 
 /**
@@ -14,6 +17,8 @@ type SafeImageProps = Omit<ImageProps, "fill"> & {
 export default function SafeImage({
   frameHeight = 192,
   frameWidth = "100%",
+  fit = "cover",
+  frameClassName = "bg-zinc-900",
   className = "",
   alt,
   src,
@@ -23,7 +28,7 @@ export default function SafeImage({
 }: SafeImageProps) {
   return (
     <div
-      className={`relative overflow-hidden bg-zinc-900 ${className}`}
+      className={`relative overflow-hidden ${frameClassName} ${className}`}
       style={{
         position: "relative",
         width: frameWidth,
@@ -38,8 +43,8 @@ export default function SafeImage({
         fill
         sizes={sizes}
         unoptimized={unoptimized}
-        className="object-cover"
-        style={{ objectFit: "cover" }}
+        className={fit === "contain" ? "object-contain" : "object-cover"}
+        style={{ objectFit: fit }}
         {...rest}
       />
     </div>

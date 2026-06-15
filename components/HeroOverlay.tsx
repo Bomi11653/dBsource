@@ -2,6 +2,7 @@
 
 import BrandLogo from "@/components/BrandLogo";
 import BrowseGuide from "@/components/BrowseGuide";
+import HeroSearchBar from "@/components/HeroSearchBar";
 import ScrollGuide from "@/components/ScrollGuide";
 import { useI18n } from "./I18nProvider";
 
@@ -28,6 +29,7 @@ export default function HeroOverlay() {
           variant="minimal"
           className="mt-4 sm:mt-8 md:mt-10 w-full"
         />
+        <HeroSearchBar />
       </div>
       <ScrollGuide
         targetId="home-scenes"

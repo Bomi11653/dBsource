@@ -82,6 +82,11 @@
     "sortOrder": {
       "type": "integer",
       "default": 0
+    },
+    "market": {
+      "type": "enumeration",
+      "enum": ["cn", "global", "all"],
+      "default": "all"
     }
   }
 }

@@ -4,7 +4,7 @@ import type { ContactInfo } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import BrowseGuide from "@/components/BrowseGuide";
 import SalesContactCards from "@/components/SalesContactCards";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function ContactContent({ contact }: { contact: ContactInfo }) {
@@ -14,6 +14,16 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tracking, setTracking] = useState({
+    utmSource: "",
+    utmMedium: "",
+    utmCampaign: "",
+    utmTerm: "",
+    utmContent: "",
+    landingPage: "",
+    referrer: "",
+    language: locale,
+  });
 
   const mapSrc =`https://www.google.com/maps?q=${encodeURIComponent(contact.mapQuery)}&output=embed&z=15`;
   const defaultMessage = productModel
@@ -21,6 +31,20 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
       ? `我想咨询产品型号：${productModel}`
       : `I would like to inquire about model: ${productModel}`
     : "";
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setTracking({
+      utmSource: query.get("utm_source") ?? "",
+      utmMedium: query.get("utm_medium") ?? "",
+      utmCampaign: query.get("utm_campaign") ?? "",
+      utmTerm: query.get("utm_term") ?? "",
+      utmContent: query.get("utm_content") ?? "",
+      landingPage: window.location.href,
+      referrer: document.referrer || "",
+      language: navigator.language || locale,
+    });
+  }, [locale]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,6 +71,14 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
           phone: fd.get("phone"),
           message: fd.get("message"),
           product: fd.get("product") || undefined,
+          utmSource: tracking.utmSource,
+          utmMedium: tracking.utmMedium,
+          utmCampaign: tracking.utmCampaign,
+          utmTerm: tracking.utmTerm,
+          utmContent: tracking.utmContent,
+          landingPage: tracking.landingPage,
+          referrer: tracking.referrer,
+          language: tracking.language,
         }),
       });
       const data = await res.json();

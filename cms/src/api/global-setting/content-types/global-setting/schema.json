@@ -1,0 +1,52 @@
+{
+  "kind": "singleType",
+  "collectionName": "global_settings",
+  "info": {
+    "singularName": "global-setting",
+    "pluralName": "global-settings",
+    "displayName": "⑩ 全局设置 GlobalSetting",
+    "description": "全站基础信息（Logo / 页脚版权等）"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "footerCopyrightZh": {
+      "type": "string"
+    },
+    "footerCopyrightEn": {
+      "type": "string"
+    },
+    "homeFeaturedProductAId": {
+      "type": "integer"
+    },
+    "homeFeaturedProductBId": {
+      "type": "integer"
+    },
+    "homeFeaturedCaseId": {
+      "type": "integer"
+    },
+    "homeFeaturedCaseTitleZh": {
+      "type": "string"
+    },
+    "homeFeaturedCaseTitleEn": {
+      "type": "string"
+    },
+    "homeFeaturedCaseDescZh": {
+      "type": "text"
+    },
+    "homeFeaturedCaseDescEn": {
+      "type": "text"
+    },
+    "homeFeaturedCaseImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    }
+  }
+}

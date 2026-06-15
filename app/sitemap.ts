@@ -4,7 +4,7 @@ import { siteConfig } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteConfig.url;
-  const staticRoutes = ["", "/about", "/products", "/cases", "/downloads", "/contact"];
+  const staticRoutes = ["", "/about", "/products", "/cases", "/downloads", "/configurator", "/contact"];
 
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
     url: `${base}${route}`,

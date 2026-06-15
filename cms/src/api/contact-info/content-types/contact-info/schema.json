@@ -19,6 +19,21 @@
     "addressEn": { "type": "string", "required": true },
     "mapQuery": { "type": "string", "required": true },
     "footerIntroZh": { "type": "text" },
-    "footerIntroEn": { "type": "text" }
+    "footerIntroEn": { "type": "text" },
+    "homeFeaturedCaseId": { "type": "integer" },
+    "homeFeaturedCaseTitleZh": { "type": "string" },
+    "homeFeaturedCaseTitleEn": { "type": "string" },
+    "homeFeaturedCaseDescZh": { "type": "text" },
+    "homeFeaturedCaseDescEn": { "type": "text" },
+    "homeFeaturedCaseImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "market": {
+      "type": "enumeration",
+      "enum": ["cn", "global", "all"],
+      "default": "all"
+    }
   }
 }

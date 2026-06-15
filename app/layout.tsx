@@ -2,6 +2,7 @@ import AdminAwareChrome from "@/components/AdminAwareChrome";
 import Analytics from "@/components/Analytics";
 import JsonLd from "@/components/JsonLd";
 import PageTransitionProvider from "@/components/PageTransitionProvider";
+import { PerformanceModeProvider } from "@/components/PerformanceModeProvider";
 import { SeriesConfigProvider } from "@/components/SeriesConfigProvider";
 import { SiteDataProvider } from "@/components/SiteDataProvider";
 import SmoothScroll from "@/components/SmoothScroll";
@@ -92,14 +93,16 @@ export default async function RootLayout({
         <JsonLd data={organizationJsonLd()} />
         <Analytics />
         <I18nProvider>
-          <SeriesConfigProvider config={seriesConfig}>
-            <SiteDataProvider products={products} cases={cases} downloads={downloads}>
-              <PageTransitionProvider>
-                <SmoothScroll />
-                <AdminAwareChrome>{children}</AdminAwareChrome>
-              </PageTransitionProvider>
-            </SiteDataProvider>
-          </SeriesConfigProvider>
+          <PerformanceModeProvider>
+            <SeriesConfigProvider config={seriesConfig}>
+              <SiteDataProvider products={products} cases={cases} downloads={downloads}>
+                <PageTransitionProvider>
+                  <SmoothScroll />
+                  <AdminAwareChrome>{children}</AdminAwareChrome>
+                </PageTransitionProvider>
+              </SiteDataProvider>
+            </SeriesConfigProvider>
+          </PerformanceModeProvider>
         </I18nProvider>
       </body>
     </html>

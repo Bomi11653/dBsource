@@ -3,9 +3,15 @@ import { cases as caseCatalog, type CaseItem, type CaseType, type Locale } from 
 
 /** 全站案例展示顺序：工程案例 → 演出案例 */
 export function sortCases(list: CaseItem[]): CaseItem[] {
-  const order = [...CASE_TYPE_ORDER.engineering, ...CASE_TYPE_ORDER.performance];
-  const byId = new Map(list.map((c) => [c.id, c]));
-  return order.map((id) => byId.get(id)).filter((c): c is CaseItem => Boolean(c));
+  const byType = {
+    engineering: list.filter((c) => c.type === "engineering"),
+    performance: list.filter((c) => c.type === "performance"),
+  } as const;
+
+  return [
+    ...sortCasesWithinType(byType.engineering, "engineering"),
+    ...sortCasesWithinType(byType.performance, "performance"),
+  ];
 }
 
 /** 将本地案例图册路径合并到案例数据（全站统一封面与图集） */
@@ -13,10 +19,12 @@ export function applyCaseImages(list: CaseItem[]): CaseItem[] {
   return list.map((item) => {
     const imgs = caseImageMap[item.id];
     if (!imgs) return item;
+    const hasCmsCover = Boolean(item.image);
+    const hasCmsGallery = Array.isArray(item.gallery) && item.gallery.length > 0;
     return {
       ...item,
-      image: imgs.cover,
-      gallery: imgs.gallery,
+      image: hasCmsCover ? item.image : imgs.cover,
+      gallery: hasCmsGallery ? item.gallery : imgs.gallery,
     };
   });
 }
@@ -112,9 +120,8 @@ export function getCasesForType(
   type: CaseType,
   list: CaseItem[] = applyCaseImages(caseCatalog)
 ): CaseItem[] {
-  const order = CASE_TYPE_ORDER[type];
-  const byId = new Map(list.filter((c) => c.type === type).map((c) => [c.id, c]));
-  return order.map((id) => byId.get(id)).filter((c): c is CaseItem => Boolean(c));
+  const sameType = list.filter((c) => c.type === type);
+  return sortCasesWithinType(sameType, type);
 }
 
 export function getCaseMegaLinks(
@@ -158,4 +165,43 @@ export function getRelatedCases(
   limit = 2
 ): CaseItem[] {
   return allCases.filter((c) => c.id !== currentId).slice(0, limit);
+}
+
+function sortCasesWithinType(list: CaseItem[], type: CaseType): CaseItem[] {
+  const preferredOrder = CASE_TYPE_ORDER[type];
+  const hasCmsSort = list.some((item) => typeof item.sortOrder === "number");
+  if (hasCmsSort) {
+    const preferredRank = new Map(preferredOrder.map((id, index) => [id, index]));
+    return [...list].sort((a, b) => {
+      const aHasSort = typeof a.sortOrder === "number";
+      const bHasSort = typeof b.sortOrder === "number";
+
+      if (aHasSort && bHasSort && a.sortOrder !== b.sortOrder) {
+        return (a.sortOrder as number) - (b.sortOrder as number);
+      }
+      if (aHasSort !== bHasSort) {
+        return aHasSort ? -1 : 1;
+      }
+
+      const aPreferred = preferredRank.get(a.id);
+      const bPreferred = preferredRank.get(b.id);
+      if (aPreferred != null && bPreferred != null && aPreferred !== bPreferred) {
+        return aPreferred - bPreferred;
+      }
+      if (aPreferred != null && bPreferred == null) return -1;
+      if (aPreferred == null && bPreferred != null) return 1;
+
+      return a.id - b.id;
+    });
+  }
+
+  const byId = new Map(list.map((item) => [item.id, item]));
+  const ordered = preferredOrder
+    .map((id) => byId.get(id))
+    .filter((item): item is CaseItem => Boolean(item));
+
+  const orderedIds = new Set(ordered.map((item) => item.id));
+  const appended = list.filter((item) => !orderedIds.has(item.id));
+
+  return [...ordered, ...appended];
 }

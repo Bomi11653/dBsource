@@ -92,6 +92,15 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     icon: "mail",
   },
   {
+    id: "leads",
+    title: { zh: "线索管理", en: "Leads" },
+    description: { zh: "询盘筛选、分配、状态流转", en: "Lead triage, assignment and pipeline" },
+    href: "/admin/leads",
+    strapiPath: "/content-manager/collection-types/api::lead.lead",
+    countKey: "leads",
+    icon: "target",
+  },
+  {
     id: "qr",
     title: { zh: "二维码", en: "QR Codes" },
     description: { zh: "页脚与联系页社交码", en: "Footer & contact QR codes" },

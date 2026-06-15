@@ -1,0 +1,51 @@
+{
+  "kind": "singleType",
+  "collectionName": "smart_selection_pages",
+  "info": {
+    "singularName": "smart-selection-page",
+    "pluralName": "smart-selection-pages",
+    "displayName": "⑪ 智能选型页 SmartSelectionPage",
+    "description": "智能选型页标题、副标题与按钮文案"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "titleZh": {
+      "type": "string"
+    },
+    "titleEn": {
+      "type": "string"
+    },
+    "subtitleZh": {
+      "type": "text"
+    },
+    "subtitleEn": {
+      "type": "text"
+    },
+    "generateButtonZh": {
+      "type": "string"
+    },
+    "generateButtonEn": {
+      "type": "string"
+    },
+    "regenerateButtonZh": {
+      "type": "string"
+    },
+    "regenerateButtonEn": {
+      "type": "string"
+    },
+    "copyButtonZh": {
+      "type": "string"
+    },
+    "copyButtonEn": {
+      "type": "string"
+    },
+    "contactButtonZh": {
+      "type": "string"
+    },
+    "contactButtonEn": {
+      "type": "string"
+    }
+  }
+}

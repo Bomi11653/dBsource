@@ -76,14 +76,55 @@ export function buildHomeFeaturedProducts(products: Product[]): HomeFeaturedProd
   }));
 }
 
+function buildFromProduct(product: Product): HomeFeaturedProduct {
+  return {
+    id: `product-${product.id}`,
+    name: product.name,
+    desc: product.desc,
+    models: { zh: product.model, en: product.model },
+    image: product.image,
+    specPages: [],
+    detailHref: `/products/${product.id}`,
+  };
+}
+
+export function buildHomeFeaturedProductsByIds(
+  products: Product[],
+  preferredIds?: number[]
+): HomeFeaturedProduct[] {
+  const selected = (preferredIds ?? [])
+    .map((id) => products.find((product) => product.id === id))
+    .filter((item): item is Product => Boolean(item));
+  const used = new Set(selected.map((item) => item.id));
+  const fallback = products.filter((item) => !used.has(item.id)).slice(0, Math.max(0, 2 - selected.length));
+  const merged = [...selected, ...fallback].slice(0, 2);
+  if (!merged.length) {
+    return buildHomeFeaturedProducts(products);
+  }
+  return merged.map(buildFromProduct);
+}
+
 export function getHomeFeaturedCase(cases: CaseItem[]): CaseItem | undefined {
   return cases.find((c) => c.id === 6) ?? cases[0];
 }
 
-export function getHomeFeaturedCaseWithImage(cases: CaseItem[]): CaseItem {
-  const item = getHomeFeaturedCase(cases);
+export function getHomeFeaturedCaseWithImage(
+  cases: CaseItem[],
+  override?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+    desc?: { zh: string; en: string };
+    image?: string;
+  }
+): CaseItem {
+  const item = (override?.caseId ? cases.find((c) => c.id === override.caseId) : undefined) ?? getHomeFeaturedCase(cases);
   if (!item) {
     throw new Error("No cases available for home preview");
   }
-  return item;
+  return {
+    ...item,
+    title: override?.title?.zh || override?.title?.en ? { ...item.title, ...override.title } : item.title,
+    desc: override?.desc?.zh || override?.desc?.en ? { ...item.desc, ...override.desc } : item.desc,
+    image: override?.image || item.image,
+  };
 }

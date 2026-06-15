@@ -2,6 +2,7 @@
 
 import AiAdvisor from "@/components/AiAdvisor";
 import Navbar from "@/components/Navbar";
+import PerformanceModeSwitcher from "@/components/PerformanceModeSwitcher";
 import { usePathname } from "next/navigation";
 
 export default function AdminAwareChrome({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default function AdminAwareChrome({ children }: { children: React.ReactNo
     <>
       <Navbar />
       {children}
+      <PerformanceModeSwitcher />
       <AiAdvisor />
     </>
   );

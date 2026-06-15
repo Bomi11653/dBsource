@@ -3,14 +3,13 @@
 import type { ReactNode } from "react";
 import {
   type CategoryFilter,
-  type ProductSubSeriesSlug,
   type SeriesTab,
 } from "@/lib/products";
 import { getSubSeriesForGroupFromConfig, seriesEntryLabel } from "@/lib/series-config";
 import { useSeriesConfig } from "@/components/SeriesConfigProvider";
 import { useI18n } from "./I18nProvider";
 
-const SERIES_TABS: SeriesTab[] = ["all", "speaker", "dsp", "software", "engineering"];
+const SERIES_TABS: SeriesTab[] = ["all", "speaker", "dsp", "software"];
 const CATEGORY_FILTERS: CategoryFilter[] = ["all", "speaker", "dsp", "software"];
 
 function FilterButton({
@@ -53,10 +52,10 @@ export default function ProductSeriesBar({
 }: {
   seriesTab: SeriesTab;
   categoryFilter: CategoryFilter;
-  subSeries: ProductSubSeriesSlug | "all";
+  subSeries: string | "all";
   onSeriesChange: (tab: SeriesTab) => void;
   onCategoryChange: (cat: CategoryFilter) => void;
-  onSubSeriesChange: (sub: ProductSubSeriesSlug | "all") => void;
+  onSubSeriesChange: (sub: string | "all") => void;
   resultCount: number;
   search?: ReactNode;
 }) {

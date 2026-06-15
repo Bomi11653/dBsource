@@ -7,7 +7,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: { gold: "#2eb896", muted: "#141414" },
+        brand: { gold: "#ffffff", muted: "#141414" },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "var(--font-source-han-sans)", "system-ui", "sans-serif"],

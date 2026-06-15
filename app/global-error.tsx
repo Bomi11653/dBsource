@@ -28,7 +28,7 @@ export default function GlobalError({
           <button
             type="button"
             onClick={() => window.location.reload()}
-            style={{ marginTop: 24, padding: "12px 24px", background: "#2eb896", border: "none", cursor: "pointer" }}
+            style={{ marginTop: 24, padding: "12px 24px", background: "#ffffff", color: "#000", border: "none", cursor: "pointer", borderRadius: 8 }}
           >
             刷新页面
           </button>

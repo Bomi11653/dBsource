@@ -22,6 +22,7 @@ type StrapiMedia = {
 
 type StrapiCaseDoc = {
   legacyId: number;
+  sortOrder?: number;
   type: string;
   sceneSlug: string;
   titleZh: string;
@@ -37,6 +38,7 @@ type StrapiCaseDoc = {
   gallery?: StrapiMedia[] | null;
   highlightsZh?: string[] | null;
   highlightsEn?: string[] | null;
+  market?: "cn" | "global" | "all" | null;
 };
 
 type StrapiQRDoc = {
@@ -66,6 +68,13 @@ type StrapiDownloadDoc = {
   type: string;
   subCategory: string;
   cover?: StrapiMedia | null;
+  version?: string | null;
+  osType?: string | null;
+  releasedAt?: string | null;
+  featured?: boolean | null;
+  descZh?: string | null;
+  descEn?: string | null;
+  market?: "cn" | "global" | "all" | null;
 };
 
 type StrapiProductDoc = {
@@ -86,6 +95,7 @@ type StrapiProductDoc = {
   category: string;
   image?: StrapiMedia | null;
   gallery?: StrapiMedia[] | null;
+  market?: "cn" | "global" | "all" | null;
 };
 
 type StrapiAboutDoc = {
@@ -132,6 +142,7 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
 
   return {
     id: doc.legacyId,
+    sortOrder: typeof doc.sortOrder === "number" ? doc.sortOrder : undefined,
     type: doc.type as CaseType,
     sceneSlug: doc.sceneSlug as CaseSceneSlug,
     title: { zh: doc.titleZh, en: doc.titleEn },
@@ -150,6 +161,7 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
       zh: doc.highlightsZh ?? [],
       en: doc.highlightsEn ?? [],
     },
+    market: doc.market ?? "all",
   };
 }
 
@@ -200,6 +212,15 @@ export function mapStrapiDownload(
     type: doc.type as DownloadItem["type"],
     subCategory: doc.subCategory as DownloadItem["subCategory"],
     cover: resolveMediaUrl(cmsUrl, doc.cover),
+    version: doc.version?.trim() || undefined,
+    osType: (doc.osType as DownloadItem["osType"]) || undefined,
+    releasedAt: doc.releasedAt || undefined,
+    featured: doc.featured === true,
+    desc:
+      doc.descZh?.trim() || doc.descEn?.trim()
+        ? { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" }
+        : undefined,
+    market: doc.market ?? "all",
   };
 }
 
@@ -231,6 +252,7 @@ export function mapStrapiProduct(
     productLine: doc.productLine as ProductLineSlug,
     seriesGroup: doc.seriesGroup as ProductSeriesGroup,
     category: doc.category as ProductCategory,
+    market: doc.market ?? "all",
   };
 }
 
@@ -283,11 +305,18 @@ type StrapiContactDoc = {
   mapQuery: string;
   footerIntroZh?: string | null;
   footerIntroEn?: string | null;
+  homeFeaturedCaseId?: number | null;
+  homeFeaturedCaseTitleZh?: string | null;
+  homeFeaturedCaseTitleEn?: string | null;
+  homeFeaturedCaseDescZh?: string | null;
+  homeFeaturedCaseDescEn?: string | null;
+  homeFeaturedCaseImage?: StrapiMedia | null;
 };
 
 export function mapStrapiContactInfo(
   doc: StrapiContactDoc,
-  fallback: ContactInfoData
+  fallback: ContactInfoData,
+  cmsUrl: string
 ): ContactInfoData {
   const phones = doc.phones
     .split(/[\n,，;；]+/)
@@ -303,6 +332,24 @@ export function mapStrapiContactInfo(
     footerIntro: {
       zh: doc.footerIntroZh || fallback.footerIntro.zh,
       en: doc.footerIntroEn || fallback.footerIntro.en,
+    },
+    homeFeaturedCase: {
+      caseId: doc.homeFeaturedCaseId ?? fallback.homeFeaturedCase?.caseId ?? 6,
+      title:
+        doc.homeFeaturedCaseTitleZh || doc.homeFeaturedCaseTitleEn
+          ? {
+              zh: doc.homeFeaturedCaseTitleZh ?? "",
+              en: doc.homeFeaturedCaseTitleEn ?? "",
+            }
+          : fallback.homeFeaturedCase?.title,
+      desc:
+        doc.homeFeaturedCaseDescZh || doc.homeFeaturedCaseDescEn
+          ? {
+              zh: doc.homeFeaturedCaseDescZh ?? "",
+              en: doc.homeFeaturedCaseDescEn ?? "",
+            }
+          : fallback.homeFeaturedCase?.desc,
+      image: resolveMediaUrl(cmsUrl, doc.homeFeaturedCaseImage) || fallback.homeFeaturedCase?.image,
     },
   };
 }

@@ -1,6 +1,7 @@
 import { buildRealProductCatalog } from "./product-catalog";
 
 export type Locale = "zh" | "en";
+export type SiteMarket = "cn" | "global" | "all";
 
 /** 系列 Tab：音箱系统 / DSP / 软件 / 工程方案 */
 export type ProductSeriesGroup = "speaker" | "dsp" | "software" | "engineering";
@@ -38,6 +39,7 @@ export interface Product {
   productLine: ProductLineSlug;
   seriesGroup: ProductSeriesGroup;
   category: ProductCategory;
+  market?: SiteMarket;
 }
 
 
@@ -53,6 +55,7 @@ export type CaseSceneSlug =
 
 export interface CaseItem {
   id: number;
+  sortOrder?: number;
   type: CaseType;
   sceneSlug: CaseSceneSlug;
   title: { zh: string; en: string };
@@ -63,6 +66,7 @@ export interface CaseItem {
   image: string;
   gallery?: string[];
   highlights?: { zh: string[]; en: string[] };
+  market?: SiteMarket;
 }
 
 export type DownloadSubSlug =
@@ -88,6 +92,13 @@ export interface DownloadItem {
   type: "software" | "catalog";
   subCategory: DownloadSubSlug;
   cover: string;
+  /** 以下字段后台可编辑，缺省时前台用内置文案兜底 */
+  version?: string;
+  osType?: "windows" | "mac" | "cross-platform";
+  releasedAt?: string;
+  featured?: boolean;
+  desc?: { zh: string; en: string };
+  market?: SiteMarket;
 }
 
 export interface SceneItem {
@@ -110,6 +121,44 @@ export type ContactInfo = {
   address: { zh: string; en: string };
   mapQuery: string;
   footerIntro: { zh: string; en: string };
+  homeFeaturedCase?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+    desc?: { zh: string; en: string };
+    image?: string;
+  };
+};
+
+export type SocialLinkItem = {
+  platformKey: "wechat" | "douyin" | "channels";
+  label: { zh: string; en: string };
+  url: string;
+  qrImage?: string;
+  sortOrder: number;
+  enabled: boolean;
+};
+
+export type GlobalSettingData = {
+  logo?: string;
+  footerCopyright: { zh: string; en: string };
+  homeFeaturedProductIds?: number[];
+  homeFeaturedCase?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+    desc?: { zh: string; en: string };
+    image?: string;
+  };
+};
+
+export type SmartSelectionPageData = {
+  title: { zh: string; en: string };
+  subtitle: { zh: string; en: string };
+  buttons: {
+    generate: { zh: string; en: string };
+    regenerate: { zh: string; en: string };
+    copy: { zh: string; en: string };
+    contact: { zh: string; en: string };
+  };
 };
 
 export const contactInfo: ContactInfo = {
@@ -128,7 +177,60 @@ export const contactInfo: ContactInfo = {
     zh: "dBsource 专注专业音响系统研发与工程交付，为演出、体育、政企等场景提供从设计到调试的一站式声场解决方案。",
     en: "dBsource delivers professional audio systems and turnkey sound solutions for live events, sports venues and corporate projects.",
   },
+  homeFeaturedCase: {
+    caseId: 6,
+  },
 };
+
+export const globalSettingDefault: GlobalSettingData = {
+  logo: "/brand/logo.png",
+  footerCopyright: {
+    zh: "dBsource © 2024 版权所有",
+    en: "dBsource © 2024 All Rights Reserved",
+  },
+  homeFeaturedProductIds: [44, 46],
+  homeFeaturedCase: {
+    caseId: 6,
+  },
+};
+
+export const smartSelectionPageDefault: SmartSelectionPageData = {
+  title: { zh: "智能选型", en: "System Configurator" },
+  subtitle: {
+    zh: "本地规则引擎 + DeepSeek 专业分析",
+    en: "Local rules engine + DeepSeek professional analysis",
+  },
+  buttons: {
+    generate: { zh: "生成推荐方案", en: "Generate recommendation" },
+    regenerate: { zh: "重新生成", en: "Regenerate" },
+    copy: { zh: "复制方案", en: "Copy plan" },
+    contact: { zh: "咨询工程师", en: "Contact engineer" },
+  },
+};
+
+export const socialLinksDefault: SocialLinkItem[] = [
+  {
+    platformKey: "wechat",
+    label: { zh: "微信服务号", en: "WeChat Service" },
+    url: "https://mp.weixin.qq.com/s/q0hK-l94-osIJJAtLhnuUw",
+    sortOrder: 1,
+    enabled: true,
+  },
+  {
+    platformKey: "douyin",
+    label: { zh: "抖音", en: "Douyin" },
+    url: "https://v.douyin.com/XCka2kfqans/",
+    sortOrder: 2,
+    enabled: true,
+  },
+  {
+    platformKey: "channels",
+    label: { zh: "视频号", en: "WeChat Channels" },
+    url: "https://weixin.qq.com/sph/ALudYKClo",
+    sortOrder: 3,
+    enabled: true,
+  },
+];
 
 /** 画册真实型号目录（B 端 + C 端） */
 export const products: Product[] = buildRealProductCatalog();

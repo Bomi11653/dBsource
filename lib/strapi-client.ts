@@ -24,11 +24,11 @@ async function fetchWithTimeout(
 
 export async function fetchStrapiCollection<T>(
   path: string,
-  revalidate = 60
+  _revalidate = 60
 ): Promise<T[] | null> {
   try {
     const url = `${getCmsUrl()}/api${path}`;
-    const res = await fetchWithTimeout(url, { next: { revalidate } });
+    const res = await fetchWithTimeout(url, { cache: "no-store" });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: T[] };
     return Array.isArray(json.data) ? json.data : null;
@@ -39,11 +39,11 @@ export async function fetchStrapiCollection<T>(
 
 export async function fetchStrapiSingle<T>(
   path: string,
-  revalidate = 60
+  _revalidate = 60
 ): Promise<T | null> {
   try {
     const url = `${getCmsUrl()}/api${path}`;
-    const res = await fetchWithTimeout(url, { next: { revalidate } });
+    const res = await fetchWithTimeout(url, { cache: "no-store" });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: T | null };
     return json.data ?? null;

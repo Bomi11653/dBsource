@@ -57,7 +57,7 @@ export default function AiMessageFeedback({
         disabled={!!rating}
         onClick={() => rate("up")}
         className={`p-1 rounded-md transition-colors touch-active ${
-          rating === "up" ? "text-emerald-400" : "text-gray-500 hover:text-white"
+          rating === "up" ? "text-white" : "text-gray-500 hover:text-white"
         }`}
         aria-label={t.ai.feedbackUp}
       >

@@ -55,6 +55,31 @@
     "sortOrder": {
       "type": "integer",
       "default": 0
+    },
+    "version": {
+      "type": "string"
+    },
+    "osType": {
+      "type": "enumeration",
+      "enum": ["windows", "mac", "cross-platform"]
+    },
+    "releasedAt": {
+      "type": "date"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "descZh": {
+      "type": "text"
+    },
+    "descEn": {
+      "type": "text"
+    },
+    "market": {
+      "type": "enumeration",
+      "enum": ["cn", "global", "all"],
+      "default": "all"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { assertAdminRequest } from "@/lib/admin-auth";
+import { assertAdminRequest, isAdminAuthEnabled } from "@/lib/admin-auth";
 import { resolveClientCmsUrl } from "@/lib/resolve-client-cms-url";
 import { getAdminToken } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
@@ -9,6 +9,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const denied = assertAdminRequest(request);
   if (denied) return denied;
+
+  /* 未启用后台口令时绝不下发 Token（浏览器会自动回退到服务端代理上传） */
+  if (!isAdminAuthEnabled()) {
+    return NextResponse.json(
+      { ok: false, error: "未配置 ADMIN_TOKEN，直传通道已禁用，将使用代理上传。" },
+      { status: 403 }
+    );
+  }
 
   const token = getAdminToken();
   if (!token) {

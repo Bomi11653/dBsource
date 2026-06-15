@@ -16,16 +16,18 @@ export default function ProductGridCard({
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group card-touch flex flex-col h-full bg-black/80 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/25 hover:shadow-[0_8px_32px_rgba(46,184,150,0.12)] transition-all duration-300 md:hover:scale-[1.02]"
+      className="group card-touch flex flex-col h-full bg-black/80 border border-white/10 rounded-xl overflow-hidden hover:border-white/25 hover:shadow-[0_8px_32px_rgba(255,255,255,0.08)] transition-all duration-300 md:hover:scale-[1.02]"
     >
       <div className="relative shrink-0" style={{ height: 180 }}>
         <SafeImage
           src={product.image}
           alt={product.name[locale]}
           frameHeight={180}
+          fit="contain"
+          frameClassName="bg-white p-2"
           sizes="(max-width: 640px) 100vw, 25vw"
           loading="lazy"
-          className="opacity-85 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
+          className="opacity-95 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
         />
         {product.series && (
           <span className="absolute top-2 left-2 z-10 text-[10px] uppercase tracking-wider px-2 py-0.5 bg-black/70 border border-white/10 text-brand-gold">

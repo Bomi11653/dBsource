@@ -7,9 +7,10 @@ import StackedSpecPanel from "@/components/StackedSpecPanel";
 import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
 import { getProductGallery } from "@/lib/products";
+import { Check, Copy, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export default function ProductDetailContent({
   product,
@@ -20,10 +21,43 @@ export default function ProductDetailContent({
 }) {
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [specsCopied, setSpecsCopied] = useState(false);
   const gallery = getProductGallery(product);
   const body = product.detail?.[locale] ?? product.desc[locale];
   const stackedPages = getStackedSpecPages(product.model);
   const specSheet = stackedPages ? null : getSpecSheetForProduct(product);
+
+  const copySpecs = useCallback(() => {
+    const lines: string[] = [`${product.name[locale]}（${product.model}）`];
+    if (product.specs) lines.push(product.specs[locale]);
+    const sheets = stackedPages ?? (specSheet ? [specSheet] : []);
+    for (const sheet of sheets) {
+      if (sheets.length > 1 || sheet.model !== product.model) {
+        lines.push("", `[${sheet.model}]`);
+      } else {
+        lines.push("");
+      }
+      for (const row of sheet.rows) {
+        lines.push(`${row.label[locale]}: ${row.value[locale]}`);
+      }
+    }
+    navigator.clipboard
+      .writeText(lines.join("\n").trim())
+      .then(() => {
+        setSpecsCopied(true);
+        setTimeout(() => setSpecsCopied(false), 2000);
+      })
+      .catch(() => {});
+  }, [locale, product, specSheet, stackedPages]);
+
+  const downloadName = useCallback(
+    (src: string, index: number) => {
+      const ext = src.split("?")[0].split(".").pop();
+      const safeExt = ext && ext.length <= 5 ? ext : "jpg";
+      return `${product.model}-${index + 1}.${safeExt}`;
+    },
+    [product.model]
+  );
 
   return (
     <div className="bg-black text-white min-h-screen pt-24">
@@ -64,11 +98,6 @@ export default function ProductDetailContent({
             className=""
           />
         </div>
-        {product.specs && (
-          <p className="text-sm text-gray-500 font-mono mt-6 border-t border-white/10 pt-6">
-            {product.specs[locale]}
-          </p>
-        )}
       </section>
 
       <section
@@ -84,22 +113,36 @@ export default function ProductDetailContent({
           }`}
         >
           {gallery.map((src, i) => (
-            <button
+            <div
               key={src + i}
-              type="button"
-              onClick={() => setLightboxIndex(i)}
-              className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors cursor-zoom-in"
-              aria-label={`${product.name[locale]} ${i + 1}`}
+              className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors"
             >
-              <Image
-                src={src}
-                alt={`${product.name[locale]} ${i + 1}`}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, 33vw"
-              />
-              <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(i)}
+                className="absolute inset-0 cursor-zoom-in"
+                aria-label={`${product.name[locale]} ${i + 1}`}
+              >
+                <Image
+                  src={src}
+                  alt={`${product.name[locale]} ${i + 1}`}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  sizes="(max-width: 640px) 100vw, 33vw"
+                />
+                <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              </button>
+              <a
+                href={src}
+                download={downloadName(src, i)}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg bg-black/70 backdrop-blur border border-white/20 text-xs text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/90 transition-all touch-active"
+                title={locale === "zh" ? "下载原图" : "Download image"}
+              >
+                <Download size={14} />
+                {locale === "zh" ? "下载" : "Save"}
+              </a>
+            </div>
           ))}
         </div>
       </section>
@@ -121,7 +164,32 @@ export default function ProductDetailContent({
           id="product-specs"
           className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
         >
-          <h2 className="text-2xl font-medium mb-8">{t.products.specsTitle}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h2 className="text-2xl font-medium">{t.products.specsTitle}</h2>
+            <button
+              type="button"
+              onClick={copySpecs}
+              className={`inline-flex items-center gap-2 min-h-[44px] px-5 rounded-xl border text-sm transition-colors touch-active ${
+                specsCopied
+                  ? "border-white bg-white text-black"
+                  : "border-white/20 text-gray-300 hover:border-white/50 hover:text-white"
+              }`}
+            >
+              {specsCopied ? <Check size={15} /> : <Copy size={15} />}
+              {specsCopied
+                ? locale === "zh"
+                  ? "已复制"
+                  : "Copied"
+                : locale === "zh"
+                  ? "复制参数"
+                  : "Copy specs"}
+            </button>
+          </div>
+          {product.specs && (
+            <p className="text-sm text-gray-400 font-mono mb-6 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4">
+              {product.specs[locale]}
+            </p>
+          )}
           {stackedPages ? (
             <StackedSpecPanel pages={stackedPages} locale={locale} />
           ) : specSheet ? (
@@ -149,10 +217,6 @@ export default function ProductDetailContent({
                 </table>
               </div>
             </>
-          ) : product.specs ? (
-            <pre className="whitespace-pre-wrap text-sm text-gray-300 font-mono leading-relaxed rounded-xl border border-white/10 p-5 bg-white/[0.02]">
-              {product.specs[locale]}
-            </pre>
           ) : null}
         </section>
       )}

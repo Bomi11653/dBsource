@@ -1,11 +1,11 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { ADMIN_SECTIONS, strapiAdminUrl } from "@/lib/admin-sections";
-import { getAdminStats } from "@/lib/admin-stats";
+import { getAdminStats, getLeadDashboard } from "@/lib/admin-stats";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminDashboardPage() {
-  const stats = await getAdminStats();
+  const [stats, leadDashboard] = await Promise.all([getAdminStats(), getLeadDashboard()]);
 
   return (
     <AdminShell
@@ -37,6 +37,46 @@ export default async function AdminDashboardPage() {
         })}
       </div>
 
+      <div className="grid lg:grid-cols-3 gap-4 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-xs text-gray-500">询盘总量（近500条）</p>
+          <p className="text-2xl font-semibold mt-1">{leadDashboard.total}</p>
+          <p className="text-xs text-gray-500 mt-2">
+            已确认率 {leadDashboard.qualifiedRate}% · 成交率 {leadDashboard.winRate}%
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-xs text-gray-500 mb-2">主要来源渠道</p>
+          <ul className="space-y-1.5 text-sm">
+            {leadDashboard.topSources.length ? (
+              leadDashboard.topSources.map((item) => (
+                <li key={item.source} className="flex justify-between text-gray-300">
+                  <span>{item.source}</span>
+                  <span className="text-brand-gold">{item.count}</span>
+                </li>
+              ))
+            ) : (
+              <li className="text-gray-500">暂无数据</li>
+            )}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-xs text-gray-500 mb-2">主要国家/地区</p>
+          <ul className="space-y-1.5 text-sm">
+            {leadDashboard.topCountries.length ? (
+              leadDashboard.topCountries.map((item) => (
+                <li key={item.country} className="flex justify-between text-gray-300">
+                  <span>{item.country}</span>
+                  <span className="text-brand-gold">{item.count}</span>
+                </li>
+              ))
+            ) : (
+              <li className="text-gray-500">暂无数据</li>
+            )}
+          </ul>
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-brand-gold/20 bg-brand-gold/5 p-5 text-sm space-y-2">
         <p className="text-brand-gold font-medium">使用方式</p>
         <ol className="list-decimal list-inside text-xs text-gray-400 space-y-1">
@@ -46,6 +86,10 @@ export default async function AdminDashboardPage() {
         </ol>
         <p className="text-xs text-gray-500 pt-2">
           官网预览 <a href="http://127.0.0.1:3003" className="text-brand-gold hover:underline">127.0.0.1:3003</a>
+          {" · "}
+          <a href="/templates/monthly-lead-review.md" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-gold">
+            月度复盘模板
+          </a>
           {" · "}
           <a href={strapiAdminUrl("")} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-gold inline-flex items-center gap-1">
             高级设置 Strapi <ExternalLink size={12} />

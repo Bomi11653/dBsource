@@ -25,10 +25,15 @@ export function smartSearch(
   searchProducts(data.products, expandedQuery || q)
     .slice(0, 6)
     .forEach((p) => {
+      const name = p.name[locale];
       hits.push({
         type: "product",
         id: p.id,
-        title: `${p.model} · ${p.name[locale]}`,
+        /* 名称与型号相同则只显示一次 */
+        title:
+          name.trim().toLowerCase() === p.model.trim().toLowerCase()
+            ? p.model
+            : `${p.model} · ${name}`,
         subtitle: p.series?.[locale],
         href: `/products/${p.id}`,
       });

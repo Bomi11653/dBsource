@@ -35,7 +35,7 @@ export default function ProductSearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={t.products.searchPlaceholder}
-          className="w-full min-h-[48px] rounded-2xl border border-white/15 bg-white/5 py-3 pl-12 pr-12 text-base text-white placeholder:text-gray-500 outline-none transition-colors focus:border-[#2eb896]/50 focus:bg-white/[0.07]"
+          className="w-full min-h-[48px] rounded-2xl border border-white/15 bg-white/5 py-3 pl-12 pr-12 text-base text-white placeholder:text-gray-500 outline-none transition-colors focus:border-white/50 focus:bg-white/[0.07]"
           autoComplete="off"
           enterKeyHint="search"
         />

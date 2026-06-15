@@ -302,13 +302,23 @@ export function GalleryUploadField({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
-  async function handleFile(file: File) {
+  async function handleFiles(files: File[]) {
+    if (!files.length) return;
     setUploading(true);
     setError("");
     setProgress(0);
+    const total = files.length;
+    const nextItems = [...items];
     try {
-      const result = await uploadToAdmin(file, setProgress);
-      onChange([...items, { id: result.id, url: result.url }]);
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const result = await uploadToAdmin(file, (pct) => {
+          const merged = Math.round(((index + pct / 100) / total) * 100);
+          setProgress(merged);
+        });
+        nextItems.push({ id: result.id, url: result.url });
+      }
+      onChange(nextItems);
     } catch (e) {
       setError(e instanceof Error ? e.message : "上传失败");
     } finally {
@@ -320,6 +330,13 @@ export function GalleryUploadField({
 
   function removeAt(index: number) {
     onChange(items.filter((_, i) => i !== index));
+  }
+
+  function clearAll() {
+    if (!items.length) return;
+    const ok = window.confirm(`确定清空当前图集的全部 ${items.length} 张图片吗？此操作可在保存前撤销。`);
+    if (!ok) return;
+    onChange([]);
   }
 
   return (
@@ -359,10 +376,11 @@ export function GalleryUploadField({
             ref={inputRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) handleFiles(files);
             }}
           />
           <button
@@ -372,8 +390,18 @@ export function GalleryUploadField({
             className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs text-gray-300 hover:border-brand-gold/40 hover:text-white transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            {uploading ? `上传中 ${progress}%` : `追加图片（已有 ${items.length} 张）`}
+            {uploading ? `上传中 ${progress}%` : `上传图片（支持单张 / 多选）`}
           </button>
+          {items.length > 0 ? (
+            <button
+              type="button"
+              onClick={clearAll}
+              disabled={uploading}
+              className="ml-2 inline-flex items-center gap-2 rounded-lg border border-red-500/35 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-colors disabled:opacity-50"
+            >
+              清空全部图片
+            </button>
+          ) : null}
           {uploading ? (
             <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-white/10 overflow-hidden">
               <div
@@ -473,6 +501,97 @@ export function FileUploadField({
           <p className="text-[10px] text-gray-600 mt-1.5">支持 PDF / ZIP / 安装包，单文件最大 512MB</p>
           {error ? <p className="text-xs text-red-400 mt-2">{error}</p> : null}
         </div>
+      </div>
+    </Field>
+  );
+}
+
+type ProductSpecExtractionResult = {
+  specsZh: string;
+  specsEn: string;
+  descZh?: string;
+  descEn?: string;
+};
+
+export function PdfSpecImportField({
+  modelHint,
+  onExtract,
+}: {
+  modelHint?: string;
+  onExtract: (data: ProductSpecExtractionResult) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+
+  async function handlePdf(file: File) {
+    setUploading(true);
+    setError("");
+    setStatus("");
+    setProgress(0);
+    try {
+      const uploaded = await uploadToAdmin(file, setProgress);
+      setStatus("PDF 已上传，正在识别参数…");
+
+      const res = await fetch("/api/admin/product-specs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl: uploaded.url, modelHint: modelHint ?? "" }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: ProductSpecExtractionResult;
+      };
+      if (!json.ok || !json.data) {
+        throw new Error(json.error || "PDF 参数识别失败");
+      }
+
+      onExtract(json.data);
+      setStatus("识别完成，参数已自动填入，记得保存并发布。");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "识别失败");
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <Field label="参数 PDF 识别（自动填充参数）" className="sm:col-span-2">
+      <div className="space-y-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handlePdf(f);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs text-gray-300 hover:border-brand-gold/40 hover:text-white transition-colors disabled:opacity-50"
+        >
+          {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {uploading ? `处理中 ${progress}%` : "上传 PDF 并自动识别参数"}
+        </button>
+        {uploading ? (
+          <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-brand-gold transition-all duration-200"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        ) : null}
+        {status ? <p className="text-xs text-emerald-400">{status}</p> : null}
+        {error ? <p className="text-xs text-red-400">{error}</p> : null}
       </div>
     </Field>
   );
