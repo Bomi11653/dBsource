@@ -55,30 +55,39 @@ chmod +x scripts/*.sh
 docker compose restart web
 ```
 
-## 导入本地数据
+## 导入本地数据（SQLite → PostgreSQL）
 
-GitHub **不包含**产品和图片，需从开发机迁移：
+GitHub **不包含**产品和图片。完整步骤见：
 
-### 图片（uploads）
+**[docs/MIGRATE-SQLITE-TO-POSTGRES.md](docs/MIGRATE-SQLITE-TO-POSTGRES.md)**
 
-```bash
-# 在 ECS 上，从本机 scp 上传后执行：
-./scripts/import-uploads.sh /root/uploads
-```
+### 快速流程
 
-或从 Windows 开发机：
+**Windows 开发机 — 导出：**
 
 ```powershell
-scp -r D:\dbsource\data\cms\uploads root@你的ECS_IP:/root/uploads
+cd deploy\scripts
+.\export-local-data.ps1              # 只导出内容（推荐）
+# .\export-local-data.ps1 -IncludeFiles   # 内容+图片一起导出
 ```
 
-### 数据库（SQLite → PostgreSQL）
+**上传到 ECS：**
 
-1. 在 Strapi 后台使用 **Settings → Transfer Tokens** 导出/导入，或
-2. 使用 Strapi CLI `strapi export` / `strapi import`，或
-3. 联系技术支持用 `pgloader` 从 SQLite 迁移
+```powershell
+scp D:\dbsource\data\exports\dbsource-*.tar.gz root@ECS_IP:/root/
+scp -r D:\dbsource\data\cms\uploads root@ECS_IP:/root/uploads
+```
 
-本地数据路径：`D:\dbsource\data\cms\data.db`
+**ECS — 导入：**
+
+```bash
+cd ~/dBsource/deploy
+./scripts/import-strapi-data.sh /root/dbsource-*.tar.gz
+./scripts/import-uploads.sh /root/uploads
+# 配置 STRAPI_API_TOKEN 后: docker compose restart web
+```
+
+本地数据路径：`D:\dbsource\data\cms\data.db`、`D:\dbsource\data\cms\uploads\`
 
 ## HTTPS（阿里云免费证书）
 
