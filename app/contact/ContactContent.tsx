@@ -22,7 +22,7 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
     utmContent: "",
     landingPage: "",
     referrer: "",
-    language: locale,
+    language: locale === "zh" ? "zh-CN" : "en",
   });
 
   const mapSrc =`https://www.google.com/maps?q=${encodeURIComponent(contact.mapQuery)}&output=embed&z=15`;
@@ -42,7 +42,7 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
       utmContent: query.get("utm_content") ?? "",
       landingPage: window.location.href,
       referrer: document.referrer || "",
-      language: navigator.language || locale,
+      language: navigator.language || (locale === "zh" ? "zh-CN" : "en"),
     });
   }, [locale]);
 

@@ -293,6 +293,12 @@ export type ContactInfoData = {
   address: { zh: string; en: string };
   mapQuery: string;
   footerIntro: { zh: string; en: string };
+  homeFeaturedCase?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+    desc?: { zh: string; en: string };
+    image?: string;
+  };
 };
 
 type StrapiContactDoc = {

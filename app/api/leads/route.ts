@@ -1,4 +1,4 @@
-import { intentLabel, scoreLeadIntent } from "@/lib/ai/lead-scoring";
+import { computeLeadScore, intentLabel, scoreLeadIntent } from "@/lib/ai/lead-scoring";
 import { submitContactLead } from "@/lib/cms";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -93,6 +93,14 @@ export async function POST(request: NextRequest) {
     phone: normalizeText(body.phone) || undefined,
     product: product || undefined,
   });
+  const intentScore = computeLeadScore({
+    name,
+    message,
+    company: normalizeText(body.company) || undefined,
+    email: normalizeText(body.email) || undefined,
+    phone: normalizeText(body.phone) || undefined,
+    product: product || undefined,
+  });
   const intentTag = `[意向:${intentLabel(intent, "zh")}]`;
   const productTag = product ? `[产品: ${product}]` : "";
   const fullMessage = [intentTag, productTag, message].filter(Boolean).join("\n");
@@ -104,7 +112,7 @@ export async function POST(request: NextRequest) {
     phone: normalizeText(body.phone) || undefined,
     message: fullMessage,
     product: product || undefined,
-    intentScore: intent,
+    intentScore,
     intentTag: intentLabel(intent, "zh"),
     language: language || undefined,
     country: country || undefined,

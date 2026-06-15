@@ -136,11 +136,11 @@ export async function getLeadDashboard(): Promise<LeadDashboard> {
     byStatus,
     qualifiedRate: total > 0 ? Math.round((qualified / total) * 1000) / 10 : 0,
     winRate: total > 0 ? Math.round((won / total) * 1000) / 10 : 0,
-    topSources: [...sourceCount.entries()]
+    topSources: Array.from(sourceCount.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([source, count]) => ({ source, count })),
-    topCountries: [...countryCount.entries()]
+    topCountries: Array.from(countryCount.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([country, count]) => ({ country, count })),
