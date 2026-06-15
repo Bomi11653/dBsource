@@ -1,0 +1,5 @@
+# Place SSL certificates here:
+#   certs/www/fullchain.pem
+#   certs/www/privkey.pem
+#   certs/cms/fullchain.pem
+#   certs/cms/privkey.pem

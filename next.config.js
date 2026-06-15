@@ -7,6 +7,7 @@ const cmsOrigin = (
 
 const nextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   transpilePackages: ["three"],
   async rewrites() {
     return [
