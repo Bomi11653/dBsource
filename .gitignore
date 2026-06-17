@@ -1,8 +1,44 @@
-node_modules
-.next
-out
-.env
-.env*.local
-.cache
+# Dependencies & build outputs
+node_modules/
+.next/
+out/
+dist/
+build/
+cms/build/
+cms/dist/
+cms/.cache/
+.cache/
 *.tsbuildinfo
+
+# Environment & secrets (never commit real values)
+.env
+.env.*
+!.env.example
+!.env.production.local.example
+!cms/.env.example
+!deploy/.env.example
+ecosystem.config.js
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+.tmp/
+
+# CMS uploads (restore via export/import)
+cms/public/uploads/*
+!cms/public/uploads/.gitkeep
+
+# Deploy TLS material
+deploy/nginx/certs/*
+!deploy/nginx/certs/.gitkeep
+
+# OS / IDE / logs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Generated docs
 docs/*.pptx

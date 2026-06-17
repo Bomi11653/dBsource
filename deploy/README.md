@@ -2,6 +2,10 @@
 
 Docker Compose 一键部署：**Next.js 官网 + 内容后台 + Strapi + PostgreSQL + Nginx**。
 
+> **完整部署流程（推荐从这里开始）：** [docs/DEPLOYMENT-GUIDE.md](docs/DEPLOYMENT-GUIDE.md)  
+> **零基础小白（飞书版）：** [docs/飞书-零基础部署指南.md](docs/飞书-零基础部署指南.md)  
+> **PM2 裸机部署（Ubuntu + Nginx + PM2）：** [docs/ECS-PM2-NGINX-DEPLOY.md](docs/ECS-PM2-NGINX-DEPLOY.md)
+
 ## 架构
 
 ```
@@ -9,6 +13,8 @@ Internet → Nginx (:80/:443)
             ├── www.dbsourceaudio.com  → web (Next.js :3000)
             └── cms.dbsourceaudio.com  → strapi (:1337) → PostgreSQL
 ```
+
+**从 Vercel 切换：** 见 [docs/VERCEL-TO-ALIYUN-CUTOVER.md](docs/VERCEL-TO-ALIYUN-CUTOVER.md)
 
 ## 服务器要求
 
