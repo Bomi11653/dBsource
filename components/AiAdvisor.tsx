@@ -355,6 +355,10 @@ export default function AiAdvisor() {
                         links={m.links}
                         onNavigate={closePanel}
                         prominent={m.fallback}
+                        contactProduct={
+                          m.links.find((l) => l.type === "product")?.label ||
+                          (pageContext?.type === "product" ? pageContext.model : undefined)
+                        }
                       />
                     ) : null}
                     {m.role === "assistant" && m.needsHuman ? (

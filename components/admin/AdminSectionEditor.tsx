@@ -58,17 +58,26 @@ type HomeFeaturedCaseDraft = StrapiRow & {
 };
 
 const LEAD_STATUS_OPTIONS = [
-  { value: "new", label: "新线索" },
-  { value: "read", label: "已读" },
-  { value: "qualified", label: "已确认" },
+  { value: "new", label: "未处理" },
+  { value: "contacted", label: "已联系" },
   { value: "quoted", label: "已报价" },
   { value: "won", label: "已成交" },
-  { value: "lost", label: "已丢单" },
-  { value: "archived", label: "归档" },
+  { value: "invalid", label: "无效" },
 ];
 
+const LEGACY_LEAD_STATUS: Record<string, string> = {
+  read: "已联系",
+  qualified: "已联系",
+  lost: "无效",
+  archived: "无效",
+};
+
 function leadStatusLabel(value: string): string {
-  return LEAD_STATUS_OPTIONS.find((item) => item.value === value)?.label ?? value;
+  return (
+    LEAD_STATUS_OPTIONS.find((item) => item.value === value)?.label ??
+    LEGACY_LEAD_STATUS[value] ??
+    value
+  );
 }
 
 function docId(row: StrapiRow) {

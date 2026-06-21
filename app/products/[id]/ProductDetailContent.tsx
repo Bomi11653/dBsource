@@ -3,6 +3,7 @@
 import type { CaseItem, Product } from "@/data/mock";
 import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
+import ProductStickyCta, { ProductDetailActions } from "@/components/ProductStickyCta";
 import StackedSpecPanel from "@/components/StackedSpecPanel";
 import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
@@ -15,9 +16,11 @@ import { useCallback, useState } from "react";
 export default function ProductDetailContent({
   product,
   relatedCases,
+  recommendedProducts = [],
 }: {
   product: Product;
   relatedCases: CaseItem[];
+  recommendedProducts?: Product[];
 }) {
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -60,7 +63,7 @@ export default function ProductDetailContent({
   );
 
   return (
-    <div className="bg-black text-white min-h-screen pt-24">
+    <div className="bg-black text-white min-h-screen pt-24 pb-24 md:pb-0">
       <section className="px-6 md:px-20 py-16 md:py-24 border-b border-white/10 max-w-6xl mx-auto">
         <Link
           href="/products"
@@ -76,13 +79,8 @@ export default function ProductDetailContent({
         <h1 className="text-4xl md:text-5xl font-medium mb-2">{product.name[locale]}</h1>
         <p className="text-brand-gold font-mono text-lg mb-8">{product.model}</p>
         <p className="text-gray-400 leading-relaxed max-w-3xl text-lg">{body}</p>
-        <div className="mt-8 flex flex-wrap gap-4">
-          <Link
-            href={`/contact?product=${encodeURIComponent(product.model)}`}
-            className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-xl bg-brand-gold/90 text-black text-sm font-medium hover:bg-brand-gold transition-colors touch-active"
-          >
-            {t.products.requestQuote}
-          </Link>
+        <ProductDetailActions product={product} className="mt-8" />
+        <div className="mt-6">
           <BrowseGuide
             title={t.guide.exploreTitle}
             items={[
@@ -92,6 +90,9 @@ export default function ProductDetailContent({
                 : []),
               ...(relatedCases.length
                 ? [{ label: t.guide.productCases, targetId: "product-cases" }]
+                : []),
+              ...(recommendedProducts.length
+                ? [{ label: t.products.recommendedSystems, targetId: "product-recommendations" }]
                 : []),
               { label: t.guide.productsSpeaker, href: "/products" },
             ]}
@@ -221,6 +222,41 @@ export default function ProductDetailContent({
         </section>
       )}
 
+      {recommendedProducts.length > 0 && (
+        <section
+          id="product-recommendations"
+          className="px-6 md:px-20 py-16 md:py-20 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
+        >
+          <h2 className="text-2xl font-medium mb-2">{t.products.recommendedSystems}</h2>
+          <p className="text-sm text-gray-500 mb-8">{t.products.recommendedSystemsDesc}</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {recommendedProducts.map((p) => (
+              <Link
+                key={p.id}
+                href={`/products/${p.id}`}
+                className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 hover:border-brand-gold/35 transition-colors"
+              >
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-zinc-900 mb-3">
+                  {p.image ? (
+                    <Image
+                      src={p.image}
+                      alt={p.name[locale]}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform"
+                      sizes="240px"
+                    />
+                  ) : null}
+                </div>
+                <p className="text-xs text-brand-gold font-mono">{p.model}</p>
+                <p className="text-sm font-medium mt-1 group-hover:text-brand-gold transition-colors">
+                  {p.name[locale]}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {relatedCases.length > 0 && (
       <section
         id="product-cases"
@@ -252,6 +288,7 @@ export default function ProductDetailContent({
         </div>
       </section>
       )}
+      <ProductStickyCta product={product} />
     </div>
   );
 }

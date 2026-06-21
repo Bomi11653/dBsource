@@ -2,7 +2,7 @@ import CaseDetailContent from "./CaseDetailContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getCaseById, getCases } from "@/lib/cms";
 import { getRelatedCases } from "@/lib/cases";
-import { pageMetadata } from "@/lib/seo";
+import { caseJsonLd, pageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 type Props = { params: { id: string } };
@@ -16,7 +16,12 @@ export async function generateMetadata({ params }: Props) {
   const id = Number(params.id);
   const caseItem = await getCaseById(id);
   if (!caseItem) return {};
-  return pageMetadata(caseItem.title.zh, caseItem.desc.zh, `/cases/${id}`);
+  return pageMetadata(
+    caseItem.title.zh,
+    caseItem.desc.zh,
+    `/cases/${id}`,
+    caseItem.image
+  );
 }
 
 export default async function CaseDetailPage({ params }: Props) {
@@ -27,11 +32,18 @@ export default async function CaseDetailPage({ params }: Props) {
   if (!caseItem) notFound();
 
   const relatedCases = getRelatedCases(id, allCases);
+  const jsonLd = caseJsonLd(caseItem);
 
   return (
-    <main>
-      <CaseDetailContent caseItem={caseItem} relatedCases={relatedCases} />
-      <SiteFooter />
-    </main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
+        <CaseDetailContent caseItem={caseItem} relatedCases={relatedCases} />
+        <SiteFooter />
+      </main>
+    </>
   );
 }

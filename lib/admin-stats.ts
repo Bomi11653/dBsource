@@ -4,7 +4,7 @@ import { fetchStrapiWithToken, getCmsUrl } from "./strapi-client";
 async function countCollection(endpoint: string): Promise<number> {
   try {
     const url = `${getCmsUrl()}/api${endpoint}&pagination[pageSize]=1&fields[0]=id`;
-    const res = await fetch(url, { next: { revalidate: 0 } });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return 0;
     const json = (await res.json()) as {
       data?: unknown[];
@@ -128,8 +128,13 @@ export async function getLeadDashboard(): Promise<LeadDashboard> {
   }
 
   const total = rows.length;
-  const qualified = (byStatus.qualified ?? 0) + (byStatus.quoted ?? 0) + (byStatus.won ?? 0);
+  const contacted =
+    (byStatus.contacted ?? 0) + (byStatus.read ?? 0) + (byStatus.qualified ?? 0);
+  const quoted = byStatus.quoted ?? 0;
   const won = byStatus.won ?? 0;
+  const invalid =
+    (byStatus.invalid ?? 0) + (byStatus.lost ?? 0) + (byStatus.archived ?? 0);
+  const qualified = contacted + quoted + won;
 
   return {
     total,

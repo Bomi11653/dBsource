@@ -40,7 +40,7 @@
     "message": { "type": "text", "required": true },
     "status": {
       "type": "enumeration",
-      "enum": ["new", "read", "qualified", "quoted", "won", "lost", "archived"],
+      "enum": ["new", "contacted", "quoted", "won", "invalid", "read", "qualified", "lost", "archived"],
       "default": "new"
     }
   }

@@ -593,7 +593,7 @@ export interface ApiLeadLead extends Struct.CollectionTypeSchema {
     publishedAt: Schema.Attribute.DateTime;
     referrer: Schema.Attribute.String;
     status: Schema.Attribute.Enumeration<
-      ["new", "read", "qualified", "quoted", "won", "lost", "archived"]
+      ["new", "contacted", "quoted", "won", "invalid", "read", "qualified", "lost", "archived"]
     > &
       Schema.Attribute.DefaultTo<"new">;
     updatedAt: Schema.Attribute.DateTime;

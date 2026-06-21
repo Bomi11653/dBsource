@@ -1,13 +1,27 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { memo, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-function Wave() {
+function useHeroMotionPrefs() {
+  const [lite, setLite] = useState(true);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setLite(mobile || coarse || reduced);
+  }, []);
+
+  return lite;
+}
+
+function Wave({ paused }: { paused: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
+    if (paused) return;
     const material = ref.current?.material as THREE.ShaderMaterial | undefined;
     if (material?.uniforms?.uTime) {
       material.uniforms.uTime.value = clock.elapsedTime;
@@ -49,18 +63,59 @@ function Wave() {
   );
 }
 
-function ShaderHero() {
+function HeroLiteFallback() {
   return (
-    <div className="relative h-screen-safe w-full bg-black">
+    <div className="absolute inset-0 overflow-hidden bg-black">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(45,212,191,0.12),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_60%,rgba(201,169,98,0.1),transparent_50%)]" />
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+    </div>
+  );
+}
+
+function ShaderHeroCanvas() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPaused(!entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={rootRef} className="absolute inset-0">
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50 }}
-        dpr={[1, 1.5]}
-        frameloop="always"
+        dpr={[1, 1.25]}
+        frameloop={paused ? "never" : "always"}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <ambientLight intensity={0.4} />
-        <Wave />
+        <Wave paused={paused} />
       </Canvas>
+    </div>
+  );
+}
+
+function ShaderHero() {
+  const lite = useHeroMotionPrefs();
+
+  return (
+    <div className="relative h-screen-safe w-full bg-black">
+      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas />}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black" />
     </div>
   );

@@ -226,3 +226,20 @@ export function getRelatedCases(product: Product, allCases: CaseItem[] = cases):
   );
   return (matched.length ? matched : allCases).slice(0, 2);
 }
+
+/** 同系列 / 同产品线推荐，用于详情页「系统搭配」 */
+export function getRecommendedProducts(
+  product: Product,
+  allProducts: Product[],
+  limit = 4
+): Product[] {
+  const others = allProducts.filter((p) => p.id !== product.id);
+  const sameLine = others.filter(
+    (p) =>
+      p.productLine === product.productLine ||
+      p.seriesGroup === product.seriesGroup ||
+      p.model.split("-")[0] === product.model.split("-")[0]
+  );
+  const pool = sameLine.length >= 2 ? sameLine : others;
+  return pool.slice(0, limit);
+}

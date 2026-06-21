@@ -1,23 +1,26 @@
 import type { Metadata } from "next";
+import type { CaseItem, Product } from "@/data/mock";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.dbsource.com";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.dbsourceaudio.com";
 
 export const siteConfig = {
   name: "dBsource",
   title: "dBsource | 专业音响品牌官网",
   description:
     "dBsource 专业音响系统 — WebGL 品牌官网、产品中心、工程案例、软件下载与工程服务。东莞新声电子科技有限公司。",
-  url: siteUrl,
+  url: siteUrl.replace(/\/$/, ""),
   locale: "zh_CN",
 };
 
 export function pageMetadata(
   title: string,
   description: string,
-  path = ""
+  path = "",
+  imageUrl?: string
 ): Metadata {
   const url = `${siteConfig.url}${path}`;
-  const ogImage = `${siteConfig.url}/images/cases/cases-hero-bg.png`;
+  const ogImage = imageUrl || `${siteConfig.url}/images/cases/cases-hero-bg.png`;
   return {
     title,
     description,
@@ -28,7 +31,7 @@ export function pageMetadata(
       siteName: siteConfig.name,
       locale: siteConfig.locale,
       type: "website",
-      images: [{ url: ogImage, width: 1200, height: 630, alt: siteConfig.name }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
@@ -55,6 +58,49 @@ export function organizationJsonLd() {
       addressLocality: "东莞市",
       addressRegion: "广东省",
       addressCountry: "CN",
+    },
+  };
+}
+
+export function productJsonLd(product: Product, locale: "zh" | "en" = "zh") {
+  const image = product.image?.startsWith("http")
+    ? product.image
+    : product.image
+      ? `${siteConfig.url}${product.image.startsWith("/") ? "" : "/"}${product.image}`
+      : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name[locale],
+    description: product.desc[locale],
+    sku: product.model,
+    brand: {
+      "@type": "Brand",
+      name: "dBsource",
+    },
+    ...(image ? { image: [image] } : {}),
+    url: `${siteConfig.url}/products/${product.id}`,
+  };
+}
+
+export function caseJsonLd(caseItem: CaseItem, locale: "zh" | "en" = "zh") {
+  const image = caseItem.image?.startsWith("http")
+    ? caseItem.image
+    : caseItem.image
+      ? `${siteConfig.url}${caseItem.image.startsWith("/") ? "" : "/"}${caseItem.image}`
+      : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: caseItem.title[locale],
+    description: caseItem.desc[locale],
+    ...(image ? { image: [image] } : {}),
+    url: `${siteConfig.url}/cases/${caseItem.id}`,
+    author: {
+      "@type": "Organization",
+      name: "dBsource",
     },
   };
 }

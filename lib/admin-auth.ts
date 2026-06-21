@@ -34,6 +34,16 @@ export function extractAdminToken(request: NextRequest): string | null {
   );
 }
 
+export function adminCookieOptions(maxAge = 60 * 60 * 24 * 7) {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+    path: "/",
+    maxAge,
+  };
+}
+
 export function assertAdminRequest(request: NextRequest): NextResponse | null {
   if (!isAdminAuthEnabled()) {
     /* 本地开发免登录；生产环境必须配置 ADMIN_TOKEN，否则锁定全部后台接口 */

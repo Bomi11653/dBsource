@@ -18,14 +18,21 @@ export default function AiAdvisorLinks({
   links,
   onNavigate,
   prominent,
+  contactProduct,
 }: {
   links: AiLink[];
   onNavigate?: () => void;
   prominent?: boolean;
+  contactProduct?: string;
 }) {
   const { locale, t } = useI18n();
   const { related, actions } = splitAiLinks(links);
-  if (!related.length && !actions.length) return null;
+  const hasProductLinks = links.some((l) => l.type === "product");
+  const engineerHref = contactProduct
+    ? `/contact?product=${encodeURIComponent(contactProduct)}`
+    : "/contact";
+
+  if (!related.length && !actions.length && !hasProductLinks) return null;
 
   return (
     <div className="mt-2.5 pt-2.5 border-t border-white/5 space-y-2">
@@ -66,6 +73,15 @@ export default function AiAdvisorLinks({
             </Link>
           ))}
         </div>
+      ) : null}
+      {hasProductLinks ? (
+        <Link
+          href={engineerHref}
+          onClick={onNavigate}
+          className="inline-flex items-center text-[11px] px-3 py-1.5 rounded-full border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors font-medium"
+        >
+          {t.ai.contactEngineer} →
+        </Link>
       ) : null}
     </div>
   );

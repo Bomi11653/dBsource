@@ -92,6 +92,14 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     icon: "mail",
   },
   {
+    id: "status",
+    title: { zh: "系统状态", en: "Status" },
+    description: { zh: "CMS 连接、数据源与内容统计", en: "CMS health and data source" },
+    href: "/admin/status",
+    strapiPath: "",
+    icon: "status",
+  },
+  {
     id: "leads",
     title: { zh: "线索管理", en: "Leads" },
     description: { zh: "询盘筛选、分配、状态流转", en: "Lead triage, assignment and pipeline" },

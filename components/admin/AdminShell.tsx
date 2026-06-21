@@ -12,6 +12,7 @@ import {
   Mail,
   Package,
   QrCode,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +25,9 @@ const ICONS = {
   info: Info,
   mail: Mail,
   qr: QrCode,
+  status: Activity,
+  target: LayoutDashboard,
+  layers: LayoutDashboard,
 } as const;
 
 export default function AdminShell({
@@ -61,7 +65,17 @@ export default function AdminShell({
             </Link>
           );
         })}
-        <div className="mt-auto pt-4 border-t border-white/10">
+        <div className="mt-auto pt-4 border-t border-white/10 space-y-1">
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch("/api/admin/logout", { method: "POST" });
+              window.location.href = "/admin/login";
+            }}
+            className="block w-full text-left px-3 py-2 text-xs text-gray-500 hover:text-red-300"
+          >
+            退出登录
+          </button>
           <Link href="/" className="block px-3 py-2 text-xs text-gray-500 hover:text-brand-gold">
             ← 返回官网预览
           </Link>

@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-gray-500">询盘总量（近500条）</p>
           <p className="text-2xl font-semibold mt-1">{leadDashboard.total}</p>
           <p className="text-xs text-gray-500 mt-2">
-            已确认率 {leadDashboard.qualifiedRate}% · 成交率 {leadDashboard.winRate}%
+            跟进率 {leadDashboard.qualifiedRate}% · 成交率 {leadDashboard.winRate}%
           </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
