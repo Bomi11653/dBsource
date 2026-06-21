@@ -1,13 +1,19 @@
 import AdminAwareChrome from "@/components/AdminAwareChrome";
 import Analytics from "@/components/Analytics";
 import JsonLd from "@/components/JsonLd";
+import MaintenanceGate from "@/components/MaintenanceGate";
 import PageTransitionProvider from "@/components/PageTransitionProvider";
 import { PerformanceModeProvider } from "@/components/PerformanceModeProvider";
 import { SeriesConfigProvider } from "@/components/SeriesConfigProvider";
 import { SiteDataProvider } from "@/components/SiteDataProvider";
 import SmoothScroll from "@/components/SmoothScroll";
 import { I18nProvider } from "@/components/I18nProvider";
-import { getCases, getDownloads, getProducts } from "@/lib/cms";
+import { contactInfo as mockContactInfo } from "@/data/mock";
+import { getCases, getContactInfo, getDownloads, getProducts } from "@/lib/cms";
+import {
+  getMaintenanceMessage,
+  isMaintenanceMode,
+} from "@/lib/maintenance";
 import { organizationJsonLd, siteConfig } from "@/lib/seo";
 import { getSeriesConfig } from "@/lib/series-config";
 import { Inter, Noto_Sans_SC, Noto_Serif_SC, Playfair_Display } from "next/font/google";
@@ -66,11 +72,31 @@ export const metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [products, cases, downloads] = await Promise.all([
-    getProducts(),
-    getCases(),
-    getDownloads(),
-  ]);
+  const maintenance = isMaintenanceMode();
+  const maintenanceMessage = getMaintenanceMessage();
+
+  let products: Awaited<ReturnType<typeof getProducts>>;
+  let cases: Awaited<ReturnType<typeof getCases>>;
+  let downloads: Awaited<ReturnType<typeof getDownloads>>;
+  let maintenanceContact = mockContactInfo;
+
+  if (maintenance) {
+    products = [];
+    cases = [];
+    downloads = [];
+    try {
+      maintenanceContact = await getContactInfo();
+    } catch {
+      maintenanceContact = mockContactInfo;
+    }
+  } else {
+    [products, cases, downloads] = await Promise.all([
+      getProducts(),
+      getCases(),
+      getDownloads(),
+    ]);
+  }
+
   const seriesConfig = await getSeriesConfig(products);
 
   return (
@@ -93,16 +119,22 @@ export default async function RootLayout({
         <JsonLd data={organizationJsonLd()} />
         <Analytics />
         <I18nProvider>
-          <PerformanceModeProvider>
-            <SeriesConfigProvider config={seriesConfig}>
-              <SiteDataProvider products={products} cases={cases} downloads={downloads}>
-                <PageTransitionProvider>
-                  <SmoothScroll />
-                  <AdminAwareChrome>{children}</AdminAwareChrome>
-                </PageTransitionProvider>
-              </SiteDataProvider>
-            </SeriesConfigProvider>
-          </PerformanceModeProvider>
+          <MaintenanceGate
+            enabled={maintenance}
+            message={maintenanceMessage}
+            contact={maintenanceContact}
+          >
+            <PerformanceModeProvider>
+              <SeriesConfigProvider config={seriesConfig}>
+                <SiteDataProvider products={products} cases={cases} downloads={downloads}>
+                  <PageTransitionProvider>
+                    <SmoothScroll />
+                    <AdminAwareChrome>{children}</AdminAwareChrome>
+                  </PageTransitionProvider>
+                </SiteDataProvider>
+              </SeriesConfigProvider>
+            </PerformanceModeProvider>
+          </MaintenanceGate>
         </I18nProvider>
       </body>
     </html>
