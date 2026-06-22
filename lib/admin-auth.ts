@@ -34,10 +34,16 @@ export function extractAdminToken(request: NextRequest): string | null {
   );
 }
 
+/** 仅当 NEXT_PUBLIC_SITE_URL 为 https 时启用 Secure Cookie（HTTP/IP 测试环境必须为 false） */
+export function isAdminCookieSecure(): boolean {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  return siteUrl.startsWith("https://");
+}
+
 export function adminCookieOptions(maxAge = 60 * 60 * 24 * 7) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isAdminCookieSecure(),
     sameSite: "strict" as const,
     path: "/",
     maxAge,
