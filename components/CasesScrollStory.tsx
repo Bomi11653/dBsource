@@ -37,14 +37,18 @@ function StickyCaseVisual({
   return (
     <div className="sticky top-0 h-screen-safe flex items-center justify-center overflow-hidden">
       <motion.div className="absolute inset-0" style={{ scale, opacity }}>
-        <Image
-          src={caseItem.image}
-          alt={caseItem.title[locale]}
-          fill
-          className="object-cover"
-          priority
-          sizes="100vw"
-        />
+        {caseItem.image ? (
+          <Image
+            src={caseItem.image}
+            alt={caseItem.title[locale]}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-zinc-900" aria-hidden />
+        )}
         <div className="absolute inset-0 bg-black/50" />
       </motion.div>
       <motion.div
@@ -180,7 +184,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          {profileCase && (
+          {profileCase?.image ? (
             <Image
               src={profileCase.image}
               alt={profileCase.title[locale]}
@@ -188,6 +192,8 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               className="object-cover"
               sizes="50vw"
             />
+          ) : (
+            <div className="absolute inset-0 bg-zinc-900" aria-hidden />
           )}
         </motion.div>
       </section>
@@ -201,7 +207,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
-          {spotlightCase && (
+          {spotlightCase?.image ? (
             <Image
               src={spotlightCase.image}
               alt={spotlightCase.title[locale]}
@@ -209,6 +215,8 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               className="object-cover"
               sizes="(max-width: 1200px) 90vw"
             />
+          ) : (
+            <div className="absolute inset-0 bg-zinc-900" aria-hidden />
           )}
           {spotlightCase && (
             <Link
@@ -305,7 +313,11 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                 }`}
               >
                 <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
-                  <Image src={item.image} alt={item.title[locale]} fill className="object-cover" />
+                  {item.image ? (
+                    <Image src={item.image} alt={item.title[locale]} fill className="object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-zinc-900" aria-hidden />
+                  )}
                 </div>
                 <div>
                   <span className="text-xs text-brand-gold uppercase tracking-wider">

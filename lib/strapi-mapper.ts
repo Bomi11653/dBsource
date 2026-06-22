@@ -12,10 +12,15 @@ import type {
 } from "@/data/mock";
 import type { AboutImages } from "@/data/about";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
-import { toPublicMediaUrl } from "@/lib/media-url";
+import {
+  resolveCaseGalleryUrls,
+  resolveCaseImageUrl,
+  toPublicMediaUrl,
+  unwrapStrapiMedia,
+  type StrapiMediaLike,
+} from "@/lib/media-url";
 
-type StrapiMedia = {
-  url?: string;
+type StrapiMedia = StrapiMediaLike & {
   name?: string;
   size?: number;
 };
@@ -35,6 +40,8 @@ type StrapiCaseDoc = {
   sceneEn: string;
   products: string;
   image?: StrapiMedia | null;
+  cover?: StrapiMedia | null;
+  thumbnail?: StrapiMedia | null;
   gallery?: StrapiMedia[] | null;
   highlightsZh?: string[] | null;
   highlightsEn?: string[] | null;
@@ -108,9 +115,19 @@ export function resolveMediaUrl(
   cmsUrl: string,
   media?: StrapiMedia | null
 ): string {
-  if (!media?.url) return "";
-  const raw = media.url.startsWith("http") ? media.url : `${cmsUrl}${media.url.startsWith("/") ? "" : "/"}${media.url}`;
-  return toPublicMediaUrl(cmsUrl, raw);
+  const unwrapped = unwrapStrapiMedia(media);
+  if (!unwrapped?.url && !unwrapped?.formats) return "";
+  const raw =
+    unwrapped.formats?.large?.url ||
+    unwrapped.formats?.medium?.url ||
+    unwrapped.formats?.small?.url ||
+    unwrapped.url ||
+    "";
+  if (!raw) return "";
+  const absolute = raw.startsWith("http")
+    ? raw
+    : `${cmsUrl}${raw.startsWith("/") ? "" : "/"}${raw}`;
+  return toPublicMediaUrl(cmsUrl, absolute);
 }
 
 function richtextToPlain(value: unknown): string | undefined {
@@ -136,9 +153,12 @@ function richtextToPlain(value: unknown): string | undefined {
     .join("\n\n");
 }
 
-export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
+export function mapStrapiCase(doc: StrapiCaseDoc, _cmsUrl: string): CaseItem {
   const detailZh = richtextToPlain(doc.detailZh);
   const detailEn = richtextToPlain(doc.detailEn);
+  const image = resolveCaseImageUrl(doc);
+  const gallery = resolveCaseGalleryUrls(doc.gallery);
+  const coverImage = image || resolveCaseImageUrl({ cover: doc.cover, thumbnail: doc.thumbnail });
 
   return {
     id: doc.legacyId,
@@ -153,10 +173,8 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
         : undefined,
     scene: { zh: doc.sceneZh, en: doc.sceneEn },
     products: doc.products,
-    image: resolveMediaUrl(cmsUrl, doc.image),
-    gallery: (doc.gallery ?? [])
-      .map((item) => resolveMediaUrl(cmsUrl, item))
-      .filter(Boolean),
+    image: coverImage,
+    gallery: gallery.length > 0 ? gallery : coverImage ? [coverImage] : [],
     highlights: {
       zh: doc.highlightsZh ?? [],
       en: doc.highlightsEn ?? [],

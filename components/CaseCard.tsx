@@ -22,7 +22,7 @@ export default function CaseCard({
       className="group card-touch block"
     >
       <article className="flex flex-col md:flex-row gap-0 md:gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors active:border-brand-gold/20">
-        {emptyImage ? (
+        {emptyImage || !item.image ? (
           <div
             className="w-full md:w-72 shrink-0 bg-zinc-900/70 md:border-r border-white/5"
             style={{ minHeight: 200 }}

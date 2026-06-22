@@ -30,20 +30,29 @@ function extraImageHosts() {
     .filter(Boolean);
 }
 
+function cmsHostnames() {
+  const hosts = new Set();
+  for (const envKey of ["CMS_URL", "NEXT_PUBLIC_CMS_URL"]) {
+    const host = parseHostname(process.env[envKey] || "");
+    if (host) hosts.add(host);
+  }
+  return [...hosts];
+}
+
 function buildRemotePatterns() {
   const patterns = [
     { protocol: "http", hostname: "localhost", port: "1337" },
     { protocol: "http", hostname: "127.0.0.1", port: "1337" },
   ];
 
-  const cmsHost = cmsHostname();
-  if (cmsHost && !["localhost", "127.0.0.1"].includes(cmsHost)) {
-    patterns.push({ protocol: "https", hostname: cmsHost });
-    patterns.push({ protocol: "http", hostname: cmsHost, port: "1337" });
+  for (const host of cmsHostnames()) {
+    if (["localhost", "127.0.0.1"].includes(host)) continue;
+    patterns.push({ protocol: "https", hostname: host });
+    patterns.push({ protocol: "http", hostname: host, port: "1337" });
   }
 
   const siteHost = siteHostname();
-  if (siteHost && siteHost !== cmsHost) {
+  if (siteHost && !cmsHostnames().includes(siteHost)) {
     patterns.push({ protocol: "https", hostname: siteHost });
   }
 

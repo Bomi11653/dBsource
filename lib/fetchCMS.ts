@@ -58,7 +58,7 @@ async function preferMockData(): Promise<boolean> {
 }
 
 const CASES_QUERY =
-  "/cases?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc";
+  "/cases?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc";
 const QR_QUERY =
   "/qr-codes?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
 const SCENES_QUERY =
