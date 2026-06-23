@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003 -H 127.0.0.1",
+    "dev:safe": "node scripts/kill-port.mjs 3003 && npm run clean && npm run dev",
     "dev:mobile": "next dev -p 3003 -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p 3003 -H 127.0.0.1",
