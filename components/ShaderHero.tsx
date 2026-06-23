@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { memo, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -17,14 +17,37 @@ function useHeroMotionPrefs() {
   return lite;
 }
 
+function CanvasResume({ paused }: { paused: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    if (!paused) invalidate();
+  }, [paused, invalidate]);
+
+  return null;
+}
+
 function Wave({ paused }: { paused: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
+  const simTime = useRef(0);
+  const lastClock = useRef<number | null>(null);
 
   useFrame(({ clock }) => {
-    if (paused) return;
+    const elapsed = clock.getElapsedTime();
+
+    if (paused) {
+      lastClock.current = null;
+      return;
+    }
+
+    if (lastClock.current !== null) {
+      simTime.current += elapsed - lastClock.current;
+    }
+    lastClock.current = elapsed;
+
     const material = ref.current?.material as THREE.ShaderMaterial | undefined;
     if (material?.uniforms?.uTime) {
-      material.uniforms.uTime.value = clock.elapsedTime;
+      material.uniforms.uTime.value = simTime.current;
     }
   });
 
@@ -80,29 +103,16 @@ function HeroLiteFallback() {
   );
 }
 
-function ShaderHeroCanvas() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    const node = rootRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setPaused(!entry.isIntersecting),
-      { threshold: 0.05 }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
+function ShaderHeroCanvas({ paused }: { paused: boolean }) {
   return (
-    <div ref={rootRef} className="absolute inset-0">
+    <div className="absolute inset-0">
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50 }}
         dpr={[1, 1.25]}
         frameloop={paused ? "never" : "always"}
         gl={{ antialias: true, powerPreference: "high-performance" }}
       >
+        <CanvasResume paused={paused} />
         <ambientLight intensity={0.4} />
         <Wave paused={paused} />
       </Canvas>
@@ -110,12 +120,12 @@ function ShaderHeroCanvas() {
   );
 }
 
-function ShaderHero() {
+function ShaderHero({ paused = false }: { paused?: boolean }) {
   const lite = useHeroMotionPrefs();
 
   return (
-    <div className="relative h-screen-safe w-full bg-black">
-      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas />}
+    <div className="relative h-full w-full bg-black">
+      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas paused={paused} />}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black" />
     </div>
   );
