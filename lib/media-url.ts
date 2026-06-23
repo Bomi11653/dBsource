@@ -1,5 +1,5 @@
 /**
- * Strapi 媒体 URL 解析（浏览器端统一同源 /uploads，服务端内网拉取用 resolveServerMediaUrl）
+ * Strapi 媒体 URL 解析（浏览器端统一同源 /strapi-uploads，由 Next rewrite 反代 Strapi）
  */
 
 export type StrapiMediaFormats = {
@@ -47,9 +47,18 @@ function isLoopbackOrPrivateHost(hostname: string): boolean {
   return PRIVATE_HOST_RE.test(hostname);
 }
 
+function toBrowserUploadsPath(uploadPath: string): string {
+  const normalized = uploadPath.startsWith("/uploads/")
+    ? uploadPath
+    : uploadPath.startsWith("/strapi-uploads/")
+      ? uploadPath.replace(/^\/strapi-uploads/, "/uploads")
+      : `/uploads/${uploadPath.replace(/^\//, "")}`;
+  return normalized.replace(/^\/uploads/, "/strapi-uploads");
+}
+
 /**
  * 浏览器可访问的媒体 URL：
- * - Strapi /uploads → 同源 /uploads/xxx（由 Nginx 或 Next rewrite 反代 Strapi）
+ * - Strapi /uploads → 同源 /strapi-uploads/xxx（Next.js rewrite 已验证可用）
  * - 不输出 127.0.0.1:1337 / 内网 CMS 地址
  */
 export function resolveBrowserMediaUrl(rawUrl: string): string {
@@ -61,11 +70,11 @@ export function resolveBrowserMediaUrl(rawUrl: string): string {
   }
 
   if (trimmed.startsWith("/strapi-uploads/")) {
-    return trimmed.replace(/^\/strapi-uploads/, "/uploads");
+    return trimmed;
   }
 
   if (trimmed.startsWith("/uploads/")) {
-    return trimmed;
+    return toBrowserUploadsPath(trimmed);
   }
 
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -73,7 +82,7 @@ export function resolveBrowserMediaUrl(rawUrl: string): string {
       const parsed = new URL(trimmed);
       const uploadPath = extractUploadsPath(parsed.pathname);
       if (uploadPath) {
-        return uploadPath;
+        return toBrowserUploadsPath(uploadPath);
       }
       if (isLoopbackOrPrivateHost(parsed.hostname)) {
         return "";
@@ -86,15 +95,15 @@ export function resolveBrowserMediaUrl(rawUrl: string): string {
 
   if (trimmed.startsWith("/")) {
     const uploadPath = extractUploadsPath(trimmed);
-    if (uploadPath) return uploadPath;
+    if (uploadPath) return toBrowserUploadsPath(uploadPath);
     return trimmed;
   }
 
   if (trimmed.startsWith("uploads/")) {
-    return `/${trimmed}`;
+    return toBrowserUploadsPath(`/${trimmed}`);
   }
 
-  return `/uploads/${trimmed.replace(/^\//, "")}`;
+  return toBrowserUploadsPath(`/uploads/${trimmed.replace(/^\//, "")}`);
 }
 
 /** 服务端（Node）访问 Strapi 媒体：内网 CMS + /uploads 路径 */
@@ -108,6 +117,9 @@ export function resolveServerMediaUrl(
 ): string {
   const browser = resolveBrowserMediaUrl(rawUrl);
   if (!browser) return "";
+  if (browser.startsWith("/strapi-uploads/")) {
+    return `${cmsUrl}${browser.replace(/^\/strapi-uploads/, "/uploads")}`;
+  }
   if (browser.startsWith("/uploads/")) {
     return `${cmsUrl}${browser}`;
   }
