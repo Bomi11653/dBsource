@@ -13,32 +13,45 @@ import type {
 import type { AboutImages } from "@/data/about";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import {
+  pickCaseTitleEn,
+  pickCaseTitleZh,
+  pickDownloadFilePath,
+  pickDownloadTitleEn,
+  pickDownloadTitleZh,
+  pickMediaPath,
+  pickProductNameEn,
+  pickProductNameZh,
   resolveCaseGalleryUrls,
   resolveCaseImageUrl,
-  toPublicMediaUrl,
+  resolveCmsAssetUrl,
+  resolveDownloadFileUrl,
+  resolveMediaUrlFromSource,
+  resolveStrapiMediaUrl,
   unwrapStrapiMedia,
+  warnStrapiMapping,
   type StrapiMediaLike,
 } from "@/lib/media-url";
 
-type StrapiMedia = StrapiMediaLike & {
-  name?: string;
-  size?: number;
-};
+type StrapiMedia = StrapiMediaLike;
 
 type StrapiCaseDoc = {
   legacyId: number;
   sortOrder?: number;
   type: string;
   sceneSlug: string;
-  titleZh: string;
-  titleEn: string;
-  descZh: string;
-  descEn: string;
+  titleZh?: string | null;
+  titleEn?: string | null;
+  title?: string | null;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  name?: string | null;
+  descZh?: string | null;
+  descEn?: string | null;
   detailZh?: unknown;
   detailEn?: unknown;
-  sceneZh: string;
-  sceneEn: string;
-  products: string;
+  sceneZh?: string | null;
+  sceneEn?: string | null;
+  products?: string | null;
   image?: StrapiMedia | null;
   cover?: StrapiMedia | null;
   thumbnail?: StrapiMedia | null;
@@ -50,31 +63,39 @@ type StrapiCaseDoc = {
 
 type StrapiQRDoc = {
   sortOrder?: number;
-  labelZh: string;
-  labelEn: string;
+  labelZh?: string | null;
+  labelEn?: string | null;
   image?: StrapiMedia | null;
 };
 
 type StrapiSceneDoc = {
   sortOrder?: number;
-  nameZh: string;
-  nameEn: string;
-  descZh: string;
-  descEn: string;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  descZh?: string | null;
+  descEn?: string | null;
   image?: StrapiMedia | null;
 };
 
 type StrapiDownloadDoc = {
   sortOrder?: number;
-  nameZh: string;
-  nameEn: string;
+  titleZh?: string | null;
+  titleEn?: string | null;
+  title?: string | null;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  name?: string | null;
   size?: string | null;
   fileName?: string | null;
-  fileUrl: string;
+  fileUrl?: string | null;
   file?: StrapiMedia | null;
+  attachment?: StrapiMedia | null;
+  downloadFile?: StrapiMedia | null;
+  image?: StrapiMedia | null;
   type: string;
   subCategory: string;
   cover?: StrapiMedia | null;
+  thumbnail?: StrapiMedia | null;
   version?: string | null;
   osType?: string | null;
   releasedAt?: string | null;
@@ -86,11 +107,15 @@ type StrapiDownloadDoc = {
 
 type StrapiProductDoc = {
   sortOrder?: number;
-  model: string;
-  nameZh: string;
-  nameEn: string;
-  descZh: string;
-  descEn: string;
+  model?: string | null;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  name?: string | null;
+  titleZh?: string | null;
+  titleEn?: string | null;
+  title?: string | null;
+  descZh?: string | null;
+  descEn?: string | null;
   detailZh?: string | null;
   detailEn?: string | null;
   specsZh?: string | null;
@@ -101,6 +126,8 @@ type StrapiProductDoc = {
   seriesGroup: string;
   category: string;
   image?: StrapiMedia | null;
+  cover?: StrapiMedia | null;
+  thumbnail?: StrapiMedia | null;
   gallery?: StrapiMedia[] | null;
   market?: "cn" | "global" | "all" | null;
 };
@@ -111,23 +138,12 @@ type StrapiAboutDoc = {
   image?: StrapiMedia | null;
 };
 
+/** @deprecated 使用 resolveStrapiMediaUrl / resolveMediaUrlFromSource */
 export function resolveMediaUrl(
   cmsUrl: string,
   media?: StrapiMedia | null
 ): string {
-  const unwrapped = unwrapStrapiMedia(media);
-  if (!unwrapped?.url && !unwrapped?.formats) return "";
-  const raw =
-    unwrapped.formats?.large?.url ||
-    unwrapped.formats?.medium?.url ||
-    unwrapped.formats?.small?.url ||
-    unwrapped.url ||
-    "";
-  if (!raw) return "";
-  const absolute = raw.startsWith("http")
-    ? raw
-    : `${cmsUrl}${raw.startsWith("/") ? "" : "/"}${raw}`;
-  return toPublicMediaUrl(cmsUrl, absolute);
+  return resolveStrapiMediaUrl(media, cmsUrl);
 }
 
 function richtextToPlain(value: unknown): string | undefined {
@@ -153,28 +169,42 @@ function richtextToPlain(value: unknown): string | undefined {
     .join("\n\n");
 }
 
-export function mapStrapiCase(doc: StrapiCaseDoc, _cmsUrl: string): CaseItem {
+export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
   const detailZh = richtextToPlain(doc.detailZh);
   const detailEn = richtextToPlain(doc.detailEn);
-  const image = resolveCaseImageUrl(doc);
-  const gallery = resolveCaseGalleryUrls(doc.gallery);
-  const coverImage = image || resolveCaseImageUrl({ cover: doc.cover, thumbnail: doc.thumbnail });
+  const mediaSource = {
+    image: doc.image,
+    cover: doc.cover,
+    thumbnail: doc.thumbnail,
+  };
+  const image = resolveCaseImageUrl(mediaSource, cmsUrl);
+  const gallery = resolveCaseGalleryUrls(doc.gallery, cmsUrl);
+  const titleZh = pickCaseTitleZh(doc);
+  const titleEn = pickCaseTitleEn(doc);
+
+  const missing: string[] = [];
+  if (!doc.titleZh?.trim() && !doc.title?.trim() && !doc.nameZh?.trim() && !doc.name?.trim()) {
+    missing.push("titleZh/title/nameZh/name");
+  }
+  if (!pickMediaPath(mediaSource)) missing.push("image/cover/thumbnail");
+  if (!doc.descZh?.trim()) missing.push("descZh");
+  warnStrapiMapping("case", doc.legacyId, missing);
 
   return {
     id: doc.legacyId,
     sortOrder: typeof doc.sortOrder === "number" ? doc.sortOrder : undefined,
     type: doc.type as CaseType,
     sceneSlug: doc.sceneSlug as CaseSceneSlug,
-    title: { zh: doc.titleZh, en: doc.titleEn },
-    desc: { zh: doc.descZh, en: doc.descEn },
+    title: { zh: titleZh, en: titleEn },
+    desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
     detail:
       detailZh || detailEn
         ? { zh: detailZh ?? "", en: detailEn ?? "" }
         : undefined,
-    scene: { zh: doc.sceneZh, en: doc.sceneEn },
-    products: doc.products,
-    image: coverImage,
-    gallery: gallery.length > 0 ? gallery : coverImage ? [coverImage] : [],
+    scene: { zh: doc.sceneZh?.trim() || "", en: doc.sceneEn?.trim() || "" },
+    products: doc.products?.trim() || "",
+    image,
+    gallery: gallery.length > 0 ? gallery : image ? [image] : [],
     highlights: {
       zh: doc.highlightsZh ?? [],
       en: doc.highlightsEn ?? [],
@@ -188,10 +218,14 @@ export function mapStrapiQR(
   cmsUrl: string,
   index: number
 ): QRItem {
+  const image = resolveMediaUrlFromSource({ image: doc.image }, cmsUrl);
+  if (!image) {
+    warnStrapiMapping("qr-code", doc.sortOrder ?? index + 1, ["image"]);
+  }
   return {
     id: doc.sortOrder ?? index + 1,
-    label: { zh: doc.labelZh, en: doc.labelEn },
-    image: resolveMediaUrl(cmsUrl, doc.image),
+    label: { zh: doc.labelZh?.trim() || "二维码", en: doc.labelEn?.trim() || "QR Code" },
+    image,
   };
 }
 
@@ -200,11 +234,15 @@ export function mapStrapiScene(
   cmsUrl: string,
   index: number
 ): SceneItem {
+  const image = resolveMediaUrlFromSource({ image: doc.image }, cmsUrl);
+  if (!image) {
+    warnStrapiMapping("scene", doc.sortOrder ?? index + 1, ["image"]);
+  }
   return {
     id: doc.sortOrder ?? index + 1,
-    name: { zh: doc.nameZh, en: doc.nameEn },
-    desc: { zh: doc.descZh, en: doc.descEn },
-    image: resolveMediaUrl(cmsUrl, doc.image),
+    name: { zh: doc.nameZh?.trim() || "", en: doc.nameEn?.trim() || "" },
+    desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
+    image,
   };
 }
 
@@ -213,23 +251,47 @@ export function mapStrapiDownload(
   cmsUrl: string,
   index: number
 ): DownloadItem {
-  const fileFromMedia = doc.file ? resolveMediaUrl(cmsUrl, doc.file) : "";
+  const id = doc.sortOrder ?? index + 1;
+  const mediaSource = {
+    image: doc.image,
+    cover: doc.cover,
+    thumbnail: doc.thumbnail,
+  };
+  const coverPath = pickMediaPath(mediaSource);
+  const cover = coverPath ? resolveCmsAssetUrl(coverPath, cmsUrl) : undefined;
+  const fileMedia =
+    unwrapStrapiMedia(doc.file) ||
+    unwrapStrapiMedia(doc.attachment) ||
+    unwrapStrapiMedia(doc.downloadFile);
+  const fileUrl = resolveDownloadFileUrl(doc, cmsUrl);
   const fileName =
     doc.fileName?.trim() ||
-    doc.file?.name?.trim() ||
+    fileMedia?.name?.trim() ||
     undefined;
+
+  const missing: string[] = [];
+  if (!doc.titleZh?.trim() && !doc.title?.trim() && !doc.nameZh?.trim() && !doc.name?.trim()) {
+    missing.push("titleZh/title/nameZh/name");
+  }
+  if (!coverPath) missing.push("image/cover/thumbnail");
+  if (!pickDownloadFilePath(doc)) missing.push("file/attachment/downloadFile/fileUrl");
+  warnStrapiMapping("download", id, missing);
+
   return {
-    id: doc.sortOrder ?? index + 1,
-    name: { zh: doc.nameZh, en: doc.nameEn },
+    id,
+    name: {
+      zh: pickDownloadTitleZh(doc),
+      en: pickDownloadTitleEn(doc),
+    },
     size:
-      typeof doc.file?.size === "number"
-        ? formatStrapiMediaSize(doc.file.size)
+      typeof fileMedia?.size === "number"
+        ? formatStrapiMediaSize(fileMedia.size)
         : doc.size?.trim() || "—",
     fileName,
-    url: fileFromMedia || doc.fileUrl || "#",
+    url: fileUrl || "#",
     type: doc.type as DownloadItem["type"],
     subCategory: doc.subCategory as DownloadItem["subCategory"],
-    cover: resolveMediaUrl(cmsUrl, doc.cover),
+    cover,
     version: doc.version?.trim() || undefined,
     osType: (doc.osType as DownloadItem["osType"]) || undefined,
     releasedAt: doc.releasedAt || undefined,
@@ -247,12 +309,28 @@ export function mapStrapiProduct(
   cmsUrl: string,
   index: number
 ): Product {
-  const image = resolveMediaUrl(cmsUrl, doc.image);
+  const id = doc.sortOrder ?? index + 1;
+  const mediaSource = {
+    image: doc.image,
+    cover: doc.cover,
+    thumbnail: doc.thumbnail,
+  };
+  const image = resolveMediaUrlFromSource(mediaSource, cmsUrl);
+  const nameZh = pickProductNameZh(doc);
+  const nameEn = pickProductNameEn(doc);
+
+  const missing: string[] = [];
+  if (!doc.nameZh?.trim() && !doc.name?.trim() && !doc.titleZh?.trim()) {
+    missing.push("nameZh/name/titleZh");
+  }
+  if (!pickMediaPath(mediaSource)) missing.push("image/cover/thumbnail");
+  warnStrapiMapping("product", id, missing);
+
   return {
-    id: doc.sortOrder ?? index + 1,
-    model: doc.model,
-    name: { zh: doc.nameZh, en: doc.nameEn },
-    desc: { zh: doc.descZh, en: doc.descEn },
+    id,
+    model: doc.model?.trim() || "",
+    name: { zh: nameZh, en: nameEn },
+    desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
     detail: doc.detailZh || doc.detailEn
       ? { zh: doc.detailZh ?? "", en: doc.detailEn ?? "" }
       : undefined,
@@ -261,7 +339,7 @@ export function mapStrapiProduct(
       : undefined,
     image,
     gallery: (doc.gallery ?? [])
-      .map((item) => resolveMediaUrl(cmsUrl, item))
+      .map((item) => resolveStrapiMediaUrl(item, cmsUrl))
       .filter(Boolean),
     series:
       doc.seriesZh || doc.seriesEn
@@ -283,7 +361,7 @@ export function mapStrapiAboutSections(
 
   const get = (key: string, fb: string) => {
     const doc = byKey.get(key);
-    const url = doc ? resolveMediaUrl(cmsUrl, doc.image) : "";
+    const url = doc ? resolveStrapiMediaUrl(doc.image, cmsUrl) : "";
     return url || fb;
   };
 
@@ -373,7 +451,9 @@ export function mapStrapiContactInfo(
               en: doc.homeFeaturedCaseDescEn ?? "",
             }
           : fallback.homeFeaturedCase?.desc,
-      image: resolveMediaUrl(cmsUrl, doc.homeFeaturedCaseImage) || fallback.homeFeaturedCase?.image,
+      image:
+        resolveStrapiMediaUrl(doc.homeFeaturedCaseImage, cmsUrl) ||
+        fallback.homeFeaturedCase?.image,
     },
   };
 }

@@ -1,18 +1,19 @@
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
+import {
+  pickDownloadFilePath,
+  resolveDownloadFileUrl,
+  unwrapStrapiMedia,
+} from "@/lib/media-url";
 import { getCmsUrl } from "@/lib/strapi-client";
-
-type StrapiFileMedia = {
-  url?: string;
-  name?: string;
-  size?: number;
-};
 
 type StrapiDownloadRecord = {
   sortOrder?: number;
   fileName?: string | null;
   size?: string | null;
   fileUrl?: string | null;
-  file?: StrapiFileMedia | null;
+  file?: unknown;
+  attachment?: unknown;
+  downloadFile?: unknown;
 };
 
 export type ResolvedDownloadFile = {
@@ -20,12 +21,6 @@ export type ResolvedDownloadFile = {
   fileName: string;
   sizeLabel: string;
 };
-
-function cmsUploadUrl(cmsUrl: string, mediaUrl: string): string {
-  if (mediaUrl.startsWith("http")) return mediaUrl;
-  if (mediaUrl.startsWith("/")) return `${cmsUrl}${mediaUrl}`;
-  return `${cmsUrl}/${mediaUrl}`;
-}
 
 function basenameFromUrl(url: string): string {
   try {
@@ -42,7 +37,7 @@ export async function resolveDownloadFile(sortOrderId: number): Promise<Resolved
   const cmsUrl = getCmsUrl();
   const query =
     `/downloads?filters[sortOrder][$eq]=${sortOrderId}` +
-    "&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size" +
+    "&populate[file]=true" +
     "&publicationState=live&pagination[pageSize]=1";
 
   let doc: StrapiDownloadRecord | null = null;
@@ -58,21 +53,21 @@ export async function resolveDownloadFile(sortOrderId: number): Promise<Resolved
 
   if (!doc) return null;
 
-  const file = doc.file;
-  const fileUrl = file?.url ? cmsUploadUrl(cmsUrl, file.url) : "";
-  const externalUrl =
-    doc.fileUrl && doc.fileUrl !== "#" && doc.fileUrl.startsWith("http") ? doc.fileUrl : "";
+  const sourceUrl = resolveDownloadFileUrl(doc, cmsUrl);
+  if (!sourceUrl || sourceUrl === "#") return null;
 
-  const sourceUrl = fileUrl || externalUrl;
-  if (!sourceUrl) return null;
+  const fileMedia =
+    unwrapStrapiMedia(doc.file) ||
+    unwrapStrapiMedia(doc.attachment) ||
+    unwrapStrapiMedia(doc.downloadFile);
 
   const fileName =
     doc.fileName?.trim() ||
-    file?.name?.trim() ||
-    basenameFromUrl(sourceUrl);
+    fileMedia?.name?.trim() ||
+    basenameFromUrl(pickDownloadFilePath(doc) || sourceUrl);
 
   const sizeLabel =
-    (typeof file?.size === "number" ? formatStrapiMediaSize(file.size) : null) ||
+    (typeof fileMedia?.size === "number" ? formatStrapiMediaSize(fileMedia.size) : null) ||
     doc.size?.trim() ||
     "—";
 

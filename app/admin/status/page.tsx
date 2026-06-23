@@ -1,5 +1,8 @@
 import AdminShell from "@/components/admin/AdminShell";
+import DataHealthCheckPanel from "@/components/admin/DataHealthCheckPanel";
+import RevalidateCacheButton from "@/components/admin/RevalidateCacheButton";
 import { getAdminStats } from "@/lib/admin-stats";
+import { adminTokenConfigured } from "@/lib/strapi-admin";
 import { isCmsAvailable } from "@/lib/cms-health";
 import { getCmsUrl } from "@/lib/strapi-client";
 import Link from "next/link";
@@ -22,6 +25,7 @@ export default async function AdminStatusPage() {
   else if (cmsOnline) dataSource = "strapi";
 
   const stats = cmsOnline && !useMock ? await getAdminStats() : null;
+  const healthCheckEnabled = cmsOnline && !useMock && adminTokenConfigured();
 
   return (
     <AdminShell title="系统状态" subtitle="CMS 连接、数据源与内容规模一览">
@@ -45,10 +49,14 @@ export default async function AdminStatusPage() {
           <p className="text-xs text-gray-500">前台缓存策略</p>
           <p className="text-lg font-medium mt-1 text-white">ISR revalidate 300s</p>
           <p className="text-xs text-gray-500 mt-3">
-            官网页面默认 5 分钟再验证；后台 API 仍为 no-store。
+            官网页面默认 5 分钟再验证；后台保存成功后会立即触发 revalidate。
           </p>
         </div>
       </div>
+
+      <RevalidateCacheButton />
+
+      <DataHealthCheckPanel enabled={healthCheckEnabled} />
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 mb-6">
         <p className="text-sm font-medium mb-4">内容数量（Strapi）</p>

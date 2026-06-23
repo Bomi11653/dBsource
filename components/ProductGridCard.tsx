@@ -3,6 +3,7 @@
 import type { Product } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
 import SafeImage from "@/components/SafeImage";
+import { Package } from "lucide-react";
 import Link from "next/link";
 
 export default function ProductGridCard({
@@ -19,16 +20,25 @@ export default function ProductGridCard({
       className="group card-touch flex flex-col h-full bg-black/80 border border-white/10 rounded-xl overflow-hidden hover:border-white/25 hover:shadow-[0_8px_32px_rgba(255,255,255,0.08)] transition-all duration-300 md:hover:scale-[1.02]"
     >
       <div className="relative shrink-0" style={{ height: 180 }}>
-        <SafeImage
-          src={product.image}
-          alt={product.name[locale]}
-          frameHeight={180}
-          fit="contain"
-          frameClassName="bg-white p-2"
-          sizes="(max-width: 640px) 100vw, 25vw"
-          loading="lazy"
-          className="opacity-95 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
-        />
+        {product.image ? (
+          <SafeImage
+            src={product.image}
+            alt={product.name[locale]}
+            frameHeight={180}
+            fit="contain"
+            frameClassName="bg-white p-2"
+            sizes="(max-width: 640px) 100vw, 25vw"
+            loading="lazy"
+            className="opacity-95 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
+          />
+        ) : (
+          <div
+            className="flex h-full items-center justify-center bg-zinc-900/80 border-b border-white/5"
+            aria-hidden
+          >
+            <Package className="h-10 w-10 text-white/20" />
+          </div>
+        )}
         {product.series && (
           <span className="absolute top-2 left-2 z-10 text-[10px] uppercase tracking-wider px-2 py-0.5 bg-black/70 border border-white/10 text-brand-gold">
             {product.series[locale]}

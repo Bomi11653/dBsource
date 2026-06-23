@@ -1,13 +1,13 @@
 "use client";
 
 import type { DownloadItem } from "@/data/mock";
-import { filterDownloads } from "@/lib/downloads";
-import { ArrowRight, Download, Search, Share2 } from "lucide-react";
+import { ArrowRight, Download, FileImage, Search, Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useI18n } from "./I18nProvider";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "./I18nProvider";
+import { filterDownloads } from "@/lib/downloads";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /* ---------- 展示层分类（不改动数据结构，纯前端映射） ---------- */
 
@@ -116,6 +116,7 @@ const UI_LABELS = {
       "如果您不确定需要下载哪个文件，或在使用过程中遇到问题，请联系我们的技术团队获取帮助。",
     contactSupport: "联系技术支持",
     noResults: "暂无符合条件的资源",
+    noCover: "暂无封面",
   },
   en: {
     searchPlaceholder: "Search software, models, documents...",
@@ -128,8 +129,56 @@ const UI_LABELS = {
       "Not sure which file you need, or running into issues? Contact our engineering team for help.",
     contactSupport: "Contact Support",
     noResults: "No resources match your filters",
+    noCover: "No cover",
   },
 } as const;
+
+function DownloadCover({
+  cover,
+  alt,
+  compact,
+}: {
+  cover?: string;
+  alt: string;
+  compact?: boolean;
+}) {
+  if (!cover) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-zinc-900/80 border border-white/10 ${
+          compact ? "h-14 w-24 shrink-0 rounded-xl" : "absolute inset-0"
+        }`}
+        aria-label={alt}
+      >
+        <FileImage className={compact ? "h-6 w-6 text-white/25" : "h-10 w-10 text-white/25"} />
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="relative h-14 w-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-white">
+        <Image
+          src={cover}
+          alt={alt}
+          fill
+          className="object-contain object-center p-1"
+          sizes="96px"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={cover}
+      alt={alt}
+      fill
+      className="object-contain object-center p-3 transition-transform duration-500 md:group-hover:scale-[1.03]"
+      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 320px"
+    />
+  );
+}
 
 export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const { locale, t } = useI18n();
@@ -299,15 +348,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                 className="group relative flex flex-col rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-5 md:p-6 transition-all duration-300 hover:border-white/25 md:hover:-translate-y-1"
               >
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="relative h-14 w-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-white">
-                    <Image
-                      src={file.cover}
-                      alt=""
-                      fill
-                      className="object-contain object-center p-1"
-                      sizes="96px"
-                    />
-                  </div>
+                  <DownloadCover cover={file.cover} alt={file.name[locale] || ui.noCover} compact />
                   <div className="min-w-0">
                     <h3 className="text-base font-medium text-white leading-snug">
                       {file.name[locale]}
@@ -372,14 +413,12 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                 }}
                 className="group flex flex-col rounded-3xl border border-white/10 bg-white/[0.04] overflow-hidden transition-all duration-300 hover:border-white/25 md:hover:-translate-y-1"
               >
-                <div className="relative w-full aspect-[16/9] border-b border-white/10 bg-white">
-                  <Image
-                    src={file.cover}
-                    alt=""
-                    fill
-                    className="object-contain object-center p-3 transition-transform duration-500 md:group-hover:scale-[1.03]"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 320px"
-                  />
+                <div
+                  className={`relative w-full aspect-[16/9] border-b border-white/10 ${
+                    file.cover ? "bg-white" : "bg-zinc-900/80"
+                  }`}
+                >
+                  <DownloadCover cover={file.cover} alt={file.name[locale] || ui.noCover} />
                 </div>
                 <div className="flex flex-col flex-1 p-4 md:p-5">
                   <h3 className="text-sm md:text-[15px] font-medium text-white leading-snug line-clamp-2">

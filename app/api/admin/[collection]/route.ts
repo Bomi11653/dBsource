@@ -1,5 +1,6 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
 import { translateCaseZhToEn } from "@/lib/ai/admin-content";
+import { revalidateAfterAdminSave } from "@/lib/revalidate";
 import { ADMIN_COLLECTIONS, adminStrapiRequest, type AdminCollection } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -66,5 +67,9 @@ export async function POST(request: NextRequest, { params }: Props) {
   const result = await adminStrapiRequest("POST", `/${params.collection}`, {
     data: { ...data, publishedAt: new Date().toISOString() },
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+  if (!result.ok) {
+    return NextResponse.json(result, { status: 502 });
+  }
+  const revalidation = revalidateAfterAdminSave(params.collection, data);
+  return NextResponse.json({ ...result, revalidation });
 }

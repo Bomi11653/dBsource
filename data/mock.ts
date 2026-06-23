@@ -91,7 +91,7 @@ export interface DownloadItem {
   url: string;
   type: "software" | "catalog";
   subCategory: DownloadSubSlug;
-  cover: string;
+  cover?: string;
   /** 以下字段后台可编辑，缺省时前台用内置文案兜底 */
   version?: string;
   osType?: "windows" | "mac" | "cross-platform";

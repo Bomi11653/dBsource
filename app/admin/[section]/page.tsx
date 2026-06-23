@@ -3,6 +3,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { adminTokenConfigured } from "@/lib/strapi-admin";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 type Props = { params: { section: string } };
 
@@ -17,7 +18,9 @@ export default function AdminSectionPage({ params }: Props) {
       title={`${section.title.zh} · 在线编辑`}
       subtitle="直接修改文字与图片，保存后自动同步到官网"
     >
-      <AdminSectionEditor section={section.id} tokenReady={tokenReady} />
+      <Suspense fallback={<p className="text-sm text-gray-500">加载编辑器…</p>}>
+        <AdminSectionEditor section={section.id} tokenReady={tokenReady} />
+      </Suspense>
     </AdminShell>
   );
 }

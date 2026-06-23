@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type StrapiMedia = { id?: number; url?: string; size?: number };
 type StrapiRow = Record<string, unknown> & {
@@ -182,6 +183,7 @@ export default function AdminSectionEditor({
   tokenReady: boolean;
 }) {
   const collection = sectionToCollection(section);
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<StrapiRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, StrapiRow>>({});
   const [openId, setOpenId] = useState<string | null>(null);
@@ -204,6 +206,20 @@ export default function AdminSectionEditor({
   useEffect(() => {
     if (localStorage.getItem("dbsource-admin-hint") === "hidden") setShowHint(false);
   }, []);
+
+  useEffect(() => {
+    const target = searchParams.get("doc")?.trim();
+    if (!target || rows.length === 0) return;
+    const exists = rows.some((row) => docId(row) === target);
+    if (!exists) return;
+    setOpenId(target);
+    window.setTimeout(() => {
+      document.getElementById(`admin-row-${target}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 200);
+  }, [searchParams, rows]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -982,6 +998,7 @@ export default function AdminSectionEditor({
               return (
                 <div
                   key={id}
+                  id={`admin-row-${id}`}
                   className={cn(
                     "rounded-2xl border overflow-hidden transition-colors",
                     isOpen ? "border-brand-gold/25 bg-white/[0.02]" : "border-white/10"

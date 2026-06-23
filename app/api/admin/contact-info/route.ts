@@ -1,4 +1,5 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
+import { revalidateAfterAdminSave } from "@/lib/revalidate";
 import { adminStrapiRequest } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,5 +17,9 @@ export async function PUT(request: NextRequest) {
   const result = await adminStrapiRequest("PUT", "/contact-info", {
     data: { ...body, publishedAt: new Date().toISOString() },
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+  if (!result.ok) {
+    return NextResponse.json(result, { status: 502 });
+  }
+  const revalidation = revalidateAfterAdminSave("contact-info", body as Record<string, unknown>);
+  return NextResponse.json({ ...result, revalidation });
 }

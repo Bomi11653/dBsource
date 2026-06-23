@@ -60,17 +60,17 @@ async function preferMockData(): Promise<boolean> {
 const CASES_QUERY =
   "/cases?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc";
 const QR_QUERY =
-  "/qr-codes?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
+  "/qr-codes?populate[image]=true&sort[0]=sortOrder:asc";
 const SCENES_QUERY =
-  "/scenes?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
+  "/scenes?populate[image]=true&sort[0]=sortOrder:asc";
 const DOWNLOADS_QUERY =
-  "/downloads?populate[cover][fields][0]=url&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size&sort[0]=sortOrder:asc";
+  "/downloads?populate[cover]=true&populate[file]=true&sort[0]=sortOrder:asc";
 const PRODUCTS_QUERY =
-  "/products?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=100";
+  "/products?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100";
 const ABOUT_QUERY =
-  "/about-sections?populate[image][fields][0]=url&sort[0]=sortOrder:asc";
+  "/about-sections?populate[image]=true&sort[0]=sortOrder:asc";
 const GLOBAL_SETTING_QUERY =
-  "/global-setting?populate[logo][fields][0]=url&populate[homeFeaturedCaseImage][fields][0]=url";
+  "/global-setting?populate[logo]=true&populate[homeFeaturedCaseImage]=true";
 const SMART_SELECTION_PAGE_QUERY = "/smart-selection-page";
 const SOCIAL_LINKS_QUERY =
   "/social-links?populate[qrImage][fields][0]=url&sort[0]=sortOrder:asc";

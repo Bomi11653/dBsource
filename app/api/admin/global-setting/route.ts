@@ -1,4 +1,5 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
+import { revalidateSiteModules } from "@/lib/revalidate";
 import { adminStrapiRequest } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -23,5 +24,9 @@ export async function PUT(request: NextRequest) {
   const result = await adminStrapiRequest("PUT", "/global-setting", {
     data: { ...data, publishedAt: now },
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 502 });
+  if (!result.ok) {
+    return NextResponse.json(result, { status: 502 });
+  }
+  const revalidation = revalidateSiteModules(["home", "contact"]);
+  return NextResponse.json({ ...result, revalidation: { ...revalidation, modules: ["home", "contact"] } });
 }
