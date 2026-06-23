@@ -28,7 +28,7 @@ export default function ProductGridCard({
             aspectClassName="aspect-[4/3]"
             minHeightClassName="min-h-[220px] md:min-h-0"
             fit="contain"
-            frameClassName="bg-gradient-to-b from-zinc-900 to-black p-3 md:p-2"
+            frameClassName="bg-white"
             sizes="(max-width: 640px) 100vw, 25vw"
             priority={index < 4}
             imageClassName="opacity-95 md:group-hover:scale-105 md:group-hover:opacity-100 transition-transform duration-500"

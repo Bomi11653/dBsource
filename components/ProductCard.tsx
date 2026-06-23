@@ -26,7 +26,7 @@ export default function ProductCard({
           aspectClassName="aspect-[4/3]"
           minHeightClassName="min-h-[240px] md:min-h-0"
           fit="contain"
-          frameClassName="bg-gradient-to-b from-zinc-900 to-black p-3 md:p-2"
+          frameClassName="bg-white"
           sizes="(max-width: 768px) 100vw, 50vw"
           imageClassName="opacity-90 md:group-hover:scale-105 transition-transform duration-500"
         />

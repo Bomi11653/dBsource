@@ -8,6 +8,7 @@ import StackedSpecPanel from "@/components/StackedSpecPanel";
 import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
 import { getProductGallery } from "@/lib/products";
+import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { Check, Copy, Download } from "lucide-react";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default function ProductDetailContent({
   const stackedPages = getStackedSpecPages(product.model);
   const specSheet = stackedPages ? null : getSpecSheetForProduct(product);
 
-  const copySpecs = useCallback(() => {
+  const copySpecs = useCallback(async () => {
     const lines: string[] = [`${product.name[locale]}（${product.model}）`];
     if (product.specs) lines.push(product.specs[locale]);
     const sheets = stackedPages ?? (specSheet ? [specSheet] : []);
@@ -44,13 +45,11 @@ export default function ProductDetailContent({
         lines.push(`${row.label[locale]}: ${row.value[locale]}`);
       }
     }
-    navigator.clipboard
-      .writeText(lines.join("\n").trim())
-      .then(() => {
-        setSpecsCopied(true);
-        setTimeout(() => setSpecsCopied(false), 2000);
-      })
-      .catch(() => {});
+    const copied = await copyTextToClipboard(lines.join("\n").trim());
+    if (copied) {
+      setSpecsCopied(true);
+      setTimeout(() => setSpecsCopied(false), 2000);
+    }
   }, [locale, product, specSheet, stackedPages]);
 
   const downloadName = useCallback(
