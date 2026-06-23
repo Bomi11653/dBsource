@@ -14,16 +14,18 @@ export function sortCases(list: CaseItem[]): CaseItem[] {
   ];
 }
 
-/** 将本地案例图册路径合并到案例数据（全站统一封面与图集） */
+/** 将本地案例图册路径合并到案例数据（仅 Mock 模式使用） */
 export function applyCaseImages(list: CaseItem[]): CaseItem[] {
   return list.map((item) => {
     const imgs = caseImageMap[item.id];
     if (!imgs) return item;
-    const hasCmsCover = Boolean(item.image);
+    const hasCmsCover = Boolean(item.imageUrl || item.image);
     const hasCmsGallery = Array.isArray(item.gallery) && item.gallery.length > 0;
+    const cover = hasCmsCover ? (item.imageUrl || item.image) : imgs.cover;
     return {
       ...item,
-      image: hasCmsCover ? item.image : imgs.cover,
+      image: cover,
+      imageUrl: cover,
       gallery: hasCmsGallery ? item.gallery : imgs.gallery,
     };
   });

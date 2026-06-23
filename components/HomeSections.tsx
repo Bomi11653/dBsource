@@ -82,6 +82,10 @@ export function HomeCasesPreview({
   const { locale, t } = useI18n();
   const featured = getHomeFeaturedCaseWithImage(cases, featuredCaseOverride);
 
+  if (!featured) {
+    return null;
+  }
+
   return (
     <section
       id="home-cases"

@@ -15,10 +15,12 @@ import {
   scenes,
   smartSelectionPageDefault,
   socialLinksDefault,
+  type ContactInfo,
 } from "@/data/mock";
 import { aboutImages, type AboutImages } from "@/data/about";
 import { applyCaseImages, sortCases } from "@/lib/cases";
-import { isCmsAvailable } from "@/lib/cms-health";
+import { shouldUseMockData } from "@/lib/cms-data-source";
+import { probeStrapiApi } from "@/lib/cms-health";
 import { fetchStrapiCollection, fetchStrapiSingle, getCmsUrl } from "@/lib/strapi-client";
 import {
   mapStrapiAboutSections,
@@ -30,7 +32,25 @@ import {
   mapStrapiScene,
 } from "@/lib/strapi-mapper";
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+function isMockMode(): boolean {
+  return shouldUseMockData();
+}
+
+const EMPTY_CONTACT: ContactInfo = {
+  company: { zh: "", en: "" },
+  phones: [],
+  email: "",
+  address: { zh: "", en: "" },
+  mapQuery: "",
+  footerIntro: { zh: "", en: "" },
+};
+
+const EMPTY_GLOBAL_SETTING = {
+  logo: undefined as string | undefined,
+  footerCopyright: { zh: "", en: "" },
+  homeFeaturedProductIds: [] as number[],
+  homeFeaturedCase: undefined as (typeof globalSettingDefault)["homeFeaturedCase"],
+};
 
 function resolveSiteMarket(): "cn" | "global" | "all" {
   const envMarket =
@@ -52,19 +72,26 @@ function filterByMarket<T extends { market?: "cn" | "global" | "all" }>(items: T
   return items.filter((item) => !item.market || item.market === "all" || item.market === market);
 }
 
-async function preferMockData(): Promise<boolean> {
-  if (USE_MOCK) return true;
-  return !(await isCmsAvailable());
+function logStrapiEmpty(collection: string) {
+  if (process.env.NODE_ENV === "development") {
+    console.warn(`[fetchCMS] Strapi 返回空 ${collection}，生产环境不回退 Mock`);
+  }
+}
+
+async function assertStrapiReachable(): Promise<boolean> {
+  if (isMockMode()) return false;
+  const probe = await probeStrapiApi();
+  return probe.ok;
 }
 
 const CASES_QUERY =
-  "/cases?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc";
+  "/cases?populate[image]=true&populate[gallery]=true&sort[0]=legacyId:asc&pagination[pageSize]=100";
 const QR_QUERY =
   "/qr-codes?populate[image]=true&sort[0]=sortOrder:asc";
 const SCENES_QUERY =
   "/scenes?populate[image]=true&sort[0]=sortOrder:asc";
 const DOWNLOADS_QUERY =
-  "/downloads?populate[cover]=true&populate[file]=true&sort[0]=sortOrder:asc";
+  "/downloads?populate[cover]=true&populate[file]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100";
 const PRODUCTS_QUERY =
   "/products?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100";
 const ABOUT_QUERY =
@@ -76,18 +103,24 @@ const SOCIAL_LINKS_QUERY =
   "/social-links?populate[qrImage][fields][0]=url&sort[0]=sortOrder:asc";
 
 export async function getProducts() {
-  if (await preferMockData()) return filterByMarket(products);
+  if (isMockMode()) return filterByMarket(products);
+  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(
-    withMarketFilter(PRODUCTS_QUERY)
-  );
-
-  if (docs?.length) {
+  const fetchMapped = async (query: string) => {
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(query);
+    if (!docs?.length) return null;
     return docs.map((doc, index) => mapStrapiProduct(doc, cmsUrl, index));
-  }
+  };
 
-  return filterByMarket(products);
+  const withMarket = await fetchMapped(withMarketFilter(PRODUCTS_QUERY));
+  if (withMarket?.length) return withMarket;
+
+  const withoutMarket = await fetchMapped(PRODUCTS_QUERY);
+  if (withoutMarket?.length) return withoutMarket;
+
+  logStrapiEmpty("products");
+  return [];
 }
 
 export async function getProductById(id: number) {
@@ -96,20 +129,26 @@ export async function getProductById(id: number) {
 }
 
 export async function getCases() {
-  if (await preferMockData()) {
+  if (isMockMode()) {
     return sortCases(applyCaseImages(filterByMarket(cases)));
   }
+  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiCase>[0]>(
-    withMarketFilter(CASES_QUERY)
-  );
-
-  if (docs?.length) {
+  const fetchMapped = async (query: string) => {
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiCase>[0]>(query);
+    if (!docs?.length) return null;
     return sortCases(docs.map((doc) => mapStrapiCase(doc, cmsUrl)));
-  }
+  };
 
-  return sortCases(applyCaseImages(filterByMarket(cases)));
+  const withMarket = await fetchMapped(withMarketFilter(CASES_QUERY));
+  if (withMarket?.length) return withMarket;
+
+  const withoutMarket = await fetchMapped(CASES_QUERY);
+  if (withoutMarket?.length) return withoutMarket;
+
+  logStrapiEmpty("cases");
+  return [];
 }
 
 export async function getCaseById(id: number) {
@@ -118,52 +157,59 @@ export async function getCaseById(id: number) {
 }
 
 export async function getDownloads() {
-  if (await preferMockData()) return filterByMarket(downloads);
+  if (isMockMode()) return filterByMarket(downloads);
+  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiDownload>[0]>(
-    withMarketFilter(DOWNLOADS_QUERY)
-  );
-
-  if (docs?.length) {
+  const fetchMapped = async (query: string) => {
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiDownload>[0]>(query);
+    if (!docs?.length) return null;
     return docs.map((doc, index) => mapStrapiDownload(doc, cmsUrl, index));
-  }
+  };
 
-  return filterByMarket(downloads);
+  const withMarket = await fetchMapped(withMarketFilter(DOWNLOADS_QUERY));
+  if (withMarket?.length) return withMarket;
+
+  const withoutMarket = await fetchMapped(DOWNLOADS_QUERY);
+  if (withoutMarket?.length) return withoutMarket;
+
+  logStrapiEmpty("downloads");
+  return [];
 }
 
 export async function getScenes() {
-  if (await preferMockData()) return scenes;
+  if (isMockMode()) return scenes;
+  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiScene>[0]>(
-    SCENES_QUERY
-  );
+  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiScene>[0]>(SCENES_QUERY);
 
   if (docs?.length) {
     return docs.map((doc, index) => mapStrapiScene(doc, cmsUrl, index));
   }
 
-  return scenes;
+  logStrapiEmpty("scenes");
+  return [];
 }
 
 export async function getQRCodes() {
-  if (await preferMockData()) return qrCodes;
+  if (isMockMode()) return qrCodes;
+  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(
-    QR_QUERY
-  );
+  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(QR_QUERY);
 
   if (docs?.length) {
     return docs.map((doc, index) => mapStrapiQR(doc, cmsUrl, index));
   }
 
-  return qrCodes;
+  logStrapiEmpty("qr-codes");
+  return [];
 }
 
 export async function getAboutImages(): Promise<AboutImages> {
-  if (await preferMockData()) return aboutImages;
+  if (isMockMode()) return aboutImages;
+  if (!(await assertStrapiReachable())) return aboutImages;
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiAboutSections>[0][number]>(
@@ -178,7 +224,11 @@ export async function getAboutImages(): Promise<AboutImages> {
 }
 
 export async function getContactInfo() {
-  if (await preferMockData()) return contactInfo;
+  if (isMockMode()) return contactInfo;
+  const fallback = EMPTY_CONTACT;
+  if (!(await assertStrapiReachable())) {
+    return { ...fallback };
+  }
 
   const cmsUrl = getCmsUrl();
   const doc = await fetchStrapiSingle<Parameters<typeof mapStrapiContactInfo>[0]>(
@@ -186,14 +236,18 @@ export async function getContactInfo() {
   );
 
   if (doc) {
-    return mapStrapiContactInfo(doc, contactInfo, cmsUrl);
+    return mapStrapiContactInfo(doc, fallback, cmsUrl);
   }
 
-  return contactInfo;
+  return { ...fallback };
 }
 
 export async function getGlobalSetting() {
-  if (await preferMockData()) return globalSettingDefault;
+  if (isMockMode()) return globalSettingDefault;
+  const fallback = EMPTY_GLOBAL_SETTING;
+  if (!(await assertStrapiReachable())) {
+    return { ...fallback };
+  }
 
   type GlobalSettingDoc = {
     logo?: { url?: string } | null;
@@ -209,43 +263,55 @@ export async function getGlobalSetting() {
     homeFeaturedCaseImage?: { url?: string } | null;
   };
   const doc = await fetchStrapiSingle<GlobalSettingDoc>(GLOBAL_SETTING_QUERY);
-  if (!doc) return globalSettingDefault;
+  if (!doc) {
+    return { ...fallback };
+  }
 
   return {
-    logo: toMediaUrl(doc.logo?.url) || globalSettingDefault.logo,
+    logo: toMediaUrl(doc.logo?.url) || fallback.logo,
     footerCopyright: {
-      zh: doc.footerCopyrightZh || globalSettingDefault.footerCopyright.zh,
-      en: doc.footerCopyrightEn || globalSettingDefault.footerCopyright.en,
+      zh: doc.footerCopyrightZh || fallback.footerCopyright.zh,
+      en: doc.footerCopyrightEn || fallback.footerCopyright.en,
     },
     homeFeaturedProductIds: [
-      doc.homeFeaturedProductAId ?? globalSettingDefault.homeFeaturedProductIds?.[0] ?? 44,
-      doc.homeFeaturedProductBId ?? globalSettingDefault.homeFeaturedProductIds?.[1] ?? 46,
-    ],
-    homeFeaturedCase: {
-      caseId: doc.homeFeaturedCaseId ?? globalSettingDefault.homeFeaturedCase?.caseId ?? 6,
-      title:
-        doc.homeFeaturedCaseTitleZh || doc.homeFeaturedCaseTitleEn
-          ? {
+      doc.homeFeaturedProductAId ?? fallback.homeFeaturedProductIds[0],
+      doc.homeFeaturedProductBId ?? fallback.homeFeaturedProductIds[1],
+    ].filter((id): id is number => typeof id === "number"),
+    homeFeaturedCase:
+      doc.homeFeaturedCaseId != null ||
+      doc.homeFeaturedCaseTitleZh ||
+      doc.homeFeaturedCaseTitleEn ||
+      doc.homeFeaturedCaseImage
+        ? {
+            caseId: doc.homeFeaturedCaseId ?? 0,
+            title: {
               zh: doc.homeFeaturedCaseTitleZh ?? "",
               en: doc.homeFeaturedCaseTitleEn ?? "",
-            }
-          : globalSettingDefault.homeFeaturedCase?.title,
-      desc:
-        doc.homeFeaturedCaseDescZh || doc.homeFeaturedCaseDescEn
-          ? {
+            },
+            desc: {
               zh: doc.homeFeaturedCaseDescZh ?? "",
               en: doc.homeFeaturedCaseDescEn ?? "",
-            }
-          : globalSettingDefault.homeFeaturedCase?.desc,
-      image:
-        toMediaUrl(doc.homeFeaturedCaseImage?.url) ||
-        globalSettingDefault.homeFeaturedCase?.image,
-    },
+            },
+            image: toMediaUrl(doc.homeFeaturedCaseImage?.url),
+          }
+        : fallback.homeFeaturedCase,
   };
 }
 
 export async function getSmartSelectionPage() {
-  if (await preferMockData()) return smartSelectionPageDefault;
+  if (isMockMode()) return smartSelectionPageDefault;
+  if (!(await assertStrapiReachable())) {
+    return {
+      title: { zh: "", en: "" },
+      subtitle: { zh: "", en: "" },
+      buttons: {
+        generate: { zh: "", en: "" },
+        regenerate: { zh: "", en: "" },
+        copy: { zh: "", en: "" },
+        contact: { zh: "", en: "" },
+      },
+    };
+  }
 
   type SmartSelectionPageDoc = {
     titleZh?: string | null;
@@ -295,7 +361,8 @@ export async function getSmartSelectionPage() {
 }
 
 export async function getSocialLinks() {
-  if (await preferMockData()) return socialLinksDefault;
+  if (isMockMode()) return socialLinksDefault;
+  if (!(await assertStrapiReachable())) return [];
 
   type SocialLinkDoc = {
     platformKey: "wechat" | "douyin" | "channels";
@@ -307,24 +374,15 @@ export async function getSocialLinks() {
     enabled?: boolean | null;
   };
   const docs = await fetchStrapiCollection<SocialLinkDoc>(SOCIAL_LINKS_QUERY);
-  if (!docs?.length) return socialLinksDefault;
+  if (!docs?.length) return [];
 
   return docs.map((doc, index) => ({
     platformKey: doc.platformKey,
     label: {
-      zh:
-        doc.labelZh ||
-        socialLinksDefault.find((x) => x.platformKey === doc.platformKey)?.label.zh ||
-        doc.platformKey,
-      en:
-        doc.labelEn ||
-        socialLinksDefault.find((x) => x.platformKey === doc.platformKey)?.label.en ||
-        doc.platformKey,
+      zh: doc.labelZh || doc.platformKey,
+      en: doc.labelEn || doc.platformKey,
     },
-    url:
-      doc.url ||
-      socialLinksDefault.find((x) => x.platformKey === doc.platformKey)?.url ||
-      "",
+    url: doc.url || "",
     qrImage: toMediaUrl(doc.qrImage?.url),
     sortOrder: doc.sortOrder ?? index + 1,
     enabled: doc.enabled !== false,

@@ -63,7 +63,10 @@ export interface CaseItem {
   detail?: { zh: string; en: string };
   scene: { zh: string; en: string };
   products: string;
+  /** @deprecated 请使用 imageUrl；保留兼容旧组件 */
   image: string;
+  /** 全站统一封面（列表/详情/首页共用） */
+  imageUrl?: string;
   gallery?: string[];
   highlights?: { zh: string[]; en: string[] };
   market?: SiteMarket;

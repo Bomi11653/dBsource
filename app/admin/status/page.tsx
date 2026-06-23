@@ -2,8 +2,10 @@ import AdminShell from "@/components/admin/AdminShell";
 import DataHealthCheckPanel from "@/components/admin/DataHealthCheckPanel";
 import RevalidateCacheButton from "@/components/admin/RevalidateCacheButton";
 import { getAdminStats } from "@/lib/admin-stats";
+import { resolveDataSource } from "@/lib/cms-data-source";
+import { probeStrapiApi } from "@/lib/cms-health";
+import { getPublicCmsUrl } from "@/lib/media-url";
 import { adminTokenConfigured } from "@/lib/strapi-admin";
-import { isCmsAvailable } from "@/lib/cms-health";
 import { getCmsUrl } from "@/lib/strapi-client";
 import Link from "next/link";
 
@@ -12,20 +14,19 @@ export const dynamic = "force-dynamic";
 const SOURCE_LABEL: Record<string, string> = {
   mock: "Mock 演示数据",
   strapi: "Strapi CMS 实时数据",
-  "mock-fallback": "CMS 不可用 · Mock 降级",
+  "strapi-error": "Strapi 异常 · 不回退 Mock",
 };
 
 export default async function AdminStatusPage() {
   const useMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
   const cmsUrl = getCmsUrl();
-  const cmsOnline = useMock ? false : await isCmsAvailable();
-
-  let dataSource: keyof typeof SOURCE_LABEL = "mock-fallback";
-  if (useMock) dataSource = "mock";
-  else if (cmsOnline) dataSource = "strapi";
+  const publicCmsUrl = getPublicCmsUrl();
+  const strapiProbe = await probeStrapiApi();
+  const cmsOnline = strapiProbe.ok;
+  const dataSource = resolveDataSource(cmsOnline);
 
   const stats = cmsOnline && !useMock ? await getAdminStats() : null;
-  const healthCheckEnabled = cmsOnline && !useMock && adminTokenConfigured();
+  const healthCheckEnabled = !useMock && adminTokenConfigured();
 
   return (
     <AdminShell title="系统状态" subtitle="CMS 连接、数据源与内容规模一览">
@@ -34,22 +35,30 @@ export default async function AdminStatusPage() {
           <p className="text-xs text-gray-500">当前数据源</p>
           <p
             className={`text-lg font-medium mt-1 ${
-              dataSource === "strapi" ? "text-emerald-400" : "text-amber-400"
+              dataSource === "strapi"
+                ? "text-emerald-400"
+                : dataSource === "strapi-error"
+                  ? "text-red-400"
+                  : "text-amber-400"
             }`}
           >
-            {SOURCE_LABEL[dataSource]}
+            {SOURCE_LABEL[dataSource] ?? dataSource}
           </p>
-          <p className="text-xs text-gray-500 mt-3 break-all">CMS: {cmsUrl}</p>
+          <p className="text-xs text-gray-500 mt-3 break-all">CMS (内网): {cmsUrl}</p>
+          <p className="text-xs text-gray-500 mt-1 break-all">CMS (公网): {publicCmsUrl}</p>
           <p className="text-xs text-gray-500 mt-1">
-            CMS 在线: {cmsOnline ? "是" : "否"} · USE_MOCK_DATA: {useMock ? "true" : "false"}
+            Strapi API: {strapiProbe.status ?? "—"} · USE_MOCK_DATA: {useMock ? "true" : "false"}
           </p>
+          {strapiProbe.errorMessage ? (
+            <p className="text-xs text-red-400 mt-2">{strapiProbe.errorMessage}</p>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-gray-500">前台缓存策略</p>
           <p className="text-lg font-medium mt-1 text-white">ISR revalidate 300s</p>
           <p className="text-xs text-gray-500 mt-3">
-            官网页面默认 5 分钟再验证；后台保存成功后会立即触发 revalidate。
+            后台保存成功后会立即触发 revalidate；生产环境 Strapi 异常时不回退 Mock。
           </p>
         </div>
       </div>

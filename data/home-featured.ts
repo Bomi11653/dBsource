@@ -1,5 +1,6 @@
 import type { CaseItem, Product } from "./mock";
 import { PRODUCT_SPEC_SHEETS, type ProductSpecSheet } from "./product-specs";
+import { getCaseCoverUrl } from "@/lib/case-media";
 
 export type HomeFeaturedSpecPage = {
   model: string;
@@ -108,6 +109,34 @@ export function getHomeFeaturedCase(cases: CaseItem[]): CaseItem | undefined {
   return cases.find((c) => c.id === 6) ?? cases[0];
 }
 
+function resolveFeaturedBaseCase(
+  cases: CaseItem[],
+  override?: {
+    caseId?: number;
+    title?: { zh: string; en: string };
+  }
+): CaseItem | null {
+  if (override?.caseId != null) {
+    const byId = cases.find((c) => c.id === override.caseId);
+    if (byId) return byId;
+  }
+  const titleZh = override?.title?.zh?.trim();
+  if (titleZh) {
+    const byTitle = cases.find((c) => c.title.zh.trim() === titleZh);
+    if (byTitle) return byTitle;
+  }
+  const titleEn = override?.title?.en?.trim();
+  if (titleEn) {
+    const byTitleEn = cases.find((c) => c.title.en.trim() === titleEn);
+    if (byTitleEn) return byTitleEn;
+  }
+  const fallback = getHomeFeaturedCase(cases);
+  if (!fallback) {
+    return null;
+  }
+  return fallback;
+}
+
 export function getHomeFeaturedCaseWithImage(
   cases: CaseItem[],
   override?: {
@@ -116,15 +145,57 @@ export function getHomeFeaturedCaseWithImage(
     desc?: { zh: string; en: string };
     image?: string;
   }
-): CaseItem {
-  const item = (override?.caseId ? cases.find((c) => c.id === override.caseId) : undefined) ?? getHomeFeaturedCase(cases);
-  if (!item) {
-    throw new Error("No cases available for home preview");
+): CaseItem | null {
+  if (!cases.length && !override?.title?.zh && !override?.title?.en && !override?.image) {
+    return null;
   }
+
+  const base = resolveFeaturedBaseCase(cases, override);
+  if (!base) {
+    if (!override?.title?.zh && !override?.title?.en && !override?.image) {
+      return null;
+    }
+    const cover = override?.image?.trim() || "";
+    return {
+      id: override?.caseId ?? 0,
+      type: "engineering",
+      sceneSlug: "corporate",
+      title: {
+        zh: override?.title?.zh?.trim() || "未命名案例",
+        en: override?.title?.en?.trim() || "Untitled case",
+      },
+      desc: {
+        zh: override?.desc?.zh?.trim() || "",
+        en: override?.desc?.en?.trim() || "",
+      },
+      scene: { zh: "", en: "" },
+      products: "",
+      image: cover,
+      imageUrl: cover,
+      gallery: cover ? [cover] : [],
+      highlights: { zh: [], en: [] },
+    };
+  }
+
+  const cover = override?.image?.trim() || getCaseCoverUrl(base);
+
   return {
-    ...item,
-    title: override?.title?.zh || override?.title?.en ? { ...item.title, ...override.title } : item.title,
-    desc: override?.desc?.zh || override?.desc?.en ? { ...item.desc, ...override.desc } : item.desc,
-    image: override?.image || item.image,
+    ...base,
+    title:
+      override?.title?.zh || override?.title?.en
+        ? {
+            zh: override.title.zh?.trim() || base.title.zh,
+            en: override.title.en?.trim() || base.title.en,
+          }
+        : base.title,
+    desc:
+      override?.desc?.zh || override?.desc?.en
+        ? {
+            zh: override.desc.zh?.trim() || base.desc.zh,
+            en: override.desc.en?.trim() || base.desc.en,
+          }
+        : base.desc,
+    image: cover,
+    imageUrl: cover,
   };
 }

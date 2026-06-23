@@ -2,36 +2,30 @@
 
 import type { CaseItem } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
+import { getCaseCoverUrl, hasCaseCover } from "@/lib/case-media";
 import SafeImage from "@/components/SafeImage";
 import Link from "next/link";
 
 export default function CaseCard({
   item,
   locale,
-  emptyImage = false,
 }: {
   item: CaseItem;
   locale: Locale;
   index?: number;
-  /** 保留缩略图框，不显示图片（待上传封面） */
-  emptyImage?: boolean;
 }) {
+  const cover = getCaseCoverUrl(item);
+
   return (
     <Link
       href={`/cases/${item.id}`}
       className="group card-touch block"
     >
       <article className="flex flex-col md:flex-row gap-0 md:gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors active:border-brand-gold/20">
-        {emptyImage || !item.image ? (
-          <div
-            className="w-full md:w-72 shrink-0 bg-zinc-900/70 md:border-r border-white/5"
-            style={{ minHeight: 200 }}
-            aria-hidden
-          />
-        ) : (
+        {hasCaseCover(item) ? (
           <div className="w-full md:w-72 shrink-0">
             <SafeImage
-              src={item.image}
+              src={cover}
               alt={item.title[locale]}
               frameHeight={200}
               frameWidth="100%"
@@ -39,6 +33,12 @@ export default function CaseCard({
               loading="lazy"
             />
           </div>
+        ) : (
+          <div
+            className="w-full md:w-72 shrink-0 bg-zinc-900/70 md:border-r border-white/5"
+            style={{ minHeight: 200 }}
+            aria-hidden
+          />
         )}
         <div className="p-4 sm:p-6 flex flex-col justify-center">
           <span className="text-xs text-brand-gold uppercase tracking-wider">

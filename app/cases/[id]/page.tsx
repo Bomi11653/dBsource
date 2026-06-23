@@ -1,5 +1,6 @@
 import CaseDetailContent from "./CaseDetailContent";
 import SiteFooter from "@/components/SiteFooter";
+import { getCaseCoverUrl } from "@/lib/case-media";
 import { getCaseById, getCases } from "@/lib/cms";
 import { getRelatedCases } from "@/lib/cases";
 import { caseJsonLd, pageMetadata } from "@/lib/seo";
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: Props) {
     caseItem.title.zh,
     caseItem.desc.zh,
     `/cases/${id}`,
-    caseItem.image
+    getCaseCoverUrl(caseItem)
   );
 }
 

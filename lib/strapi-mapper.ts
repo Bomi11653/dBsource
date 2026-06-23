@@ -11,6 +11,7 @@ import type {
   SceneItem,
 } from "@/data/mock";
 import type { AboutImages } from "@/data/about";
+import { mapCaseMediaFields } from "@/lib/case-media";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import {
   pickCaseTitleEn,
@@ -21,12 +22,11 @@ import {
   pickMediaPath,
   pickProductNameEn,
   pickProductNameZh,
-  resolveCaseGalleryUrls,
-  resolveCaseImageUrl,
   resolveCmsAssetUrl,
   resolveDownloadFileUrl,
   resolveMediaUrlFromSource,
   resolveStrapiMediaUrl,
+  unwrapStrapiGallery,
   unwrapStrapiMedia,
   warnStrapiMapping,
   type StrapiMediaLike,
@@ -55,7 +55,7 @@ type StrapiCaseDoc = {
   image?: StrapiMedia | null;
   cover?: StrapiMedia | null;
   thumbnail?: StrapiMedia | null;
-  gallery?: StrapiMedia[] | null;
+  gallery?: unknown;
   highlightsZh?: string[] | null;
   highlightsEn?: string[] | null;
   market?: "cn" | "global" | "all" | null;
@@ -176,9 +176,9 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
     image: doc.image,
     cover: doc.cover,
     thumbnail: doc.thumbnail,
+    gallery: unwrapStrapiGallery(doc.gallery),
   };
-  const image = resolveCaseImageUrl(mediaSource, cmsUrl);
-  const gallery = resolveCaseGalleryUrls(doc.gallery, cmsUrl);
+  const { imageUrl, gallery } = mapCaseMediaFields(doc, cmsUrl);
   const titleZh = pickCaseTitleZh(doc);
   const titleEn = pickCaseTitleEn(doc);
 
@@ -186,7 +186,7 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
   if (!doc.titleZh?.trim() && !doc.title?.trim() && !doc.nameZh?.trim() && !doc.name?.trim()) {
     missing.push("titleZh/title/nameZh/name");
   }
-  if (!pickMediaPath(mediaSource)) missing.push("image/cover/thumbnail");
+  if (!pickMediaPath(mediaSource)) missing.push("image/cover/thumbnail/gallery");
   if (!doc.descZh?.trim()) missing.push("descZh");
   warnStrapiMapping("case", doc.legacyId, missing);
 
@@ -203,8 +203,9 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
         : undefined,
     scene: { zh: doc.sceneZh?.trim() || "", en: doc.sceneEn?.trim() || "" },
     products: doc.products?.trim() || "",
-    image,
-    gallery: gallery.length > 0 ? gallery : image ? [image] : [],
+    image: imageUrl,
+    imageUrl,
+    gallery,
     highlights: {
       zh: doc.highlightsZh ?? [],
       en: doc.highlightsEn ?? [],

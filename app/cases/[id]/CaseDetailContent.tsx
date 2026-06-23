@@ -4,6 +4,7 @@ import type { CaseItem } from "@/data/mock";
 import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
+import { getCaseCoverUrl, getCaseGalleryUrls } from "@/lib/case-media";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -18,17 +19,16 @@ export default function CaseDetailContent({
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const body = caseItem.detail?.[locale] ?? caseItem.desc[locale];
-  const gallery = (caseItem.gallery ?? []).filter(Boolean);
-  const heroImages =
-    gallery.length > 0 ? gallery : caseItem.image ? [caseItem.image] : [];
+  const cover = getCaseCoverUrl(caseItem);
+  const heroImages = getCaseGalleryUrls(caseItem);
   const highlights = caseItem.highlights?.[locale] ?? [];
 
   return (
     <div className="bg-black text-white min-h-screen pt-24">
       <section className="relative h-[50vh] md:h-[60vh] border-b border-white/10">
-        {caseItem.image ? (
+        {cover ? (
           <Image
-            src={caseItem.image}
+            src={cover}
             alt={caseItem.title[locale]}
             fill
             className="object-cover"
@@ -104,7 +104,7 @@ export default function CaseDetailContent({
         {heroImages.length > 0 ? (
         <div
           className={`grid gap-4 md:gap-6 ${
-            gallery.length > 9
+            heroImages.length > 9
               ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           }`}
@@ -154,16 +154,18 @@ export default function CaseDetailContent({
         >
           <h2 className="text-2xl font-medium mb-8">{t.cases.related}</h2>
           <div className="grid md:grid-cols-2 gap-8">
-            {relatedCases.map((c) => (
+            {relatedCases.map((c) => {
+              const relatedCover = getCaseCoverUrl(c);
+              return (
               <Link
                 key={c.id}
                 href={`/cases/${c.id}`}
                 className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
               >
                 <div className="relative h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
-                  {c.image ? (
+                  {relatedCover ? (
                   <Image
-                    src={c.image}
+                    src={relatedCover}
                     alt={c.title[locale]}
                     fill
                     className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
@@ -178,7 +180,8 @@ export default function CaseDetailContent({
                 </h3>
                 <p className="text-gray-400 text-sm mt-2 line-clamp-2">{c.desc[locale]}</p>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

@@ -37,13 +37,18 @@ export default function DataHealthCheckPanel({ enabled }: { enabled: boolean }) 
     setError(null);
     try {
       const res = await fetch("/api/admin/health-check", { method: "POST" });
-      const json = (await res.json()) as HealthCheckResult;
-      if (!res.ok && json.error) {
-        setError(json.error);
-        setResult(json);
+      const json = (await res.json()) as {
+        ok?: boolean;
+        content?: HealthCheckResult;
+        error?: string;
+      };
+      const result = json.content ?? (json as HealthCheckResult);
+      if (!res.ok && result.error) {
+        setError(result.error);
+        setResult(result);
         return;
       }
-      setResult(json);
+      setResult(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "检查失败");
     } finally {
@@ -149,6 +154,7 @@ export default function DataHealthCheckPanel({ enabled }: { enabled: boolean }) 
                       <th className="text-left px-4 py-3 font-medium">内容类型</th>
                       <th className="text-left px-4 py-3 font-medium">ID</th>
                       <th className="text-left px-4 py-3 font-medium">标题</th>
+                      <th className="text-left px-4 py-3 font-medium">imageUrl</th>
                       <th className="text-left px-4 py-3 font-medium">问题原因</th>
                       <th className="text-left px-4 py-3 font-medium">操作</th>
                     </tr>
@@ -199,7 +205,10 @@ function IssueRow({ issue }: { issue: HealthIssueRow }) {
       <td className="px-4 py-3 whitespace-nowrap text-gray-300">{issue.contentTypeLabel}</td>
       <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-gray-400">{issue.id}</td>
       <td className="px-4 py-3 max-w-[180px] truncate text-white">{issue.title}</td>
-      <td className="px-4 py-3 text-amber-200/90 text-xs leading-relaxed max-w-[320px]">
+      <td className="px-4 py-3 max-w-[200px] truncate font-mono text-[11px] text-gray-500">
+        {issue.imageUrl || "—"}
+      </td>
+      <td className="px-4 py-3 text-amber-200/90 text-xs leading-relaxed max-w-[280px]">
         {issue.reason}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">

@@ -20,6 +20,7 @@ export type MediaSource = {
   image?: unknown;
   cover?: unknown;
   thumbnail?: unknown;
+  gallery?: unknown[] | null;
 };
 
 export type DownloadFileSource = {
@@ -59,24 +60,39 @@ export function warnStrapiMapping(
   console.warn(`[Strapi mapping] ${label} 缺少字段: ${missing.join(", ")}`);
 }
 
+/** Strapi v5 gallery 可能是数组或 { data: [] } */
+export function unwrapStrapiGallery(gallery: unknown): unknown[] {
+  if (!gallery) return [];
+  if (Array.isArray(gallery)) return gallery;
+  if (typeof gallery === "object" && gallery !== null) {
+    const data = (gallery as { data?: unknown }).data;
+    if (Array.isArray(data)) return data;
+  }
+  return [];
+}
+
 /**
- * 图片相对路径优先级（Strapi 原始路径）：
- * image.formats.large → medium → url → cover.formats.large → cover.url →
- * thumbnail.formats.medium → thumbnail.url
+ * 图片相对路径优先级（Strapi 原始路径）
  */
 export function pickMediaPath(source: MediaSource): string {
   const image = unwrapStrapiMedia(source.image);
   const cover = unwrapStrapiMedia(source.cover);
   const thumbnail = unwrapStrapiMedia(source.thumbnail);
+  const galleryFirst = unwrapStrapiMedia(unwrapStrapiGallery(source.gallery)[0]);
 
   const candidates = [
     image?.formats?.large?.url,
     image?.formats?.medium?.url,
     image?.url,
     cover?.formats?.large?.url,
+    cover?.formats?.medium?.url,
     cover?.url,
+    thumbnail?.formats?.large?.url,
     thumbnail?.formats?.medium?.url,
     thumbnail?.url,
+    galleryFirst?.formats?.large?.url,
+    galleryFirst?.formats?.medium?.url,
+    galleryFirst?.url,
   ];
 
   for (const raw of candidates) {
@@ -265,9 +281,9 @@ export function pickDownloadTitleEn(doc: TitleSource, fallback = "Untitled resou
   );
 }
 
-/** 案例标题：titleZh → title → nameZh → name → fallback */
+/** 案例标题：titleZh → title → nameZh → name → titleEn → fallback */
 export function pickCaseTitleZh(doc: TitleSource, fallback = "未命名案例"): string {
-  return pickString(doc.titleZh, doc.title, doc.nameZh, doc.name) || fallback;
+  return pickString(doc.titleZh, doc.title, doc.nameZh, doc.name, doc.titleEn) || fallback;
 }
 
 export function pickCaseTitleEn(doc: TitleSource, fallback = "Untitled case"): string {

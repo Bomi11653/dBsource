@@ -1,3 +1,4 @@
+import { mapCaseMediaFields } from "@/lib/case-media";
 import {
   pickCaseTitleZh,
   pickDownloadFilePath,
@@ -5,6 +6,7 @@ import {
   pickMediaPath,
   pickProductNameZh,
   resolveCmsAssetUrl,
+  unwrapStrapiGallery,
   type DownloadFileSource,
   type MediaSource,
   type TitleSource,
@@ -20,6 +22,7 @@ export type HealthIssueRow = {
   id: string;
   documentId: string;
   title: string;
+  imageUrl: string;
   reason: string;
   editHref: string;
 };
@@ -47,6 +50,7 @@ type StrapiRow = Record<string, unknown> & {
   image?: unknown;
   cover?: unknown;
   thumbnail?: unknown;
+  gallery?: unknown;
   file?: unknown;
   attachment?: unknown;
   downloadFile?: unknown;
@@ -66,11 +70,17 @@ const EDIT_SECTION: Record<HealthContentType, string> = {
 };
 
 const QUERIES: Record<HealthContentType, string> = {
-  cases: "/cases?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100",
+  cases: "/cases?populate[image]=true&populate[gallery]=true&sort[0]=legacyId:asc&pagination[pageSize]=100",
   downloads:
     "/downloads?populate[cover]=true&populate[file]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100",
   products: "/products?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=200",
 };
+
+const SHARED_PLACEHOLDER_PATTERNS = [
+  /cover-unit48\.png/i,
+  /download-cover-\d+\.svg/i,
+  /case-[12]\.svg/i,
+];
 
 function hasText(...values: Array<string | null | undefined>): boolean {
   return values.some((value) => typeof value === "string" && value.trim().length > 0);
@@ -90,12 +100,19 @@ function editHref(type: HealthContentType, documentId: string): string {
   return `/admin/${EDIT_SECTION[type]}?doc=${encodeURIComponent(documentId)}`;
 }
 
+function resolveAbsoluteUrl(rawPath: string, cmsUrl: string): string {
+  if (!rawPath) return "";
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) return rawPath;
+  return resolveCmsAssetUrl(rawPath, cmsUrl);
+}
+
 function pushIssue(
   issues: HealthIssueRow[],
   type: HealthContentType,
   row: StrapiRow,
   title: string,
-  reason: string
+  reason: string,
+  imageUrl = ""
 ) {
   const documentId = rowDocumentId(row);
   if (!documentId) return;
@@ -105,6 +122,7 @@ function pushIssue(
     id: displayId(type, row),
     documentId,
     title,
+    imageUrl,
     reason,
     editHref: editHref(type, documentId),
   });
@@ -155,10 +173,14 @@ async function isUrlReachable(url: string, token: string | null): Promise<boolea
   }
 }
 
-function resolveAbsoluteUrl(rawPath: string, cmsUrl: string): string {
-  if (!rawPath) return "";
-  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) return rawPath;
-  return resolveCmsAssetUrl(rawPath, cmsUrl);
+function galleryFirstPath(row: StrapiRow): string {
+  const gallery = unwrapStrapiGallery(row.gallery);
+  if (!gallery.length) return "";
+  return pickMediaPath({ image: gallery[0] });
+}
+
+function imageOnlyPath(row: StrapiRow): string {
+  return pickMediaPath({ image: row.image });
 }
 
 async function checkCases(
@@ -175,22 +197,71 @@ async function checkCases(
       image: row.image,
       cover: row.cover,
       thumbnail: row.thumbnail,
+      gallery: unwrapStrapiGallery(row.gallery),
     };
+    const { imageUrl, gallery } = mapCaseMediaFields(row, cmsUrl);
     const imagePath = pickMediaPath(mediaSource);
+    const listOnlyPath = imageOnlyPath(row);
+    const galleryPath = galleryFirstPath(row);
 
-    if (!hasText(row.titleZh as string, row.title as string)) {
-      pushIssue(issues, "cases", row, title, "缺少 titleZh / title");
+    if (
+      !hasText(
+        row.titleZh as string,
+        row.title as string,
+        row.nameZh as string,
+        row.name as string
+      )
+    ) {
+      pushIssue(issues, "cases", row, title, "缺少 titleZh / title / nameZh / name", imageUrl);
     }
 
     if (!imagePath) {
-      pushIssue(issues, "cases", row, title, "缺少 image 封面");
+      pushIssue(
+        issues,
+        "cases",
+        row,
+        title,
+        "缺少 image / cover / thumbnail / gallery[0] 封面",
+        imageUrl
+      );
       continue;
     }
 
-    const imageUrl = resolveAbsoluteUrl(imagePath, cmsUrl);
-    const reachable = await isUrlReachable(imageUrl, token);
-    if (!reachable) {
-      pushIssue(issues, "cases", row, title, `image.url 无法访问（${imageUrl}）`);
+    if (imageUrl) {
+      const reachable = await isUrlReachable(imageUrl, token);
+      if (!reachable) {
+        pushIssue(issues, "cases", row, title, `imageUrl 无法访问（${imageUrl}）`, imageUrl);
+      }
+    }
+
+    if (galleryPath) {
+      const galleryUrl = resolveAbsoluteUrl(galleryPath, cmsUrl);
+      const galleryReachable = await isUrlReachable(galleryUrl, token);
+      if (!galleryReachable) {
+        pushIssue(
+          issues,
+          "cases",
+          row,
+          title,
+          `gallery[0] 无法访问（${galleryUrl}）`,
+          gallery[0] || galleryUrl
+        );
+      }
+    }
+
+    if (listOnlyPath && galleryPath && listOnlyPath !== galleryPath && imageUrl) {
+      const listUrl = resolveAbsoluteUrl(listOnlyPath, cmsUrl);
+      const galleryUrl = resolveAbsoluteUrl(galleryPath, cmsUrl);
+      if (listUrl !== galleryUrl && galleryUrl !== imageUrl) {
+        pushIssue(
+          issues,
+          "cases",
+          row,
+          title,
+          `列表封面（${listUrl}）与 gallery[0]（${galleryUrl}）不一致，建议统一 image 字段`,
+          imageUrl
+        );
+      }
     }
   }
 
@@ -203,6 +274,8 @@ async function checkDownloads(
   token: string | null
 ): Promise<HealthIssueRow[]> {
   const issues: HealthIssueRow[] = [];
+  const missingCoverRows: StrapiRow[] = [];
+  const sharedCoverMap = new Map<string, StrapiRow[]>();
 
   for (const row of rows) {
     const titleSource = row as TitleSource;
@@ -215,36 +288,84 @@ async function checkDownloads(
     const fileSource = row as DownloadFileSource;
     const imagePath = pickMediaPath(mediaSource);
     const filePath = pickDownloadFilePath(fileSource);
+    const imageUrl = imagePath ? resolveAbsoluteUrl(imagePath, cmsUrl) : "";
 
-    if (!hasText(row.titleZh as string, row.title as string, row.nameZh as string, row.name as string)) {
-      pushIssue(issues, "downloads", row, title, "缺少 titleZh / title / name");
+    if (
+      !hasText(
+        row.titleZh as string,
+        row.title as string,
+        row.nameZh as string,
+        row.name as string
+      )
+    ) {
+      pushIssue(issues, "downloads", row, title, "缺少 titleZh / title / nameZh / name", imageUrl);
     }
 
     if (!imagePath) {
-      pushIssue(issues, "downloads", row, title, "缺少 image / cover 封面");
+      missingCoverRows.push(row);
+      pushIssue(issues, "downloads", row, title, "缺少 image / cover 封面", imageUrl);
     } else {
-      const imageUrl = resolveAbsoluteUrl(imagePath, cmsUrl);
       const reachable = await isUrlReachable(imageUrl, token);
       if (!reachable) {
-        pushIssue(issues, "downloads", row, title, `封面 URL 无法访问（${imageUrl}）`);
+        pushIssue(issues, "downloads", row, title, `封面 URL 无法访问（${imageUrl}）`, imageUrl);
+      }
+
+      const isPlaceholder = SHARED_PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(imageUrl));
+      if (isPlaceholder) {
+        const bucket = sharedCoverMap.get(imageUrl) ?? [];
+        bucket.push(row);
+        sharedCoverMap.set(imageUrl, bucket);
       }
     }
 
     if (!filePath) {
-      pushIssue(issues, "downloads", row, title, "缺少 file 下载文件");
+      pushIssue(issues, "downloads", row, title, "缺少 file 下载文件", imageUrl);
     } else {
       const fileUrl = resolveAbsoluteUrl(filePath, cmsUrl);
       const reachable = await isUrlReachable(fileUrl, token);
       if (!reachable) {
-        pushIssue(issues, "downloads", row, title, `file.url 无法访问（${fileUrl}）`);
+        pushIssue(issues, "downloads", row, title, `file.url 无法访问（${fileUrl}）`, imageUrl);
       }
+    }
+  }
+
+  for (const [url, group] of Array.from(sharedCoverMap.entries())) {
+    if (group.length < 2) continue;
+    for (const row of group) {
+      const title = pickDownloadTitleZh(row as TitleSource);
+      pushIssue(
+        issues,
+        "downloads",
+        row,
+        title,
+        `多条下载资源共用同一张占位封面（${url}），请为每条资源上传独立封面`,
+        url
+      );
+    }
+  }
+
+  if (missingCoverRows.length >= 2) {
+    for (const row of missingCoverRows) {
+      const title = pickDownloadTitleZh(row as TitleSource);
+      pushIssue(
+        issues,
+        "downloads",
+        row,
+        title,
+        `共 ${missingCoverRows.length} 条下载资源缺少封面，前台将显示无图占位`,
+        ""
+      );
     }
   }
 
   return issues;
 }
 
-async function checkProducts(rows: StrapiRow[]): Promise<HealthIssueRow[]> {
+async function checkProducts(
+  rows: StrapiRow[],
+  cmsUrl: string,
+  token: string | null
+): Promise<HealthIssueRow[]> {
   const issues: HealthIssueRow[] = [];
 
   for (const row of rows) {
@@ -255,13 +376,28 @@ async function checkProducts(rows: StrapiRow[]): Promise<HealthIssueRow[]> {
       cover: row.cover,
       thumbnail: row.thumbnail,
     };
+    const imagePath = pickMediaPath(mediaSource);
+    const imageUrl = imagePath ? resolveAbsoluteUrl(imagePath, cmsUrl) : "";
 
-    if (!hasText(row.nameZh as string, row.name as string)) {
-      pushIssue(issues, "products", row, title, "缺少 nameZh / name");
+    if (
+      !hasText(
+        row.nameZh as string,
+        row.name as string,
+        row.titleZh as string,
+        row.title as string
+      )
+    ) {
+      pushIssue(issues, "products", row, title, "缺少 nameZh / name / titleZh / title", imageUrl);
     }
 
-    if (!pickMediaPath(mediaSource)) {
-      pushIssue(issues, "products", row, title, "缺少 image 产品图");
+    if (!imagePath) {
+      pushIssue(issues, "products", row, title, "缺少 image 产品图", imageUrl);
+      continue;
+    }
+
+    const reachable = await isUrlReachable(imageUrl, token);
+    if (!reachable) {
+      pushIssue(issues, "products", row, title, `image.url 无法访问（${imageUrl}）`, imageUrl);
     }
   }
 
@@ -297,7 +433,7 @@ export async function runCmsHealthCheck(): Promise<HealthCheckResult> {
     const [caseIssues, downloadIssues, productIssues] = await Promise.all([
       checkCases(caseRows, cmsUrl, token),
       checkDownloads(downloadRows, cmsUrl, token),
-      checkProducts(productRows),
+      checkProducts(productRows, cmsUrl, token),
     ]);
 
     const issues = [...caseIssues, ...downloadIssues, ...productIssues];

@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaseItem } from "@/data/mock";
+import { getCaseCoverUrl } from "@/lib/case-media";
 import { getScrollStoryLayout } from "@/lib/cases";
 import { useI18n } from "@/components/I18nProvider";
 import {
@@ -33,13 +34,14 @@ function StickyCaseVisual({
   });
   const opacity = useTransform(scrollYProgress, [0, 0.25, 0.55], [1, 1, 0.15]);
   const textOpacity = useTransform(scrollYProgress, [0, 0.2, 0.45], [0, 1, 0]);
+  const cover = getCaseCoverUrl(caseItem);
 
   return (
     <div className="sticky top-0 h-screen-safe flex items-center justify-center overflow-hidden">
       <motion.div className="absolute inset-0" style={{ scale, opacity }}>
-        {caseItem.image ? (
+        {cover ? (
           <Image
-            src={caseItem.image}
+            src={cover}
             alt={caseItem.title[locale]}
             fill
             className="object-cover"
@@ -184,9 +186,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          {profileCase?.image ? (
+          {profileCase && getCaseCoverUrl(profileCase) ? (
             <Image
-              src={profileCase.image}
+              src={getCaseCoverUrl(profileCase)}
               alt={profileCase.title[locale]}
               fill
               className="object-cover"
@@ -207,9 +209,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
-          {spotlightCase?.image ? (
+          {spotlightCase && getCaseCoverUrl(spotlightCase) ? (
             <Image
-              src={spotlightCase.image}
+              src={getCaseCoverUrl(spotlightCase)}
               alt={spotlightCase.title[locale]}
               fill
               className="object-cover"
@@ -298,7 +300,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               {t.cases.viewAllProjects} →
             </Link>
           </div>
-          {moreCases.map((item, index) => (
+          {moreCases.map((item, index) => {
+            const cover = getCaseCoverUrl(item);
+            return (
             <motion.article
               key={item.id}
               initial={{ opacity: 0, y: 40 }}
@@ -313,8 +317,8 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                 }`}
               >
                 <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
-                  {item.image ? (
-                    <Image src={item.image} alt={item.title[locale]} fill className="object-cover" />
+                  {cover ? (
+                    <Image src={cover} alt={item.title[locale]} fill className="object-cover" />
                   ) : (
                     <div className="absolute inset-0 bg-zinc-900" aria-hidden />
                   )}
@@ -333,7 +337,8 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                 </div>
               </Link>
             </motion.article>
-          ))}
+            );
+          })}
         </section>
       )}
     </div>

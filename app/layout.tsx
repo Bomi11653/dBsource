@@ -1,3 +1,4 @@
+import type { Metadata, Viewport } from "next";
 import AdminAwareChrome from "@/components/AdminAwareChrome";
 import Analytics from "@/components/Analytics";
 import JsonLd from "@/components/JsonLd";
@@ -16,36 +17,7 @@ import {
 } from "@/lib/maintenance";
 import { organizationJsonLd, siteConfig } from "@/lib/seo";
 import { getSeriesConfig } from "@/lib/series-config";
-import { Inter, Noto_Sans_SC, Noto_Serif_SC, Playfair_Display } from "next/font/google";
-import type { Viewport } from "next";
 import "./globals.css";
-
-const fontMainLatin = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const fontAccentLatin = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-
-const fontMainCJK = Noto_Sans_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-source-han-sans",
-  display: "swap",
-});
-
-const fontAccentCJK = Noto_Serif_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-source-han-serif",
-  display: "swap",
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -54,7 +26,7 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
-export const metadata = {
+export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.title,
@@ -105,7 +77,7 @@ export default async function RootLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: Inter, "Source Han Sans SC", -apple-system, sans-serif; letter-spacing: 0.02em; }
+              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; letter-spacing: 0.02em; }
               a { color: inherit; text-decoration: none; }
               img, video { max-width: 100%; height: auto; }
               button { font: inherit; color: inherit; background: transparent; border: none; cursor: pointer; }
@@ -113,9 +85,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${fontMainLatin.variable} ${fontAccentLatin.variable} ${fontMainCJK.variable} ${fontAccentCJK.variable} font-sans antialiased bg-black text-white`}
-      >
+      <body className="font-sans antialiased bg-black text-white">
         <JsonLd data={organizationJsonLd()} />
         <Analytics />
         <I18nProvider>

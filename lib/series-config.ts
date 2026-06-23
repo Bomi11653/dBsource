@@ -1,5 +1,6 @@
 import type { Locale, Product, ProductSeriesGroup } from "@/data/mock";
-import { isCmsAvailable } from "@/lib/cms-health";
+import { shouldUseMockData } from "@/lib/cms-data-source";
+import { probeStrapiApi } from "@/lib/cms-health";
 import { fetchStrapiCollection, getCmsUrl } from "@/lib/strapi-client";
 import {
   PRODUCT_SERIES_GROUPS,
@@ -23,9 +24,6 @@ type StrapiSeriesDoc = {
   visible?: boolean;
   featuredProductId?: number | null;
 };
-
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
-
 export function subSeriesMatchesProduct(sub: ProductSubSeries, product: Product): boolean {
   return (
     product.productLine === sub.slug ||
@@ -108,7 +106,9 @@ function mapStrapiSeries(doc: StrapiSeriesDoc, index: number): SeriesConfigEntry
 }
 
 export async function fetchSeriesConfigFromCMS(): Promise<SeriesConfigEntry[] | null> {
-  if (USE_MOCK || !(await isCmsAvailable())) return null;
+  if (shouldUseMockData()) return null;
+  const probe = await probeStrapiApi();
+  if (!probe.ok) return null;
 
   const docs = await fetchStrapiCollection<StrapiSeriesDoc>(
     "/product-series-configs?sort[0]=sortOrder:asc&pagination[pageSize]=50"

@@ -10,8 +10,15 @@ module.exports = {
         brand: { gold: "#ffffff", muted: "#141414" },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "var(--font-source-han-sans)", "system-ui", "sans-serif"],
-        serif: ["var(--font-playfair)", "var(--font-source-han-serif)", "serif"],
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "PingFang SC",
+          "Microsoft YaHei",
+          "sans-serif",
+        ],
+        serif: ["Georgia", "Songti SC", "SimSun", "serif"],
       },
       letterSpacing: {
         body: "0.02em",
