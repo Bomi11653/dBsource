@@ -2,6 +2,7 @@ import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import {
   pickDownloadFilePath,
   resolveDownloadFileUrl,
+  resolveServerMediaUrl,
   unwrapStrapiMedia,
 } from "@/lib/media-url";
 import { getCmsUrl } from "@/lib/strapi-client";
@@ -53,7 +54,7 @@ export async function resolveDownloadFile(sortOrderId: number): Promise<Resolved
 
   if (!doc) return null;
 
-  const sourceUrl = resolveDownloadFileUrl(doc, cmsUrl);
+  const sourceUrl = resolveServerMediaUrl(resolveDownloadFileUrl(doc), cmsUrl);
   if (!sourceUrl || sourceUrl === "#") return null;
 
   const fileMedia =

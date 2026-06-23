@@ -3,7 +3,7 @@
 import type { HomeFeaturedProduct } from "@/data/home-featured";
 import { useI18n } from "@/components/I18nProvider";
 import { usePerformanceMode } from "@/components/PerformanceModeProvider";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -102,7 +102,7 @@ export default function HomeFeaturedProductCard({
 
       <div className="relative z-[2] pointer-events-none w-full flex-1 min-h-[160px] md:min-h-[220px] my-6 md:my-8 flex items-center justify-center">
         <div className="relative w-full max-w-[320px] md:max-w-[380px] aspect-[4/3] md:aspect-square transition-transform duration-500 ease-out group-hover:scale-105">
-          <Image
+          <CmsImage
             src={displayImage}
             alt={product.name[locale]}
             fill

@@ -1,5 +1,6 @@
 import type { CaseItem, Locale, Product, ProductCategory, ProductSeriesGroup } from "@/data/mock";
 import { cases, products } from "@/data/mock";
+import { resolveBrowserMediaUrl } from "@/lib/media-url";
 
 export type SeriesTab = "all" | ProductSeriesGroup;
 export type CategoryFilter = "all" | ProductCategory;
@@ -201,18 +202,22 @@ export function searchProducts(list: Product[], query: string): Product[] {
 /** Cover + gallery from CMS; URL-deduped, any count (0 → fallback to cover only). */
 export function getProductGallery(product: Product): string[] {
   const seen = new Set<string>();
-  const gallery = (product.gallery ?? []).filter((url) => {
+  const norm = (url: string) => resolveBrowserMediaUrl(url);
+  const gallery = (product.gallery ?? [])
+    .map(norm)
+    .filter((url) => {
     if (!url || seen.has(url)) return false;
     seen.add(url);
     return true;
   });
   if (gallery.length > 0) {
-    if (product.image && !seen.has(product.image)) {
-      return [product.image, ...gallery];
+    const cover = product.image ? norm(product.image) : "";
+    if (cover && !seen.has(cover)) {
+      return [cover, ...gallery];
     }
     return gallery;
   }
-  return product.image ? [product.image] : [];
+  return product.image ? [norm(product.image)] : [];
 }
 
 export function getProductById(id: number): Product | undefined {

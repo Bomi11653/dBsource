@@ -1,6 +1,7 @@
 import type { CaseItem } from "@/data/mock";
 import {
   pickMediaPath,
+  resolveBrowserMediaUrl,
   resolveCaseGalleryUrls,
   resolveCmsAssetUrl,
   unwrapStrapiGallery,
@@ -34,13 +35,13 @@ export function resolveCaseCoverFromSource(
 
 /** 映射后的案例封面（全站统一读取此字段） */
 export function getCaseCoverUrl(item: Pick<CaseItem, "imageUrl" | "image">): string {
-  return (item.imageUrl || item.image || "").trim();
+  return resolveBrowserMediaUrl((item.imageUrl || item.image || "").trim());
 }
 
 /** 案例图集：封面 + gallery，去重 */
 export function getCaseGalleryUrls(item: CaseItem): string[] {
   const cover = getCaseCoverUrl(item);
-  const gallery = (item.gallery ?? []).filter(Boolean);
+  const gallery = (item.gallery ?? []).map((u) => resolveBrowserMediaUrl(u)).filter(Boolean);
   if (!gallery.length) {
     return cover ? [cover] : [];
   }

@@ -11,7 +11,7 @@ import {
   useSpring,
   MotionValue,
 } from "framer-motion";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import BrowseGuide from "@/components/BrowseGuide";
 import ScrollGuide from "@/components/ScrollGuide";
 import Link from "next/link";
@@ -40,7 +40,7 @@ function StickyCaseVisual({
     <div className="sticky top-0 h-screen-safe flex items-center justify-center overflow-hidden">
       <motion.div className="absolute inset-0" style={{ scale, opacity }}>
         {cover ? (
-          <Image
+          <CmsImage
             src={cover}
             alt={caseItem.title[locale]}
             fill
@@ -96,7 +96,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
     <div ref={containerRef} className="bg-black text-white">
       {/* 第一屏：品牌标题 + 彝族新年晚会现场背景 */}
       <section className="relative h-screen-safe flex flex-col items-center justify-center overflow-hidden">
-        <Image
+        <CmsImage
           src="/images/cases/cases-hero-bg.png"
           alt=""
           fill
@@ -187,7 +187,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           transition={{ duration: 0.8, delay: 0.1 }}
         >
           {profileCase && getCaseCoverUrl(profileCase) ? (
-            <Image
+            <CmsImage
               src={getCaseCoverUrl(profileCase)}
               alt={profileCase.title[locale]}
               fill
@@ -210,7 +210,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
           {spotlightCase && getCaseCoverUrl(spotlightCase) ? (
-            <Image
+            <CmsImage
               src={getCaseCoverUrl(spotlightCase)}
               alt={spotlightCase.title[locale]}
               fill
@@ -318,7 +318,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               >
                 <div className="relative aspect-[16/10] min-h-[200px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
                   {cover ? (
-                    <Image src={cover} alt={item.title[locale]} fill className="object-cover object-center" />
+                    <CmsImage src={cover} alt={item.title[locale]} fill className="object-cover object-center" />
                   ) : (
                     <div className="absolute inset-0 bg-zinc-900" aria-hidden />
                   )}

@@ -6,6 +6,7 @@ import {
   pickMediaPath,
   pickProductNameZh,
   resolveCmsAssetUrl,
+  resolveServerMediaUrl,
   unwrapStrapiGallery,
   type DownloadFileSource,
   type MediaSource,
@@ -102,8 +103,10 @@ function editHref(type: HealthContentType, documentId: string): string {
 
 function resolveAbsoluteUrl(rawPath: string, cmsUrl: string): string {
   if (!rawPath) return "";
-  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) return rawPath;
-  return resolveCmsAssetUrl(rawPath, cmsUrl);
+  if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
+    return resolveServerMediaUrl(rawPath, cmsUrl);
+  }
+  return resolveServerMediaUrl(resolveCmsAssetUrl(rawPath, cmsUrl), cmsUrl);
 }
 
 function pushIssue(

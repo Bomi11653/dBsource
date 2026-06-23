@@ -1,6 +1,8 @@
 "use client";
 
+import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import Image, { type ImageProps } from "next/image";
+import { useMemo } from "react";
 
 type FitMode = "cover" | "contain";
 
@@ -44,6 +46,18 @@ export default function SafeImage({
   ...rest
 }: SafeImageProps) {
   const objectFitClass = `${fitClasses(fit, desktopFit)} object-center`;
+  const normalizedSrc = useMemo(
+    () => (typeof src === "string" ? resolveBrowserMediaUrl(src) : src),
+    [src]
+  );
+
+  if (!normalizedSrc) {
+    return null;
+  }
+
+  const handleError = () => {
+    console.error("[SafeImage] failed to load:", normalizedSrc);
+  };
 
   return (
     <div
@@ -57,12 +71,13 @@ export default function SafeImage({
       }}
     >
       <Image
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         fill
         sizes={sizes}
         unoptimized={unoptimized}
         className={`${objectFitClass} ${imageClassName}`.trim()}
+        onError={handleError}
         {...rest}
       />
     </div>
@@ -80,6 +95,13 @@ export function SafeImageContain({
   src: string;
   className?: string;
 }) {
+  const normalizedSrc =
+    typeof src === "string" ? resolveBrowserMediaUrl(src) : src;
+
+  if (!normalizedSrc) {
+    return null;
+  }
+
   return (
     <div
       className={`relative overflow-hidden bg-zinc-900 p-1 ${className}`}
@@ -93,11 +115,12 @@ export function SafeImageContain({
       }}
     >
       <Image
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         fill
         sizes={`${size}px`}
         className="object-contain object-center"
+        onError={() => console.error("[SafeImage] failed to load:", normalizedSrc)}
       />
     </div>
   );
@@ -122,18 +145,27 @@ export function SafeImageAspect({
   minHeightClassName?: string;
 }) {
   const objectFitClass = `${fitClasses(fit, desktopFit)} object-center`;
+  const normalizedSrc = useMemo(
+    () => (typeof src === "string" ? resolveBrowserMediaUrl(src) : src),
+    [src]
+  );
+
+  if (!normalizedSrc) {
+    return null;
+  }
 
   return (
     <div
       className={`relative w-full overflow-hidden ${aspectClassName} ${minHeightClassName} ${frameClassName} ${className}`}
     >
       <Image
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         fill
         sizes={sizes}
         unoptimized={unoptimized}
         className={`${objectFitClass} ${imageClassName}`.trim()}
+        onError={() => console.error("[SafeImage] failed to load:", normalizedSrc)}
         {...rest}
       />
     </div>

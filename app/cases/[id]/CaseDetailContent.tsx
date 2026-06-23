@@ -5,7 +5,7 @@ import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
 import { getCaseCoverUrl, getCaseGalleryUrls } from "@/lib/case-media";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -27,7 +27,7 @@ export default function CaseDetailContent({
     <div className="bg-black text-white min-h-screen pt-24">
       <section className="relative min-h-[min(52vh,420px)] md:h-[60vh] border-b border-white/10 bg-zinc-950">
         {cover ? (
-          <Image
+          <CmsImage
             src={cover}
             alt={caseItem.title[locale]}
             fill
@@ -117,7 +117,7 @@ export default function CaseDetailContent({
               className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors cursor-zoom-in"
               aria-label={`${caseItem.title[locale]} ${i + 1}`}
             >
-              <Image
+              <CmsImage
                 src={src}
                 alt={`${caseItem.title[locale]} ${i + 1}`}
                 fill
@@ -164,7 +164,7 @@ export default function CaseDetailContent({
               >
                 <div className="relative aspect-[16/10] min-h-[180px] md:h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
                   {relatedCover ? (
-                  <Image
+                  <CmsImage
                     src={relatedCover}
                     alt={c.title[locale]}
                     fill

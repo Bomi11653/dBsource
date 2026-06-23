@@ -1,10 +1,4 @@
-function toMediaUrl(url?: string | null): string | undefined {
-  if (!url) return undefined;
-  if (url.startsWith("http")) return url;
-  const base = getCmsUrl();
-  return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
-}
-
+import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import {
   cases,
   contactInfo,
@@ -310,7 +304,7 @@ export async function getGlobalSetting() {
       }
 
       return {
-        logo: toMediaUrl(doc.logo?.url) || fallback.logo,
+        logo: resolveBrowserMediaUrl(doc.logo?.url ?? "") || fallback.logo,
         footerCopyright: {
           zh: doc.footerCopyrightZh || fallback.footerCopyright.zh,
           en: doc.footerCopyrightEn || fallback.footerCopyright.en,
@@ -334,7 +328,7 @@ export async function getGlobalSetting() {
                   zh: doc.homeFeaturedCaseDescZh ?? "",
                   en: doc.homeFeaturedCaseDescEn ?? "",
                 },
-                image: toMediaUrl(doc.homeFeaturedCaseImage?.url),
+                image: resolveBrowserMediaUrl(doc.homeFeaturedCaseImage?.url ?? ""),
               }
             : fallback.homeFeaturedCase,
       };
@@ -416,7 +410,7 @@ export async function getSocialLinks() {
       en: doc.labelEn || doc.platformKey,
     },
     url: doc.url || "",
-    qrImage: toMediaUrl(doc.qrImage?.url),
+    qrImage: resolveBrowserMediaUrl(doc.qrImage?.url ?? "") || undefined,
     sortOrder: doc.sortOrder ?? index + 1,
     enabled: doc.enabled !== false,
   }));

@@ -9,7 +9,7 @@ import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-spec
 import { useI18n } from "@/components/I18nProvider";
 import { getProductGallery } from "@/lib/products";
 import { Check, Copy, Download } from "lucide-react";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -124,7 +124,7 @@ export default function ProductDetailContent({
                 className="absolute inset-0 cursor-zoom-in"
                 aria-label={`${product.name[locale]} ${i + 1}`}
               >
-                <Image
+                <CmsImage
                   src={src}
                   alt={`${product.name[locale]} ${i + 1}`}
                   fill
@@ -238,7 +238,7 @@ export default function ProductDetailContent({
               >
                 <div className="relative aspect-[4/3] min-h-[200px] md:min-h-0 rounded-lg overflow-hidden bg-zinc-900 mb-3">
                   {p.image ? (
-                    <Image
+                    <CmsImage
                       src={p.image}
                       alt={p.name[locale]}
                       fill
@@ -271,7 +271,7 @@ export default function ProductDetailContent({
               className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
             >
               <div className="relative aspect-[16/10] min-h-[180px] md:h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
-                <Image
+                <CmsImage
                   src={c.image}
                   alt={c.title[locale]}
                   fill

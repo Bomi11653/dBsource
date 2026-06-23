@@ -2,7 +2,7 @@
 
 import type { DownloadItem } from "@/data/mock";
 import { ArrowRight, Download, FileImage, Search, Share2 } from "lucide-react";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
@@ -158,7 +158,7 @@ function DownloadCover({
   if (compact) {
     return (
       <div className="relative h-14 w-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-white">
-        <Image
+        <CmsImage
           src={cover}
           alt={alt}
           fill
@@ -170,7 +170,7 @@ function DownloadCover({
   }
 
   return (
-    <Image
+    <CmsImage
       src={cover}
       alt={alt}
       fill

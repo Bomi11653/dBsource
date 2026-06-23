@@ -74,6 +74,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: "/uploads/:path*",
+        destination: `${cmsOrigin}/uploads/:path*`,
+      },
+      {
         source: "/strapi-uploads/:path*",
         destination: `${cmsOrigin}/uploads/:path*`,
       },

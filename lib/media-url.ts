@@ -1,5 +1,5 @@
 /**
- * Strapi 媒体 URL 解析（统一 formats 优先级，/uploads 拼接 CMS 公网地址）
+ * Strapi 媒体 URL 解析（浏览器端统一同源 /uploads，服务端内网拉取用 resolveServerMediaUrl）
  */
 
 export type StrapiMediaFormats = {
@@ -30,12 +30,94 @@ export type DownloadFileSource = {
   fileUrl?: string | null;
 };
 
+/** 仅用于后台状态展示，不作为浏览器图片 base */
 export function getPublicCmsUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_CMS_URL ||
+  return (process.env.NEXT_PUBLIC_CMS_URL || "").replace(/\/$/, "");
+}
+
+const PRIVATE_HOST_RE =
+  /^(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/i;
+
+function extractUploadsPath(pathname: string): string | null {
+  const match = pathname.match(/(\/uploads\/.*)$/);
+  return match ? match[1] : null;
+}
+
+function isLoopbackOrPrivateHost(hostname: string): boolean {
+  return PRIVATE_HOST_RE.test(hostname);
+}
+
+/**
+ * 浏览器可访问的媒体 URL：
+ * - Strapi /uploads → 同源 /uploads/xxx（由 Nginx 或 Next rewrite 反代 Strapi）
+ * - 不输出 127.0.0.1:1337 / 内网 CMS 地址
+ */
+export function resolveBrowserMediaUrl(rawUrl: string): string {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/strapi-uploads/")) {
+    return trimmed.replace(/^\/strapi-uploads/, "/uploads");
+  }
+
+  if (trimmed.startsWith("/uploads/")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const parsed = new URL(trimmed);
+      const uploadPath = extractUploadsPath(parsed.pathname);
+      if (uploadPath) {
+        return uploadPath;
+      }
+      if (isLoopbackOrPrivateHost(parsed.hostname)) {
+        return "";
+      }
+      return trimmed;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  if (trimmed.startsWith("/")) {
+    const uploadPath = extractUploadsPath(trimmed);
+    if (uploadPath) return uploadPath;
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("uploads/")) {
+    return `/${trimmed}`;
+  }
+
+  return `/uploads/${trimmed.replace(/^\//, "")}`;
+}
+
+/** 服务端（Node）访问 Strapi 媒体：内网 CMS + /uploads 路径 */
+export function resolveServerMediaUrl(
+  rawUrl: string,
+  cmsUrl = (
     process.env.CMS_URL ||
+    process.env.NEXT_PUBLIC_CMS_URL ||
     "http://localhost:1337"
-  ).replace(/\/$/, "");
+  ).replace(/\/$/, "")
+): string {
+  const browser = resolveBrowserMediaUrl(rawUrl);
+  if (!browser) return "";
+  if (browser.startsWith("/uploads/")) {
+    return `${cmsUrl}${browser}`;
+  }
+  if (browser.startsWith("http://") || browser.startsWith("https://")) {
+    return browser;
+  }
+  if (browser.startsWith("/")) {
+    return `${cmsUrl}${browser}`;
+  }
+  return browser;
 }
 
 /** Strapi v5 可能嵌套 data / attributes，统一解包 */
@@ -150,66 +232,45 @@ function pickFromMediaField(
 }
 
 /**
- * /uploads/* → 绝对 CMS 地址（优先 NEXT_PUBLIC_CMS_URL）
- * 其他相对路径可走同源 /strapi-uploads 代理（本地开发）
+ * Strapi 媒体路径 → 浏览器同源 URL（/uploads/...）
+ * @param _cmsUrl 保留兼容旧调用，不再用于拼接 127.0.0.1
  */
-export function resolveCmsAssetUrl(
-  rawUrl: string,
-  cmsUrl = getPublicCmsUrl()
-): string {
-  if (!rawUrl) return "";
-
-  if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-    return rawUrl;
-  }
-
-  if (rawUrl.startsWith("/uploads/")) {
-    return `${cmsUrl}${rawUrl}`;
-  }
-
-  if (rawUrl.startsWith("/strapi-uploads/")) {
-    return rawUrl;
-  }
-
-  if (rawUrl.startsWith("/")) {
-    return toPublicMediaUrl(cmsUrl, rawUrl);
-  }
-
-  return `${cmsUrl}/${rawUrl}`;
+export function resolveCmsAssetUrl(rawUrl: string, _cmsUrl?: string): string {
+  return resolveBrowserMediaUrl(rawUrl);
 }
 
 export function resolveMediaUrlFromSource(
   source: MediaSource,
-  cmsUrl = getPublicCmsUrl()
+  _cmsUrl?: string
 ): string {
-  return resolveCmsAssetUrl(pickMediaPath(source), cmsUrl);
+  return resolveCmsAssetUrl(pickMediaPath(source), _cmsUrl);
 }
 
 export function resolveCaseImageUrl(
   doc: CaseMediaSource,
-  cmsUrl = getPublicCmsUrl()
+  cmsUrl?: string
 ): string {
   return resolveMediaUrlFromSource(doc, cmsUrl);
 }
 
 export function resolveDownloadFileUrl(
   doc: DownloadFileSource,
-  cmsUrl = getPublicCmsUrl()
+  _cmsUrl?: string
 ): string {
-  return resolveCmsAssetUrl(pickDownloadFilePath(doc), cmsUrl);
+  return resolveCmsAssetUrl(pickDownloadFilePath(doc), _cmsUrl);
 }
 
 /** 单 media 字段 → 本站可访问 URL */
 export function resolveStrapiMediaUrl(
   media: unknown,
-  cmsUrl = getPublicCmsUrl()
+  cmsUrl?: string
 ): string {
   return resolveMediaUrlFromSource({ image: media }, cmsUrl);
 }
 
 export function resolveCaseGalleryUrls(
   gallery: unknown[] | null | undefined,
-  cmsUrl = getPublicCmsUrl()
+  _cmsUrl?: string
 ): string[] {
   return (gallery ?? [])
     .map((item) => {
@@ -218,35 +279,16 @@ export function resolveCaseGalleryUrls(
         pickFromMediaField(media, ["large", "medium", "small"]) ||
         media?.url ||
         "";
-      return resolveCmsAssetUrl(picked, cmsUrl);
+      return resolveCmsAssetUrl(picked);
     })
     .filter(Boolean);
 }
 
 /**
- * Strapi 媒体 URL → 本站同源路径，手机预览时不再依赖 localhost:1337
+ * @deprecated 使用 resolveBrowserMediaUrl
  */
-export function toPublicMediaUrl(cmsUrl: string, mediaUrl: string): string {
-  if (!mediaUrl) return "";
-  if (mediaUrl.startsWith("/strapi-uploads/")) return mediaUrl;
-
-  try {
-    const parsed = new URL(mediaUrl, cmsUrl);
-    const uploadPath = parsed.pathname.match(/\/uploads\/.+/)?.[0];
-    if (uploadPath) {
-      return `/strapi-uploads${uploadPath.replace(/^\/uploads/, "")}`;
-    }
-  } catch {
-    /* ignore */
-  }
-
-  if (mediaUrl.startsWith("/uploads/")) {
-    return `/strapi-uploads${mediaUrl.replace(/^\/uploads/, "")}`;
-  }
-
-  if (mediaUrl.startsWith("http")) return mediaUrl;
-  if (mediaUrl.startsWith("/")) return mediaUrl;
-  return `${cmsUrl}${mediaUrl}`;
+export function toPublicMediaUrl(_cmsUrl: string, mediaUrl: string): string {
+  return resolveBrowserMediaUrl(mediaUrl);
 }
 
 export type TitleSource = {

@@ -3,7 +3,7 @@
 import BrowseGuide from "@/components/BrowseGuide";
 import { aboutImages, type AboutImages } from "@/data/about";
 import { useI18n } from "@/components/I18nProvider";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -51,7 +51,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
           </div>
 
           <div className="mt-16 md:mt-20 w-full aspect-[16/9] md:h-[420px] relative rounded-2xl overflow-hidden border border-white/5 hero-fade-in-delay">
-            <Image
+            <CmsImage
               src={images.brandIntro}
               alt={locale === "zh" ? "dBsource 东莞工厂" : "dBsource Dongguan factory"}
               fill
@@ -63,7 +63,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
           </div>
 
           <div className="mt-8 md:mt-12 w-full aspect-[4/3] md:h-[500px] relative rounded-2xl overflow-hidden border border-white/5">
-            <Image
+            <CmsImage
               src={images.origin}
               alt={locale === "zh" ? "消声室" : "Anechoic chamber"}
               fill
@@ -92,7 +92,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
             <div
               className={`relative w-full ${systemAspects[0]} rounded-2xl overflow-hidden border border-white/5`}
             >
-              <Image
+              <CmsImage
                 src={images.system[0]}
                 alt={systemAlts[0]}
                 fill
@@ -105,7 +105,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
               <div
                 className={`relative w-full ${systemAspects[1]} rounded-2xl overflow-hidden border border-white/5`}
               >
-                <Image
+                <CmsImage
                   src={images.system[1]}
                   alt={systemAlts[1]}
                   fill
@@ -116,7 +116,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
               <div
                 className={`relative w-full ${systemAspects[2]} rounded-2xl overflow-hidden border border-white/5 md:max-w-md md:justify-self-end`}
               >
-                <Image
+                <CmsImage
                   src={images.system[2]}
                   alt={systemAlts[2]}
                   fill
@@ -143,7 +143,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
           </div>
 
           <div className="relative w-full aspect-[3/2] md:aspect-[1016/687] rounded-2xl overflow-hidden border border-white/5 reveal-on-scroll">
-            <Image
+            <CmsImage
               src={images.focus}
               alt="dBsource Focus"
               fill
@@ -173,7 +173,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
                 key={src}
                 className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/5 group reveal-on-scroll"
               >
-                <Image
+                <CmsImage
                   src={src}
                   alt={`Unit48 ${i + 1}`}
                   fill

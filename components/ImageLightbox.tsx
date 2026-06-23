@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Image from "next/image";
+import CmsImage from "@/components/CmsImage";
 import { useCallback, useEffect, useState } from "react";
 
 interface ImageLightboxProps {
@@ -113,7 +113,7 @@ export default function ImageLightbox({
             className="relative w-full max-w-6xl aspect-[4/3] max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            <CmsImage
               src={images[index]}
               alt={`${altPrefix} ${index + 1}`}
               fill
