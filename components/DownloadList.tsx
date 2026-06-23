@@ -6,7 +6,9 @@ import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
-import { filterDownloads } from "@/lib/downloads";
+import { filterDownloads, buildDownloadShareUrl } from "@/lib/downloads";
+import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
+import { isWeChatWebView } from "@/lib/wechat-webview";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /* ---------- 展示层分类（不改动数据结构，纯前端映射） ---------- */
@@ -189,6 +191,9 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const [category, setCategory] = useState<CategoryKey>("software");
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [shareFallback, setShareFallback] = useState<{ url: string; fileId: number } | null>(
+    null
+  );
   const rowRefs = useRef<Record<number, HTMLLIElement | null>>({});
 
   const syncUrl = useCallback(
@@ -260,34 +265,97 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   const shareLink = useCallback((file: DownloadItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/api/downloads/${file.id}/file`;
+    return buildDownloadShareUrl(file, origin);
   }, []);
 
   const downloadHref = useCallback((file: DownloadItem) => `/api/downloads/${file.id}/file`, []);
 
+  const copyShareLink = useCallback(async (file: DownloadItem) => {
+    const url = shareLink(file);
+    const copied = await copyTextToClipboard(url);
+    if (copied) {
+      setCopiedId(file.id);
+      setShareFallback(null);
+      window.setTimeout(() => setCopiedId(null), 2000);
+      return true;
+    }
+    setShareFallback({ url, fileId: file.id });
+    return false;
+  }, [shareLink]);
+
   const handleShare = useCallback(
     async (file: DownloadItem) => {
       const url = shareLink(file);
-      try {
-        if (navigator.share) {
-          await navigator.share({
-            title: file.name[locale],
-            url,
-          });
-        } else {
-          await navigator.clipboard.writeText(url);
-          setCopiedId(file.id);
-          window.setTimeout(() => setCopiedId(null), 2000);
+      const title = file.name[locale];
+      const canNativeShare =
+        typeof navigator.share === "function" &&
+        window.isSecureContext &&
+        !isWeChatWebView();
+
+      if (canNativeShare) {
+        try {
+          await navigator.share({ title, text: title, url });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
         }
-      } catch {
-        /* user cancelled or unsupported */
       }
+
+      await copyShareLink(file);
     },
-    [locale, shareLink]
+    [copyShareLink, locale, shareLink]
   );
 
   return (
     <div>
+      {shareFallback ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-fallback-title"
+          onClick={() => setShareFallback(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/15 bg-zinc-950 p-5 sm:p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="share-fallback-title" className="text-base font-medium text-white mb-2">
+              {t.downloads.share}
+            </h3>
+            <p className="text-sm text-white/60 mb-4">{t.downloads.shareFailed}</p>
+            <input
+              type="text"
+              readOnly
+              value={shareFallback.url}
+              className="w-full rounded-xl border border-white/10 bg-black px-3 py-2.5 text-sm text-white/90 outline-none"
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const file = items.find((f) => f.id === shareFallback.fileId);
+                  if (file) void copyShareLink(file);
+                }}
+                className="flex-1 min-h-[44px] rounded-xl bg-white text-black text-sm font-medium touch-active"
+              >
+                {copiedId === shareFallback.fileId
+                  ? t.downloads.shareCopied
+                  : t.downloads.shareCopyButton}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShareFallback(null)}
+                className="min-h-[44px] px-4 rounded-xl border border-white/15 text-sm text-white/70 touch-active"
+              >
+                {locale === "zh" ? "关闭" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* 搜索框 */}
       <div className="max-w-3xl mx-auto mt-10 md:mt-14 mb-6 md:mb-8">
         <div className="relative">

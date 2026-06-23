@@ -243,6 +243,8 @@ export const translations = {
       download: "下载",
       share: "分享",
       shareCopied: "链接已复制",
+      shareFailed: "无法自动复制，请手动复制下方链接",
+      shareCopyButton: "复制链接",
       size: "大小",
     },
     cases: {
@@ -559,6 +561,8 @@ export const translations = {
       download: "Download",
       share: "Share",
       shareCopied: "Link copied",
+      shareFailed: "Could not copy automatically. Please copy the link below.",
+      shareCopyButton: "Copy link",
       size: "Size",
     },
     cases: {

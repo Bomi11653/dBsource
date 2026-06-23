@@ -125,3 +125,9 @@ export function filterDownloads(
   }
   return result;
 }
+
+/** 下载页分享链接（打开后定位到对应资源） */
+export function buildDownloadShareUrl(file: DownloadItem, origin: string): string {
+  const base = origin.replace(/\/$/, "");
+  return `${base}/downloads?tab=${file.type}&file=${file.id}`;
+}
