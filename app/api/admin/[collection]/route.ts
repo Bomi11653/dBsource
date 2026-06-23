@@ -1,6 +1,6 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
 import { translateCaseZhToEn } from "@/lib/ai/admin-content";
-import { revalidateAfterAdminSave } from "@/lib/revalidate";
+import { buildAdminSaveResponse } from "@/lib/admin-post-save";
 import { ADMIN_COLLECTIONS, adminStrapiRequest, type AdminCollection } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -70,6 +70,6 @@ export async function POST(request: NextRequest, { params }: Props) {
   if (!result.ok) {
     return NextResponse.json(result, { status: 502 });
   }
-  const revalidation = revalidateAfterAdminSave(params.collection, data);
-  return NextResponse.json({ ...result, revalidation });
+  const saveMeta = await buildAdminSaveResponse(params.collection, { ok: true }, data);
+  return NextResponse.json({ ...result, saved: saveMeta.saved, revalidation: saveMeta.revalidation, cacheRefresh: saveMeta.cacheRefresh });
 }

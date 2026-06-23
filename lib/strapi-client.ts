@@ -1,6 +1,7 @@
 const DEFAULT_CMS_URL = "http://localhost:1337";
-const FETCH_TIMEOUT_MS = 8000;
 export const FRONTEND_REVALIDATE_SECONDS = 300;
+export const STRAPI_FETCH_TIMEOUT_MS = 5000;
+const FETCH_TIMEOUT_MS = STRAPI_FETCH_TIMEOUT_MS;
 
 export function getCmsUrl(): string {
   return (
@@ -40,6 +41,11 @@ async function fetchWithTimeout(
       ...buildFetchInit(init, cache),
       signal: controller.signal,
     });
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("Strapi request timeout");
+    }
+    throw e;
   } finally {
     clearTimeout(timer);
   }
@@ -48,15 +54,17 @@ async function fetchWithTimeout(
 export async function fetchStrapiCollection<T>(
   path: string,
   revalidate: number | false = FRONTEND_REVALIDATE_SECONDS
-): Promise<T[] | null> {
+): Promise<T[]> {
   try {
     const url = `${getCmsUrl()}/api${path}`;
     const res = await fetchWithTimeout(url, {}, { revalidate });
-    if (!res.ok) return null;
+    if (res.status === 404) return [];
+    if (!res.ok) throw new Error(`Strapi ${path} HTTP ${res.status}`);
     const json = (await res.json()) as { data?: T[] };
-    return Array.isArray(json.data) ? json.data : null;
-  } catch {
-    return null;
+    return Array.isArray(json.data) ? json.data : [];
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Strapi collection fetch failed");
   }
 }
 
@@ -67,11 +75,13 @@ export async function fetchStrapiSingle<T>(
   try {
     const url = `${getCmsUrl()}/api${path}`;
     const res = await fetchWithTimeout(url, {}, { revalidate });
-    if (!res.ok) return null;
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Strapi ${path} HTTP ${res.status}`);
     const json = (await res.json()) as { data?: T | null };
     return json.data ?? null;
-  } catch {
-    return null;
+  } catch (e) {
+    if (e instanceof Error) throw e;
+    throw new Error("Strapi single fetch failed");
   }
 }
 

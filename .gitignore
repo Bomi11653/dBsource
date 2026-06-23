@@ -42,3 +42,6 @@ Thumbs.db
 
 # Generated docs
 docs/*.pptx
+
+# Local CMS last-known-good cache (runtime only)
+.data/

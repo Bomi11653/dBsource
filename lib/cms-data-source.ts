@@ -2,7 +2,7 @@
  * 数据源策略：生产环境禁止静默回退 Mock 演示数据
  */
 
-export type CmsDataSource = "mock" | "strapi" | "strapi-error";
+export type CmsDataSource = "mock" | "strapi" | "strapi-cache" | "strapi-error";
 
 export function isUseMockDataEnv(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
@@ -23,8 +23,12 @@ export function allowMockFallback(): boolean {
   return isUseMockDataEnv();
 }
 
-export function resolveDataSource(cmsOnline: boolean): CmsDataSource {
+export function resolveDataSource(
+  cmsOnline: boolean,
+  usingLastKnownGood = false
+): CmsDataSource {
   if (isUseMockDataEnv()) return "mock";
+  if (usingLastKnownGood) return "strapi-cache";
   if (cmsOnline) return "strapi";
   return "strapi-error";
 }

@@ -13,6 +13,7 @@ import {
   inputClass,
 } from "@/components/admin/AdminFields";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
+import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
 import { DOWNLOAD_SUB_CATEGORIES } from "@/lib/downloads";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { sectionToCollection } from "@/lib/strapi-admin";
@@ -368,10 +369,11 @@ export default function AdminSectionEditor({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const json = await res.json();
+    const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
     setSavingId(null);
     if (json.ok) {
-      setMessage({ type: "ok", text: "已保存并发布到网站" });
+      const toast = formatSaveToast(json);
+      setMessage({ type: toast.type, text: toast.text });
       setRows((prev) =>
         prev.map((r) => (docId(r) === id ? { ...draft, documentId: r.documentId ?? draft.documentId } : r))
       );
@@ -468,11 +470,12 @@ export default function AdminSectionEditor({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(defaults[collection] ?? {}),
     });
-    const json = await res.json();
+    const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
     setSavingId(null);
     if (json.ok) {
-      setMessage({ type: "ok", text: "已创建，请展开编辑" });
-      const created = (json.data as { data?: StrapiRow } | undefined)?.data;
+      const toast = formatSaveToast(json);
+      setMessage({ type: toast.type, text: toast.text });
+      const created = (json as { data?: { data?: StrapiRow } }).data?.data;
       const createdId = created ? docId(created) : null;
       load(createdId);
     } else {
@@ -491,10 +494,11 @@ export default function AdminSectionEditor({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const json = await res.json();
+    const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
     setSavingId(null);
     if (json.ok) {
-      setMessage({ type: "ok", text: "联系方式已更新" });
+      const toast = formatSaveToast(json);
+      setMessage({ type: toast.type, text: toast.text });
     } else {
       setMessage({ type: "error", text: json.error || "保存失败" });
     }
@@ -525,12 +529,22 @@ export default function AdminSectionEditor({
         );
       }
       const responses = await Promise.all(tasks);
-      const payloads = await Promise.all(responses.map((res) => res.json()));
+      const payloads = (await Promise.all(
+        responses.map((res) => res.json())
+      )) as Array<AdminSaveResponse & { ok?: boolean; error?: string }>;
       const failed = payloads.find((item) => !item?.ok);
       if (failed) {
         setMessage({ type: "error", text: failed.error || "首页配置保存失败" });
       } else {
-        setMessage({ type: "ok", text: "首页核心产品配置已保存并发布" });
+        const revalFailed = payloads.find((p) => p.revalidation && !p.revalidation.ok);
+        const cacheFailed = payloads.find((p) => p.cacheRefresh && !p.cacheRefresh.ok);
+        const toast = formatSaveToast({
+          ok: true,
+          saved: true,
+          revalidation: revalFailed?.revalidation ?? payloads[0]?.revalidation,
+          cacheRefresh: cacheFailed?.cacheRefresh ?? payloads[0]?.cacheRefresh,
+        });
+        setMessage({ type: toast.type, text: toast.text });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "首页配置保存失败";
@@ -561,9 +575,10 @@ export default function AdminSectionEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
       if (json.ok) {
-        setMessage({ type: "ok", text: "首页精选案例配置已保存并发布" });
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text });
       } else {
         setMessage({ type: "error", text: json.error || "首页精选案例配置保存失败" });
       }

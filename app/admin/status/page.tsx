@@ -1,7 +1,9 @@
 import AdminShell from "@/components/admin/AdminShell";
+import CmsStabilityPanel from "@/components/admin/CmsStabilityPanel";
 import DataHealthCheckPanel from "@/components/admin/DataHealthCheckPanel";
-import RevalidateCacheButton from "@/components/admin/RevalidateCacheButton";
+import SiteCacheStatusPanel from "@/components/admin/SiteCacheStatusPanel";
 import { getAdminStats } from "@/lib/admin-stats";
+import { listLkgCacheSummary } from "@/lib/cms-lkg-cache";
 import { resolveDataSource } from "@/lib/cms-data-source";
 import { probeStrapiApi } from "@/lib/cms-health";
 import { getPublicCmsUrl } from "@/lib/media-url";
@@ -14,6 +16,7 @@ export const dynamic = "force-dynamic";
 const SOURCE_LABEL: Record<string, string> = {
   mock: "Mock 演示数据",
   strapi: "Strapi CMS 实时数据",
+  "strapi-cache": "Strapi 最后成功缓存",
   "strapi-error": "Strapi 异常 · 不回退 Mock",
 };
 
@@ -23,7 +26,9 @@ export default async function AdminStatusPage() {
   const publicCmsUrl = getPublicCmsUrl();
   const strapiProbe = await probeStrapiApi();
   const cmsOnline = strapiProbe.ok;
-  const dataSource = resolveDataSource(cmsOnline);
+  const lkgSummary = listLkgCacheSummary();
+  const usingLastKnownGood = lkgSummary.usingLastKnownGood;
+  const dataSource = resolveDataSource(cmsOnline, usingLastKnownGood);
 
   const stats = cmsOnline && !useMock ? await getAdminStats() : null;
   const healthCheckEnabled = !useMock && adminTokenConfigured();
@@ -37,9 +42,11 @@ export default async function AdminStatusPage() {
             className={`text-lg font-medium mt-1 ${
               dataSource === "strapi"
                 ? "text-emerald-400"
-                : dataSource === "strapi-error"
-                  ? "text-red-400"
-                  : "text-amber-400"
+                : dataSource === "strapi-cache"
+                  ? "text-amber-400"
+                  : dataSource === "strapi-error"
+                    ? "text-red-400"
+                    : "text-amber-400"
             }`}
           >
             {SOURCE_LABEL[dataSource] ?? dataSource}
@@ -49,6 +56,11 @@ export default async function AdminStatusPage() {
           <p className="text-xs text-gray-500 mt-1">
             Strapi API: {strapiProbe.status ?? "—"} · USE_MOCK_DATA: {useMock ? "true" : "false"}
           </p>
+          {usingLastKnownGood ? (
+            <p className="text-xs text-amber-400 mt-2">
+              官网正在使用 last-known-good 本地缓存
+            </p>
+          ) : null}
           {strapiProbe.errorMessage ? (
             <p className="text-xs text-red-400 mt-2">{strapiProbe.errorMessage}</p>
           ) : null}
@@ -58,12 +70,24 @@ export default async function AdminStatusPage() {
           <p className="text-xs text-gray-500">前台缓存策略</p>
           <p className="text-lg font-medium mt-1 text-white">ISR revalidate 300s</p>
           <p className="text-xs text-gray-500 mt-3">
-            后台保存成功后会立即触发 revalidate；生产环境 Strapi 异常时不回退 Mock。
+            后台保存成功后会立即触发 revalidate 并刷新本地 CMS 缓存；Strapi 异常时使用
+            last-known-good，不回退 Mock。
           </p>
         </div>
       </div>
 
-      <RevalidateCacheButton />
+      <CmsStabilityPanel
+        cmsOnline={cmsOnline}
+        usingLastKnownGood={usingLastKnownGood}
+        dataSource={dataSource}
+        lastSuccessfulFetchAt={lkgSummary.lastSuccessfulFetchAt}
+        lastFailedFetchAt={lkgSummary.lastFailedFetchAt}
+        errorMessage={strapiProbe.errorMessage ?? lkgSummary.lastErrorMessage}
+        fileCount={lkgSummary.fileCount}
+        perType={lkgSummary.perType}
+      />
+
+      <SiteCacheStatusPanel />
 
       <DataHealthCheckPanel enabled={healthCheckEnabled} />
 

@@ -1,5 +1,5 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
-import { revalidateSiteModules } from "@/lib/revalidate";
+import { buildAdminSaveResponse } from "@/lib/admin-post-save";
 import { adminStrapiRequest } from "@/lib/strapi-admin";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -27,6 +27,6 @@ export async function PUT(request: NextRequest) {
   if (!result.ok) {
     return NextResponse.json(result, { status: 502 });
   }
-  const revalidation = revalidateSiteModules(["home", "contact"]);
-  return NextResponse.json({ ...result, revalidation: { ...revalidation, modules: ["home", "contact"] } });
+  const saveMeta = await buildAdminSaveResponse("global-setting", { ok: true }, data);
+  return NextResponse.json({ ...result, saved: saveMeta.saved, revalidation: saveMeta.revalidation, cacheRefresh: saveMeta.cacheRefresh });
 }

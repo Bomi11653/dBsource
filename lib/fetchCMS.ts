@@ -20,7 +20,7 @@ import {
 import { aboutImages, type AboutImages } from "@/data/about";
 import { applyCaseImages, sortCases } from "@/lib/cases";
 import { shouldUseMockData } from "@/lib/cms-data-source";
-import { probeStrapiApi } from "@/lib/cms-health";
+import { withLastKnownGood } from "@/lib/cms-lkg-cache";
 import { fetchStrapiCollection, fetchStrapiSingle, getCmsUrl } from "@/lib/strapi-client";
 import {
   mapStrapiAboutSections,
@@ -52,6 +52,25 @@ const EMPTY_GLOBAL_SETTING = {
   homeFeaturedCase: undefined as (typeof globalSettingDefault)["homeFeaturedCase"],
 };
 
+const EMPTY_ABOUT_IMAGES: AboutImages = {
+  brandIntro: "",
+  origin: "",
+  system: ["", "", ""] as AboutImages["system"],
+  focus: "",
+  dsp: ["", "", ""] as AboutImages["dsp"],
+};
+
+const EMPTY_SMART_SELECTION = {
+  title: { zh: "", en: "" },
+  subtitle: { zh: "", en: "" },
+  buttons: {
+    generate: { zh: "", en: "" },
+    regenerate: { zh: "", en: "" },
+    copy: { zh: "", en: "" },
+    contact: { zh: "", en: "" },
+  },
+};
+
 function resolveSiteMarket(): "cn" | "global" | "all" {
   const envMarket =
     (process.env.SITE_MARKET || process.env.NEXT_PUBLIC_SITE_MARKET || "all").toLowerCase();
@@ -78,10 +97,8 @@ function logStrapiEmpty(collection: string) {
   }
 }
 
-async function assertStrapiReachable(): Promise<boolean> {
-  if (isMockMode()) return false;
-  const probe = await probeStrapiApi();
-  return probe.ok;
+function strapiUrl(path: string): string {
+  return `${getCmsUrl()}${path}`;
 }
 
 const CASES_QUERY =
@@ -104,23 +121,29 @@ const SOCIAL_LINKS_QUERY =
 
 export async function getProducts() {
   if (isMockMode()) return filterByMarket(products);
-  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const fetchMapped = async (query: string) => {
-    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(query);
-    if (!docs?.length) return null;
-    return docs.map((doc, index) => mapStrapiProduct(doc, cmsUrl, index));
-  };
+  return withLastKnownGood(
+    "products",
+    strapiUrl(PRODUCTS_QUERY),
+    async () => {
+      const fetchMapped = async (query: string) => {
+        const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(query);
+        if (!docs.length) return null;
+        return docs.map((doc, index) => mapStrapiProduct(doc, cmsUrl, index));
+      };
 
-  const withMarket = await fetchMapped(withMarketFilter(PRODUCTS_QUERY));
-  if (withMarket?.length) return withMarket;
+      const withMarket = await fetchMapped(withMarketFilter(PRODUCTS_QUERY));
+      if (withMarket?.length) return withMarket;
 
-  const withoutMarket = await fetchMapped(PRODUCTS_QUERY);
-  if (withoutMarket?.length) return withoutMarket;
+      const withoutMarket = await fetchMapped(PRODUCTS_QUERY);
+      if (withoutMarket?.length) return withoutMarket;
 
-  logStrapiEmpty("products");
-  return [];
+      logStrapiEmpty("products");
+      return [];
+    },
+    []
+  );
 }
 
 export async function getProductById(id: number) {
@@ -132,23 +155,29 @@ export async function getCases() {
   if (isMockMode()) {
     return sortCases(applyCaseImages(filterByMarket(cases)));
   }
-  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const fetchMapped = async (query: string) => {
-    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiCase>[0]>(query);
-    if (!docs?.length) return null;
-    return sortCases(docs.map((doc) => mapStrapiCase(doc, cmsUrl)));
-  };
+  return withLastKnownGood(
+    "cases",
+    strapiUrl(CASES_QUERY),
+    async () => {
+      const fetchMapped = async (query: string) => {
+        const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiCase>[0]>(query);
+        if (!docs.length) return null;
+        return sortCases(docs.map((doc) => mapStrapiCase(doc, cmsUrl)));
+      };
 
-  const withMarket = await fetchMapped(withMarketFilter(CASES_QUERY));
-  if (withMarket?.length) return withMarket;
+      const withMarket = await fetchMapped(withMarketFilter(CASES_QUERY));
+      if (withMarket?.length) return withMarket;
 
-  const withoutMarket = await fetchMapped(CASES_QUERY);
-  if (withoutMarket?.length) return withoutMarket;
+      const withoutMarket = await fetchMapped(CASES_QUERY);
+      if (withoutMarket?.length) return withoutMarket;
 
-  logStrapiEmpty("cases");
-  return [];
+      logStrapiEmpty("cases");
+      return [];
+    },
+    []
+  );
 }
 
 export async function getCaseById(id: number) {
@@ -158,160 +187,164 @@ export async function getCaseById(id: number) {
 
 export async function getDownloads() {
   if (isMockMode()) return filterByMarket(downloads);
-  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const fetchMapped = async (query: string) => {
-    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiDownload>[0]>(query);
-    if (!docs?.length) return null;
-    return docs.map((doc, index) => mapStrapiDownload(doc, cmsUrl, index));
-  };
+  return withLastKnownGood(
+    "downloads",
+    strapiUrl(DOWNLOADS_QUERY),
+    async () => {
+      const fetchMapped = async (query: string) => {
+        const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiDownload>[0]>(query);
+        if (!docs.length) return null;
+        return docs.map((doc, index) => mapStrapiDownload(doc, cmsUrl, index));
+      };
 
-  const withMarket = await fetchMapped(withMarketFilter(DOWNLOADS_QUERY));
-  if (withMarket?.length) return withMarket;
+      const withMarket = await fetchMapped(withMarketFilter(DOWNLOADS_QUERY));
+      if (withMarket?.length) return withMarket;
 
-  const withoutMarket = await fetchMapped(DOWNLOADS_QUERY);
-  if (withoutMarket?.length) return withoutMarket;
+      const withoutMarket = await fetchMapped(DOWNLOADS_QUERY);
+      if (withoutMarket?.length) return withoutMarket;
 
-  logStrapiEmpty("downloads");
-  return [];
+      logStrapiEmpty("downloads");
+      return [];
+    },
+    []
+  );
 }
 
 export async function getScenes() {
   if (isMockMode()) return scenes;
-  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiScene>[0]>(SCENES_QUERY);
-
-  if (docs?.length) {
-    return docs.map((doc, index) => mapStrapiScene(doc, cmsUrl, index));
-  }
-
-  logStrapiEmpty("scenes");
-  return [];
+  return withLastKnownGood(
+    "scenes",
+    strapiUrl(SCENES_QUERY),
+    async () => {
+      const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiScene>[0]>(SCENES_QUERY);
+      if (docs.length) {
+        return docs.map((doc, index) => mapStrapiScene(doc, cmsUrl, index));
+      }
+      logStrapiEmpty("scenes");
+      return [];
+    },
+    []
+  );
 }
 
 export async function getQRCodes() {
   if (isMockMode()) return qrCodes;
-  if (!(await assertStrapiReachable())) return [];
 
   const cmsUrl = getCmsUrl();
   const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(QR_QUERY);
-
-  if (docs?.length) {
+  if (docs.length) {
     return docs.map((doc, index) => mapStrapiQR(doc, cmsUrl, index));
   }
-
   logStrapiEmpty("qr-codes");
   return [];
 }
 
 export async function getAboutImages(): Promise<AboutImages> {
   if (isMockMode()) return aboutImages;
-  if (!(await assertStrapiReachable())) return aboutImages;
 
   const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiAboutSections>[0][number]>(
-    ABOUT_QUERY
+  return withLastKnownGood(
+    "about",
+    strapiUrl(ABOUT_QUERY),
+    async () => {
+      const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiAboutSections>[0][number]>(
+        ABOUT_QUERY
+      );
+      if (docs.length) {
+        return mapStrapiAboutSections(docs, cmsUrl, EMPTY_ABOUT_IMAGES);
+      }
+      return { ...EMPTY_ABOUT_IMAGES };
+    },
+    { ...EMPTY_ABOUT_IMAGES }
   );
-
-  if (docs?.length) {
-    return mapStrapiAboutSections(docs, cmsUrl, aboutImages);
-  }
-
-  return aboutImages;
 }
 
 export async function getContactInfo() {
   if (isMockMode()) return contactInfo;
-  const fallback = EMPTY_CONTACT;
-  if (!(await assertStrapiReachable())) {
-    return { ...fallback };
-  }
 
   const cmsUrl = getCmsUrl();
-  const doc = await fetchStrapiSingle<Parameters<typeof mapStrapiContactInfo>[0]>(
-    "/contact-info"
+  return withLastKnownGood(
+    "contact",
+    strapiUrl("/contact-info"),
+    async () => {
+      const doc = await fetchStrapiSingle<Parameters<typeof mapStrapiContactInfo>[0]>(
+        "/contact-info"
+      );
+      if (doc) {
+        return mapStrapiContactInfo(doc, EMPTY_CONTACT, cmsUrl);
+      }
+      return { ...EMPTY_CONTACT };
+    },
+    { ...EMPTY_CONTACT }
   );
-
-  if (doc) {
-    return mapStrapiContactInfo(doc, fallback, cmsUrl);
-  }
-
-  return { ...fallback };
 }
 
 export async function getGlobalSetting() {
   if (isMockMode()) return globalSettingDefault;
+
   const fallback = EMPTY_GLOBAL_SETTING;
-  if (!(await assertStrapiReachable())) {
-    return { ...fallback };
-  }
+  return withLastKnownGood(
+    "globalSetting",
+    strapiUrl(GLOBAL_SETTING_QUERY),
+    async () => {
+      type GlobalSettingDoc = {
+        logo?: { url?: string } | null;
+        footerCopyrightZh?: string | null;
+        footerCopyrightEn?: string | null;
+        homeFeaturedProductAId?: number | null;
+        homeFeaturedProductBId?: number | null;
+        homeFeaturedCaseId?: number | null;
+        homeFeaturedCaseTitleZh?: string | null;
+        homeFeaturedCaseTitleEn?: string | null;
+        homeFeaturedCaseDescZh?: string | null;
+        homeFeaturedCaseDescEn?: string | null;
+        homeFeaturedCaseImage?: { url?: string } | null;
+      };
+      const doc = await fetchStrapiSingle<GlobalSettingDoc>(GLOBAL_SETTING_QUERY);
+      if (!doc) {
+        return { ...fallback };
+      }
 
-  type GlobalSettingDoc = {
-    logo?: { url?: string } | null;
-    footerCopyrightZh?: string | null;
-    footerCopyrightEn?: string | null;
-    homeFeaturedProductAId?: number | null;
-    homeFeaturedProductBId?: number | null;
-    homeFeaturedCaseId?: number | null;
-    homeFeaturedCaseTitleZh?: string | null;
-    homeFeaturedCaseTitleEn?: string | null;
-    homeFeaturedCaseDescZh?: string | null;
-    homeFeaturedCaseDescEn?: string | null;
-    homeFeaturedCaseImage?: { url?: string } | null;
-  };
-  const doc = await fetchStrapiSingle<GlobalSettingDoc>(GLOBAL_SETTING_QUERY);
-  if (!doc) {
-    return { ...fallback };
-  }
-
-  return {
-    logo: toMediaUrl(doc.logo?.url) || fallback.logo,
-    footerCopyright: {
-      zh: doc.footerCopyrightZh || fallback.footerCopyright.zh,
-      en: doc.footerCopyrightEn || fallback.footerCopyright.en,
+      return {
+        logo: toMediaUrl(doc.logo?.url) || fallback.logo,
+        footerCopyright: {
+          zh: doc.footerCopyrightZh || fallback.footerCopyright.zh,
+          en: doc.footerCopyrightEn || fallback.footerCopyright.en,
+        },
+        homeFeaturedProductIds: [
+          doc.homeFeaturedProductAId ?? fallback.homeFeaturedProductIds[0],
+          doc.homeFeaturedProductBId ?? fallback.homeFeaturedProductIds[1],
+        ].filter((id): id is number => typeof id === "number"),
+        homeFeaturedCase:
+          doc.homeFeaturedCaseId != null ||
+          doc.homeFeaturedCaseTitleZh ||
+          doc.homeFeaturedCaseTitleEn ||
+          doc.homeFeaturedCaseImage
+            ? {
+                caseId: doc.homeFeaturedCaseId ?? 0,
+                title: {
+                  zh: doc.homeFeaturedCaseTitleZh ?? "",
+                  en: doc.homeFeaturedCaseTitleEn ?? "",
+                },
+                desc: {
+                  zh: doc.homeFeaturedCaseDescZh ?? "",
+                  en: doc.homeFeaturedCaseDescEn ?? "",
+                },
+                image: toMediaUrl(doc.homeFeaturedCaseImage?.url),
+              }
+            : fallback.homeFeaturedCase,
+      };
     },
-    homeFeaturedProductIds: [
-      doc.homeFeaturedProductAId ?? fallback.homeFeaturedProductIds[0],
-      doc.homeFeaturedProductBId ?? fallback.homeFeaturedProductIds[1],
-    ].filter((id): id is number => typeof id === "number"),
-    homeFeaturedCase:
-      doc.homeFeaturedCaseId != null ||
-      doc.homeFeaturedCaseTitleZh ||
-      doc.homeFeaturedCaseTitleEn ||
-      doc.homeFeaturedCaseImage
-        ? {
-            caseId: doc.homeFeaturedCaseId ?? 0,
-            title: {
-              zh: doc.homeFeaturedCaseTitleZh ?? "",
-              en: doc.homeFeaturedCaseTitleEn ?? "",
-            },
-            desc: {
-              zh: doc.homeFeaturedCaseDescZh ?? "",
-              en: doc.homeFeaturedCaseDescEn ?? "",
-            },
-            image: toMediaUrl(doc.homeFeaturedCaseImage?.url),
-          }
-        : fallback.homeFeaturedCase,
-  };
+    { ...fallback }
+  );
 }
 
 export async function getSmartSelectionPage() {
   if (isMockMode()) return smartSelectionPageDefault;
-  if (!(await assertStrapiReachable())) {
-    return {
-      title: { zh: "", en: "" },
-      subtitle: { zh: "", en: "" },
-      buttons: {
-        generate: { zh: "", en: "" },
-        regenerate: { zh: "", en: "" },
-        copy: { zh: "", en: "" },
-        contact: { zh: "", en: "" },
-      },
-    };
-  }
 
   type SmartSelectionPageDoc = {
     titleZh?: string | null;
@@ -327,34 +360,35 @@ export async function getSmartSelectionPage() {
     contactButtonZh?: string | null;
     contactButtonEn?: string | null;
   };
+
   const doc = await fetchStrapiSingle<SmartSelectionPageDoc>(SMART_SELECTION_PAGE_QUERY);
-  if (!doc) return smartSelectionPageDefault;
+  if (!doc) return { ...EMPTY_SMART_SELECTION };
 
   return {
     title: {
-      zh: doc.titleZh || smartSelectionPageDefault.title.zh,
-      en: doc.titleEn || smartSelectionPageDefault.title.en,
+      zh: doc.titleZh || EMPTY_SMART_SELECTION.title.zh,
+      en: doc.titleEn || EMPTY_SMART_SELECTION.title.en,
     },
     subtitle: {
-      zh: doc.subtitleZh || smartSelectionPageDefault.subtitle.zh,
-      en: doc.subtitleEn || smartSelectionPageDefault.subtitle.en,
+      zh: doc.subtitleZh || EMPTY_SMART_SELECTION.subtitle.zh,
+      en: doc.subtitleEn || EMPTY_SMART_SELECTION.subtitle.en,
     },
     buttons: {
       generate: {
-        zh: doc.generateButtonZh || smartSelectionPageDefault.buttons.generate.zh,
-        en: doc.generateButtonEn || smartSelectionPageDefault.buttons.generate.en,
+        zh: doc.generateButtonZh || EMPTY_SMART_SELECTION.buttons.generate.zh,
+        en: doc.generateButtonEn || EMPTY_SMART_SELECTION.buttons.generate.en,
       },
       regenerate: {
-        zh: doc.regenerateButtonZh || smartSelectionPageDefault.buttons.regenerate.zh,
-        en: doc.regenerateButtonEn || smartSelectionPageDefault.buttons.regenerate.en,
+        zh: doc.regenerateButtonZh || EMPTY_SMART_SELECTION.buttons.regenerate.zh,
+        en: doc.regenerateButtonEn || EMPTY_SMART_SELECTION.buttons.regenerate.en,
       },
       copy: {
-        zh: doc.copyButtonZh || smartSelectionPageDefault.buttons.copy.zh,
-        en: doc.copyButtonEn || smartSelectionPageDefault.buttons.copy.en,
+        zh: doc.copyButtonZh || EMPTY_SMART_SELECTION.buttons.copy.zh,
+        en: doc.copyButtonEn || EMPTY_SMART_SELECTION.buttons.copy.en,
       },
       contact: {
-        zh: doc.contactButtonZh || smartSelectionPageDefault.buttons.contact.zh,
-        en: doc.contactButtonEn || smartSelectionPageDefault.buttons.contact.en,
+        zh: doc.contactButtonZh || EMPTY_SMART_SELECTION.buttons.contact.zh,
+        en: doc.contactButtonEn || EMPTY_SMART_SELECTION.buttons.contact.en,
       },
     },
   };
@@ -362,7 +396,6 @@ export async function getSmartSelectionPage() {
 
 export async function getSocialLinks() {
   if (isMockMode()) return socialLinksDefault;
-  if (!(await assertStrapiReachable())) return [];
 
   type SocialLinkDoc = {
     platformKey: "wechat" | "douyin" | "channels";
@@ -374,7 +407,7 @@ export async function getSocialLinks() {
     enabled?: boolean | null;
   };
   const docs = await fetchStrapiCollection<SocialLinkDoc>(SOCIAL_LINKS_QUERY);
-  if (!docs?.length) return [];
+  if (!docs.length) return [];
 
   return docs.map((doc, index) => ({
     platformKey: doc.platformKey,

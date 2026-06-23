@@ -17,6 +17,7 @@ import {
 } from "@/lib/maintenance";
 import { organizationJsonLd, siteConfig } from "@/lib/seo";
 import { getSeriesConfig } from "@/lib/series-config";
+import { fetchSeriesConfigFromCMS } from "@/lib/fetch-series-config";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -69,7 +70,8 @@ export default async function RootLayout({
     ]);
   }
 
-  const seriesConfig = await getSeriesConfig(products);
+  const cmsSeries = await fetchSeriesConfigFromCMS();
+  const seriesConfig = getSeriesConfig(products, cmsSeries);
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>

@@ -1,7 +1,4 @@
 import type { Locale, Product, ProductSeriesGroup } from "@/data/mock";
-import { shouldUseMockData } from "@/lib/cms-data-source";
-import { probeStrapiApi } from "@/lib/cms-health";
-import { fetchStrapiCollection, getCmsUrl } from "@/lib/strapi-client";
 import {
   PRODUCT_SERIES_GROUPS,
   PRODUCT_SUB_SERIES,
@@ -14,16 +11,6 @@ export type SeriesConfigEntry = ProductSubSeries & {
   sortOrder: number;
 };
 
-type StrapiSeriesDoc = {
-  slug: string;
-  seriesGroup: string;
-  nameZh: string;
-  nameEn: string;
-  modelPrefix: string;
-  sortOrder?: number;
-  visible?: boolean;
-  featuredProductId?: number | null;
-};
 export function subSeriesMatchesProduct(sub: ProductSubSeries, product: Product): boolean {
   return (
     product.productLine === sub.slug ||
@@ -93,32 +80,10 @@ function inferSeriesFromProducts(
   return inferred;
 }
 
-function mapStrapiSeries(doc: StrapiSeriesDoc, index: number): SeriesConfigEntry {
-  return {
-    slug: doc.slug as ProductSubSeriesSlug,
-    seriesGroup: doc.seriesGroup as ProductSeriesGroup,
-    label: { zh: doc.nameZh, en: doc.nameEn },
-    modelPrefix: doc.modelPrefix,
-    featuredProductId: doc.featuredProductId ?? index + 1,
-    visible: doc.visible !== false,
-    sortOrder: doc.sortOrder ?? index,
-  };
-}
-
-export async function fetchSeriesConfigFromCMS(): Promise<SeriesConfigEntry[] | null> {
-  if (shouldUseMockData()) return null;
-  const probe = await probeStrapiApi();
-  if (!probe.ok) return null;
-
-  const docs = await fetchStrapiCollection<StrapiSeriesDoc>(
-    "/product-series-configs?sort[0]=sortOrder:asc&pagination[pageSize]=50"
-  );
-  if (!docs?.length) return null;
-  return docs.map(mapStrapiSeries);
-}
-
-export async function getSeriesConfig(products: Product[]): Promise<SeriesConfigEntry[]> {
-  const cmsSeries = await fetchSeriesConfigFromCMS();
+export function getSeriesConfig(
+  products: Product[],
+  cmsSeries?: SeriesConfigEntry[] | null
+): SeriesConfigEntry[] {
   const base = cmsSeries ?? defaultSeriesConfig();
   const merged = [...base, ...inferSeriesFromProducts(products, base)];
 
