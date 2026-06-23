@@ -14,7 +14,7 @@ export default async function CasesPage() {
   const cases = await getCases();
   return (
     <main className="bg-black">
-      <Suspense fallback={<div className="min-h-screen bg-black pt-28" />}>
+      <Suspense fallback={<div className="min-h-screen-safe bg-black pt-28" />}>
         <CasesPageContent cases={cases} />
       </Suspense>
       <SiteFooter />

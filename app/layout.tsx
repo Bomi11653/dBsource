@@ -8,6 +8,7 @@ import { PerformanceModeProvider } from "@/components/PerformanceModeProvider";
 import { SeriesConfigProvider } from "@/components/SeriesConfigProvider";
 import { SiteDataProvider } from "@/components/SiteDataProvider";
 import SmoothScroll from "@/components/SmoothScroll";
+import WeChatCompat from "@/components/WeChatCompat";
 import { I18nProvider } from "@/components/I18nProvider";
 import { contactInfo as mockContactInfo } from "@/data/mock";
 import { getCases, getContactInfo, getDownloads, getProducts } from "@/lib/cms";
@@ -79,7 +80,7 @@ export default async function RootLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Arial, sans-serif; }
+              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; }
               a { color: inherit; text-decoration: none; }
               img, video { max-width: 100%; height: auto; }
               button { font: inherit; color: inherit; background: transparent; border: none; cursor: pointer; }
@@ -90,6 +91,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased bg-black text-white">
         <JsonLd data={organizationJsonLd()} />
         <Analytics />
+        <WeChatCompat />
         <I18nProvider>
           <MaintenanceGate
             enabled={maintenance}

@@ -110,7 +110,7 @@ export default function ImageLightbox({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.25 }}
-            className="relative w-full max-w-6xl aspect-[4/3] max-h-[85vh]"
+            className="relative w-full max-w-6xl aspect-[4/3] max-h-[85dvh]"
             onClick={(e) => e.stopPropagation()}
           >
             <CmsImage

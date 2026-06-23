@@ -353,7 +353,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                     <h3 className="text-base font-medium text-white leading-snug">
                       {file.name[locale]}
                       {file.version ? (
-                        <span className="ml-2 text-xs font-normal text-white/[0.45] font-mono">
+                        <span className="ml-2 text-xs font-normal text-white/[0.45] tabular-nums">
                           v{file.version}
                         </span>
                       ) : null}
@@ -424,7 +424,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                   <h3 className="text-sm md:text-[15px] font-medium text-white leading-snug line-clamp-2">
                     {file.name[locale]}
                     {file.version ? (
-                      <span className="ml-1.5 text-xs font-normal text-white/[0.45] font-mono">
+                      <span className="ml-1.5 text-xs font-normal text-white/[0.45] tabular-nums">
                         v{file.version}
                       </span>
                     ) : null}

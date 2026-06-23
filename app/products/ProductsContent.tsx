@@ -187,8 +187,8 @@ export default function ProductsContent({ products }: { products: Product[] }) {
           key={`${seriesTab}-${categoryFilter}-${subSeries}-${searchQuery}-${currentPage}`}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 animate-page-in"
         >
-          {currentProducts.map((p) => (
-            <ProductGridCard key={p.id} product={p} locale={locale} />
+          {currentProducts.map((p, i) => (
+            <ProductGridCard key={p.id} product={p} locale={locale} index={i} />
           ))}
         </div>
       )}

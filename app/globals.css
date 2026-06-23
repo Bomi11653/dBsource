@@ -4,8 +4,8 @@
 
 :root {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue",
+    Arial, sans-serif;
 }
 
 @layer base {
@@ -72,6 +72,31 @@
 
   html {
     font-family: var(--font-sans);
+  }
+
+  /* 微信 WebView：强制系统字体，避免手写字体/拼音字体回退 */
+  html[data-wechat="true"],
+  html[data-wechat="true"] body,
+  html[data-wechat="true"] h1,
+  html[data-wechat="true"] h2,
+  html[data-wechat="true"] h3,
+  html[data-wechat="true"] h4,
+  html[data-wechat="true"] h5,
+  html[data-wechat="true"] h6,
+  html[data-wechat="true"] p,
+  html[data-wechat="true"] button,
+  html[data-wechat="true"] nav,
+  html[data-wechat="true"] a,
+  html[data-wechat="true"] li,
+  html[data-wechat="true"] label,
+  html[data-wechat="true"] input,
+  html[data-wechat="true"] textarea,
+  html[data-wechat="true"] select,
+  html[data-wechat="true"] span {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+      "Helvetica Neue", Arial, sans-serif !important;
+    font-variant-east-asian: normal;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
@@ -344,6 +369,16 @@ img[data-nimg="fill"],
 
 .pb-page-safe {
   padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+}
+
+.pb-sticky-cta {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .pb-sticky-cta {
+    padding-bottom: 0;
+  }
 }
 
 .scroll-mt-nav {

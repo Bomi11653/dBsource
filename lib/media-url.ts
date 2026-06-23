@@ -69,6 +69,19 @@ export function resolveBrowserMediaUrl(rawUrl: string): string {
     return trimmed;
   }
 
+  // LKG 缓存或旧 HTML 中的内网 / 1337 端口地址
+  if (
+    trimmed.includes("127.0.0.1") ||
+    trimmed.includes("localhost") ||
+    /:1337\b/.test(trimmed)
+  ) {
+    const uploadMatch = trimmed.match(/\/uploads\/[^\s"'?#]+/);
+    if (uploadMatch) {
+      return toBrowserUploadsPath(uploadMatch[0]);
+    }
+    return "";
+  }
+
   if (trimmed.startsWith("/strapi-uploads/")) {
     return trimmed;
   }

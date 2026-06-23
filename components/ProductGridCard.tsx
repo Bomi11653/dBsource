@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function ProductGridCard({
   product,
   locale,
+  index = 0,
 }: {
   product: Product;
   locale: Locale;
@@ -29,7 +30,7 @@ export default function ProductGridCard({
             fit="contain"
             frameClassName="bg-gradient-to-b from-zinc-900 to-black p-3 md:p-2"
             sizes="(max-width: 640px) 100vw, 25vw"
-            loading="lazy"
+            priority={index < 4}
             imageClassName="opacity-95 md:group-hover:scale-105 md:group-hover:opacity-100 transition-transform duration-500"
           />
         ) : (

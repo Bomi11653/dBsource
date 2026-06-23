@@ -2,6 +2,7 @@
 
 import type { QRItem, SocialLinkItem } from "@/data/mock";
 import { SafeImageContain } from "@/components/SafeImage";
+import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import { ArrowRight } from "lucide-react";
 import { useI18n } from "./I18nProvider";
 
@@ -81,15 +82,18 @@ export default function QRCarousel({
             const url = platform?.url ?? "";
             const desc = platform?.desc[locale] ?? "";
             const qrSrc = platform?.qrImage || qr.image;
+            const qrKey = resolveBrowserMediaUrl(qrSrc) || qr.id;
 
             const inner = (
               <>
                 <div className="shrink-0 rounded-xl bg-white p-1.5 transition-transform duration-300 group-hover:scale-105">
                   <SafeImageContain
+                    key={qrKey}
                     src={qrSrc}
                     alt={qr.label[locale]}
                     size={88}
                     className="w-[72px] h-[72px] sm:w-[88px] sm:h-[88px]"
+                    priority
                   />
                 </div>
                 <div className="min-w-0 flex-1 text-left">

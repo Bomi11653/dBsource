@@ -17,7 +17,7 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
     >
       <h2 className="type-page-title text-2xl sm:text-3xl mb-8 md:mb-12">{t.home.scenesTitle}</h2>
       <div className="grid gap-5 md:grid-cols-3 md:gap-8">
-        {scenes.map((s) => (
+        {scenes.map((s, i) => (
           <div
             key={s.id}
             className="reveal-on-scroll rounded-xl overflow-hidden border border-white/10 card-touch"
@@ -27,6 +27,7 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
               alt={s.name[locale]}
               frameHeight={200}
               sizes="(max-width: 768px) 100vw, 33vw"
+              priority={i === 0}
             />
             <div className="p-4 sm:p-5">
               <h3 className="type-card-title text-lg">{s.name[locale]}</h3>

@@ -63,7 +63,7 @@ export default function ProductDetailContent({
   );
 
   return (
-    <div className="bg-black text-white min-h-screen pt-24 pb-24 md:pb-0">
+    <div className="bg-black text-white min-h-screen-safe pt-24 pb-sticky-cta md:pb-0">
       <section className="px-6 md:px-20 py-16 md:py-24 border-b border-white/10 max-w-6xl mx-auto">
         <Link
           href="/products"

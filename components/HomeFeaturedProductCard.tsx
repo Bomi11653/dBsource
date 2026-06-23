@@ -4,6 +4,8 @@ import type { HomeFeaturedProduct } from "@/data/home-featured";
 import { useI18n } from "@/components/I18nProvider";
 import { usePerformanceMode } from "@/components/PerformanceModeProvider";
 import CmsImage from "@/components/CmsImage";
+import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { isWeChatWebView } from "@/lib/wechat-webview";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -16,12 +18,14 @@ export default function HomeFeaturedProductCard({
 }) {
   const { locale, t } = useI18n();
   const { resolvedMode } = usePerformanceMode();
-  const [displayImage, setDisplayImage] = useState(product.image);
+  const normalizedImage = resolveBrowserMediaUrl(product.image);
+  const [displayImage, setDisplayImage] = useState(normalizedImage);
 
   useEffect(() => {
     let cancelled = false;
-    setDisplayImage(product.image);
-    if (resolvedMode === "lite") return;
+    const safeSrc = resolveBrowserMediaUrl(product.image);
+    setDisplayImage(safeSrc);
+    if (resolvedMode === "lite" || isWeChatWebView()) return;
 
     const image = new window.Image();
     image.crossOrigin = "anonymous";
@@ -56,13 +60,13 @@ export default function HomeFeaturedProductCard({
         const transparentPng = canvas.toDataURL("image/png");
         if (!cancelled) setDisplayImage(transparentPng);
       } catch {
-        if (!cancelled) setDisplayImage(product.image);
+        if (!cancelled) setDisplayImage(safeSrc);
       }
     };
     image.onerror = () => {
-      if (!cancelled) setDisplayImage(product.image);
+      if (!cancelled) setDisplayImage(safeSrc);
     };
-    image.src = product.image;
+    image.src = safeSrc;
 
     return () => {
       cancelled = true;

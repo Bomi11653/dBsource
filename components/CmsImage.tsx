@@ -1,28 +1,40 @@
 "use client";
 
-import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { useCmsImageState } from "@/lib/use-cms-image";
 import Image, { type ImageProps } from "next/image";
-import { useMemo } from "react";
 
 type CmsImageProps = Omit<ImageProps, "src"> & {
   src: string;
 };
 
-/** 将 Strapi 媒体 URL 规范为浏览器可访问的同源路径，并记录加载失败 */
-export default function CmsImage({ src, alt, onError, ...props }: CmsImageProps) {
-  const normalized = useMemo(() => resolveBrowserMediaUrl(src), [src]);
+/** Strapi 媒体图：规范化 /strapi-uploads 路径，微信内 unoptimized + 失败重试 */
+export default function CmsImage({
+  src,
+  alt,
+  onError,
+  loading,
+  unoptimized,
+  priority,
+  ...props
+}: CmsImageProps) {
+  const { displaySrc, imageKey, handleError, preferUnoptimized, preferEager } =
+    useCmsImageState(src);
 
-  if (!normalized) {
+  if (!displaySrc) {
     return null;
   }
 
   return (
     <Image
+      key={imageKey}
       {...props}
       alt={alt}
-      src={normalized}
+      src={displaySrc}
+      unoptimized={unoptimized ?? preferUnoptimized}
+      loading={loading ?? (preferEager || priority ? "eager" : undefined)}
+      priority={priority}
       onError={(event) => {
-        console.error("[CmsImage] failed to load:", normalized);
+        handleError();
         onError?.(event);
       }}
     />

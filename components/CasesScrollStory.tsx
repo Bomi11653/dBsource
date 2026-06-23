@@ -86,7 +86,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
 
   if (!heroCase) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
+      <div className="min-h-screen-safe flex items-center justify-center text-gray-400">
         {t.cases.noCases}
       </div>
     );
@@ -201,7 +201,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       </section>
 
       {/* 第四屏：大图切换 */}
-      <section className="min-h-screen flex items-center justify-center px-6 py-24">
+      <section className="min-h-screen-safe flex items-center justify-center px-6 py-24">
         <motion.div
           className="relative w-full max-w-5xl aspect-video min-h-[240px] md:min-h-0 rounded-2xl overflow-hidden border border-white/10"
           initial={{ opacity: 0, scale: 0.88 }}
@@ -234,7 +234,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       </section>
 
       {/* 第五屏：数据成交点 */}
-      <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-24">
+      <section className="min-h-screen-safe flex flex-col items-center justify-center text-center px-6 py-24">
         <motion.p
           className="text-brand-gold text-xs tracking-[0.35em] uppercase mb-6"
           initial={{ opacity: 0 }}

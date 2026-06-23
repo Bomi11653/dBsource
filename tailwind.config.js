@@ -13,12 +13,9 @@ module.exports = {
         sans: [
           "-apple-system",
           "BlinkMacSystemFont",
-          "SF Pro Display",
-          "SF Pro Text",
           "PingFang SC",
-          "Hiragino Sans GB",
           "Microsoft YaHei",
-          "Segoe UI",
+          "Helvetica Neue",
           "Arial",
           "sans-serif",
         ],

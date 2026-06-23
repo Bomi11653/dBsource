@@ -14,7 +14,7 @@ export default async function ContactPage() {
   const contact = await getContactInfo();
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen-safe">
       <Suspense fallback={<div className="pt-28 page-x text-gray-500">Loading…</div>}>
         <ContactContent contact={contact} />
       </Suspense>

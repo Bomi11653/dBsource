@@ -12,7 +12,7 @@ export const metadata = pageMetadata(
 export default async function DownloadsPage() {
   const downloads = await getDownloads();
   return (
-    <main className="pt-24 min-h-screen">
+    <main className="pt-24 min-h-screen-safe">
       <DownloadsContent items={downloads} />
       <SiteFooter />
     </main>

@@ -1,20 +1,16 @@
 "use client";
 
-import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { useCmsImageState } from "@/lib/use-cms-image";
 import Image, { type ImageProps } from "next/image";
-import { useMemo } from "react";
 
 type FitMode = "cover" | "contain";
 
 type SafeImageProps = Omit<ImageProps, "fill"> & {
-  /** 容器固定高度（px），防止 fill 布局在 CSS 未加载时撑满视口 */
   frameHeight?: number;
   frameWidth?: string;
-  /** 移动端与桌面端 object-fit（默认 cover） */
   fit?: FitMode;
   desktopFit?: FitMode;
   frameClassName?: string;
-  /** 仅作用于 Image 元素 */
   imageClassName?: string;
 };
 
@@ -28,9 +24,38 @@ function fitClasses(mobile: FitMode, desktop?: FitMode): string {
   return `${mobileClass} ${desktopClass}`;
 }
 
-/**
- * 带尺寸兜底的图片容器，避免 fill 图片在样式失效时变成全屏巨图
- */
+function CmsFillImage({
+  alt,
+  sizes,
+  className,
+  rawSrc,
+  unoptimized,
+  loading,
+  priority,
+  ...rest
+}: Omit<ImageProps, "src" | "fill"> & { rawSrc: string }) {
+  const { displaySrc, imageKey, handleError, preferUnoptimized, preferEager } =
+    useCmsImageState(rawSrc);
+
+  if (!displaySrc) return null;
+
+  return (
+    <Image
+      key={imageKey}
+      src={displaySrc}
+      alt={alt}
+      fill
+      sizes={sizes}
+      unoptimized={unoptimized ?? preferUnoptimized}
+      loading={loading ?? (preferEager || priority ? "eager" : undefined)}
+      priority={priority}
+      className={className}
+      onError={handleError}
+      {...rest}
+    />
+  );
+}
+
 export default function SafeImage({
   frameHeight = 192,
   frameWidth = "100%",
@@ -43,21 +68,14 @@ export default function SafeImage({
   src,
   sizes,
   unoptimized,
+  loading,
+  priority,
   ...rest
 }: SafeImageProps) {
   const objectFitClass = `${fitClasses(fit, desktopFit)} object-center`;
-  const normalizedSrc = useMemo(
-    () => (typeof src === "string" ? resolveBrowserMediaUrl(src) : src),
-    [src]
-  );
+  const rawSrc = typeof src === "string" ? src : "";
 
-  if (!normalizedSrc) {
-    return null;
-  }
-
-  const handleError = () => {
-    console.error("[SafeImage] failed to load:", normalizedSrc);
-  };
+  if (!rawSrc) return null;
 
   return (
     <div
@@ -70,14 +88,14 @@ export default function SafeImage({
         overflow: "hidden",
       }}
     >
-      <Image
-        src={normalizedSrc}
+      <CmsFillImage
+        rawSrc={rawSrc}
         alt={alt}
-        fill
         sizes={sizes}
         unoptimized={unoptimized}
+        loading={loading}
+        priority={priority}
         className={`${objectFitClass} ${imageClassName}`.trim()}
-        onError={handleError}
         {...rest}
       />
     </div>
@@ -89,18 +107,16 @@ export function SafeImageContain({
   alt,
   src,
   className = "",
+  priority,
 }: {
   size?: number;
   alt: string;
   src: string;
   className?: string;
+  priority?: boolean;
 }) {
-  const normalizedSrc =
-    typeof src === "string" ? resolveBrowserMediaUrl(src) : src;
-
-  if (!normalizedSrc) {
-    return null;
-  }
+  const rawSrc = typeof src === "string" ? src : "";
+  if (!rawSrc) return null;
 
   return (
     <div
@@ -114,19 +130,17 @@ export function SafeImageContain({
         overflow: "hidden",
       }}
     >
-      <Image
-        src={normalizedSrc}
+      <CmsFillImage
+        rawSrc={rawSrc}
         alt={alt}
-        fill
         sizes={`${size}px`}
+        priority={priority}
         className="object-contain object-center"
-        onError={() => console.error("[SafeImage] failed to load:", normalizedSrc)}
       />
     </div>
   );
 }
 
-/** 响应式宽高比图片框（推荐用于产品/案例卡片） */
 export function SafeImageAspect({
   aspectClassName = "aspect-[4/3]",
   minHeightClassName = "min-h-[220px] md:min-h-0",
@@ -139,33 +153,29 @@ export function SafeImageAspect({
   src,
   sizes,
   unoptimized,
+  loading,
+  priority,
   ...rest
 }: Omit<SafeImageProps, "frameHeight" | "frameWidth"> & {
   aspectClassName?: string;
   minHeightClassName?: string;
 }) {
   const objectFitClass = `${fitClasses(fit, desktopFit)} object-center`;
-  const normalizedSrc = useMemo(
-    () => (typeof src === "string" ? resolveBrowserMediaUrl(src) : src),
-    [src]
-  );
-
-  if (!normalizedSrc) {
-    return null;
-  }
+  const rawSrc = typeof src === "string" ? src : "";
+  if (!rawSrc) return null;
 
   return (
     <div
       className={`relative w-full overflow-hidden ${aspectClassName} ${minHeightClassName} ${frameClassName} ${className}`}
     >
-      <Image
-        src={normalizedSrc}
+      <CmsFillImage
+        rawSrc={rawSrc}
         alt={alt}
-        fill
         sizes={sizes}
         unoptimized={unoptimized}
+        loading={loading}
+        priority={priority}
         className={`${objectFitClass} ${imageClassName}`.trim()}
-        onError={() => console.error("[SafeImage] failed to load:", normalizedSrc)}
         {...rest}
       />
     </div>

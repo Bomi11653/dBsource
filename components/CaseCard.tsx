@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function CaseCard({
   item,
   locale,
+  index = 0,
 }: {
   item: CaseItem;
   locale: Locale;
@@ -33,7 +34,7 @@ export default function CaseCard({
               frameClassName="bg-zinc-900"
               imageClassName="object-center"
               sizes="(max-width: 768px) 100vw, 33vw"
-              loading="lazy"
+              priority={index < 3}
             />
           </div>
         ) : (

@@ -24,8 +24,8 @@ export default function CaseDetailContent({
   const highlights = caseItem.highlights?.[locale] ?? [];
 
   return (
-    <div className="bg-black text-white min-h-screen pt-24">
-      <section className="relative min-h-[min(52vh,420px)] md:h-[60vh] border-b border-white/10 bg-zinc-950">
+    <div className="bg-black text-white min-h-screen-safe pt-24">
+      <section className="relative min-h-[min(52dvh,420px)] md:h-[60vh] border-b border-white/10 bg-zinc-950">
         {cover ? (
           <CmsImage
             src={cover}

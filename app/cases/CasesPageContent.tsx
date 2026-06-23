@@ -46,7 +46,7 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
       : t.cases.performanceSubtitle;
 
   return (
-    <div className="bg-black text-white pt-24 sm:pt-28 min-h-screen page-x pb-page-safe max-w-5xl mx-auto">
+    <div className="bg-black text-white pt-24 sm:pt-28 min-h-screen-safe page-x pb-page-safe max-w-5xl mx-auto">
       <PageHeader
         compact
         title={title}
@@ -68,8 +68,8 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
         }
       />
       <div className="space-y-8">
-        {filtered.map((item) => (
-          <CaseCard key={item.id} item={item} locale={locale} />
+        {filtered.map((item, i) => (
+          <CaseCard key={item.id} item={item} locale={locale} index={i} />
         ))}
         {filtered.length === 0 && (
           <p className="text-gray-500 text-center py-16">{t.products.noResults}</p>
