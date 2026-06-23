@@ -89,13 +89,13 @@ export default function HomeFeaturedProductCard({
       />
 
       <div className="relative z-[2] pointer-events-none flex flex-col items-center w-full">
-        <h3 className="text-xl sm:text-2xl md:text-4xl font-semibold tracking-tight text-white md:group-hover:scale-[1.02] transition-transform duration-500">
+        <h3 className="type-card-title text-xl sm:text-2xl md:text-4xl text-white md:group-hover:scale-[1.02] transition-transform duration-500">
           {product.name[locale]}
         </h3>
         <p className="text-sm md:text-base text-gray-400 mt-3 max-w-sm leading-relaxed group-hover:text-gray-300 transition-colors">
           {product.desc[locale]}
         </p>
-        <p className="text-xs text-brand-gold/90 font-mono mt-4 tracking-wide">
+        <p className="text-xs text-brand-gold/90 type-label mt-4">
           {product.models[locale]}
         </p>
       </div>

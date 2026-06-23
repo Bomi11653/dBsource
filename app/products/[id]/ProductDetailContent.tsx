@@ -72,12 +72,12 @@ export default function ProductDetailContent({
           ← {t.products.backToList}
         </Link>
         {product.series && (
-          <p className="text-xs uppercase tracking-[0.25em] text-brand-gold mb-4">
+          <p className="type-label text-xs uppercase tracking-[0.25em] text-brand-gold mb-4">
             {product.series[locale]}
           </p>
         )}
-        <h1 className="text-4xl md:text-5xl font-medium mb-2">{product.name[locale]}</h1>
-        <p className="text-brand-gold font-mono text-lg mb-8">{product.model}</p>
+        <h1 className="type-hero text-4xl md:text-5xl mb-2">{product.name[locale]}</h1>
+        <p className="text-brand-gold type-label text-lg mb-8">{product.model}</p>
         <p className="text-gray-400 leading-relaxed max-w-3xl text-lg">{body}</p>
         <ProductDetailActions product={product} className="mt-8" />
         <div className="mt-6">
@@ -105,7 +105,7 @@ export default function ProductDetailContent({
         id="product-gallery"
         className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
       >
-        <h2 className="text-2xl font-medium mb-8">{t.products.detailGallery}</h2>
+        <h2 className="type-page-title text-2xl mb-8">{t.products.detailGallery}</h2>
         <div
           className={`grid gap-4 md:gap-6 ${
             gallery.length > 9
@@ -166,7 +166,7 @@ export default function ProductDetailContent({
           className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
         >
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h2 className="text-2xl font-medium">{t.products.specsTitle}</h2>
+            <h2 className="type-page-title text-2xl">{t.products.specsTitle}</h2>
             <button
               type="button"
               onClick={copySpecs}
@@ -187,7 +187,7 @@ export default function ProductDetailContent({
             </button>
           </div>
           {product.specs && (
-            <p className="text-sm text-gray-400 font-mono mb-6 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4">
+            <p className="text-sm text-gray-400 type-label mb-6 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4">
               {product.specs[locale]}
             </p>
           )}
@@ -195,7 +195,7 @@ export default function ProductDetailContent({
             <StackedSpecPanel pages={stackedPages} locale={locale} />
           ) : specSheet ? (
             <>
-              <p className="text-xs text-gray-500 mb-8 font-mono">
+              <p className="text-xs text-gray-500 mb-8 type-label">
                 {locale === "zh" ? "参考型号" : "Reference model"}: {specSheet.model}
               </p>
               <div className="overflow-hidden rounded-xl border border-white/10">
@@ -227,7 +227,7 @@ export default function ProductDetailContent({
           id="product-recommendations"
           className="px-6 md:px-20 py-16 md:py-20 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
         >
-          <h2 className="text-2xl font-medium mb-2">{t.products.recommendedSystems}</h2>
+          <h2 className="type-page-title text-2xl mb-2">{t.products.recommendedSystems}</h2>
           <p className="text-sm text-gray-500 mb-8">{t.products.recommendedSystemsDesc}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recommendedProducts.map((p) => (
@@ -247,8 +247,8 @@ export default function ProductDetailContent({
                     />
                   ) : null}
                 </div>
-                <p className="text-xs text-brand-gold font-mono">{p.model}</p>
-                <p className="text-sm font-medium mt-1 group-hover:text-brand-gold transition-colors">
+                <p className="text-xs text-brand-gold type-label">{p.model}</p>
+                <p className="type-card-title text-sm mt-1 group-hover:text-brand-gold transition-colors">
                   {p.name[locale]}
                 </p>
               </Link>
@@ -262,7 +262,7 @@ export default function ProductDetailContent({
         id="product-cases"
         className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28 page-x"
       >
-        <h2 className="text-2xl font-medium mb-8">{t.products.detailCases}</h2>
+        <h2 className="type-page-title text-2xl mb-8">{t.products.detailCases}</h2>
         <div className="grid md:grid-cols-2 gap-8">
           {relatedCases.map((c) => (
             <Link
@@ -278,11 +278,11 @@ export default function ProductDetailContent({
                   className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                 />
               </div>
-              <h3 className="text-xl font-medium group-hover:text-brand-gold transition-colors">
+              <h3 className="type-card-title text-xl group-hover:text-brand-gold transition-colors">
                 {c.title[locale]}
               </h3>
               <p className="text-gray-400 text-sm mt-2">{c.desc[locale]}</p>
-              <p className="text-xs text-gray-500 mt-3 font-mono">{c.products}</p>
+              <p className="text-xs text-gray-500 mt-3 type-label">{c.products}</p>
             </Link>
           ))}
         </div>

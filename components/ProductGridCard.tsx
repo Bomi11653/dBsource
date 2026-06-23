@@ -47,10 +47,10 @@ export default function ProductGridCard({
       </div>
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className="text-base sm:text-sm font-medium sm:font-light leading-snug line-clamp-2 group-hover:text-white transition-colors">
+          <h2 className="type-card-title text-base sm:text-sm leading-snug line-clamp-2 group-hover:text-white transition-colors">
             {product.name[locale]}
           </h2>
-          <p className="text-brand-gold text-xs font-mono mt-1">{product.model}</p>
+          <p className="text-brand-gold text-xs type-label mt-1">{product.model}</p>
         </div>
         <p className="text-gray-500 text-xs mt-3 line-clamp-2 leading-relaxed">
           {product.desc[locale]}

@@ -41,13 +41,13 @@ export default function CaseCard({
           />
         )}
         <div className="p-4 sm:p-6 flex flex-col justify-center">
-          <span className="text-xs text-brand-gold uppercase tracking-wider">
+          <span className="text-xs text-brand-gold uppercase type-label">
             {item.scene[locale]}
           </span>
-          <h2 className="text-xl sm:text-2xl font-light mt-2 group-hover:text-brand-gold transition-colors leading-snug">
+          <h2 className="type-card-title text-xl sm:text-2xl mt-2 group-hover:text-brand-gold transition-colors">
             {item.title[locale]}
           </h2>
-          <p className="text-sm text-gray-500 font-mono mt-2">{item.products}</p>
+          <p className="text-sm text-gray-500 type-label mt-2">{item.products}</p>
           <p className="text-gray-400 mt-3 leading-relaxed">{item.desc[locale]}</p>
         </div>
       </article>

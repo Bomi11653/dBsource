@@ -60,8 +60,8 @@ function StickyCaseVisual({
         <p className="text-brand-gold text-xs tracking-[0.35em] uppercase mb-4">
           {caseItem.scene[locale]}
         </p>
-        <h2 className="text-3xl md:text-5xl font-light">{caseItem.title[locale]}</h2>
-        <p className="text-gray-300 mt-4 text-sm font-mono">{caseItem.products}</p>
+        <h2 className="type-hero text-3xl md:text-5xl">{caseItem.title[locale]}</h2>
+        <p className="text-gray-300 mt-4 text-sm type-label">{caseItem.products}</p>
         <Link
           href={`/cases/${caseItem.id}`}
           className="pointer-events-auto inline-block mt-8 text-sm border border-brand-gold/50 px-6 py-2.5 text-brand-gold hover:bg-brand-gold/10 transition-colors"
@@ -110,7 +110,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-4xl sm:text-5xl md:text-7xl font-light tracking-tight text-center drop-shadow-lg"
+            className="type-hero text-4xl sm:text-5xl md:text-7xl text-center drop-shadow-lg"
           >
             {t.cases.title}
           </motion.h1>
@@ -170,12 +170,12 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             {t.cases.projectBackground}
           </p>
           <Link href={`/cases/${profileCase.id}`} className="group inline-block">
-            <h2 className="text-3xl md:text-4xl font-light mb-6 group-hover:text-brand-gold transition-colors">
+            <h2 className="type-page-title text-3xl md:text-4xl mb-6 group-hover:text-brand-gold transition-colors">
               {profileCase.title[locale]}
             </h2>
           </Link>
           <p className="text-gray-400 leading-relaxed text-lg">{profileCase.desc[locale]}</p>
-          <p className="text-gray-500 text-sm font-mono mt-8 border-t border-white/10 pt-6">
+          <p className="text-gray-500 text-sm type-label mt-8 border-t border-white/10 pt-6">
             {t.cases.deliverables}: {profileCase.products}
           </p>
         </motion.div>
@@ -225,7 +225,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               href={`/cases/${spotlightCase.id}`}
               className="absolute inset-0 flex flex-col justify-end p-8 bg-gradient-to-t from-black/90 via-black/20 to-transparent hover:from-black/95 transition-colors"
             >
-              <h3 className="text-2xl font-light">{spotlightCase.title[locale]}</h3>
+              <h3 className="type-card-title text-2xl">{spotlightCase.title[locale]}</h3>
               <p className="text-gray-400 mt-2 text-sm">{spotlightCase.desc[locale]}</p>
               <span className="text-brand-gold text-sm mt-4">{t.cases.viewDetail} →</span>
             </Link>
@@ -244,7 +244,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           {t.cases.results}
         </motion.p>
         <motion.h2
-          className="text-5xl md:text-7xl font-light text-gradient-gold"
+          className="type-hero text-5xl md:text-7xl text-gradient-gold"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -275,7 +275,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               transition={{ delay: 0.2 + i * 0.1 }}
               className="border border-white/10 rounded-xl py-6 sm:py-8 px-4"
             >
-              <p className="text-xl sm:text-2xl md:text-3xl font-light text-brand-gold">{item.value}</p>
+              <p className="type-card-title text-xl sm:text-2xl md:text-3xl text-brand-gold">{item.value}</p>
               <p className="text-xs text-gray-500 mt-2 uppercase tracking-wider">{item.label}</p>
             </motion.div>
           ))}
@@ -295,7 +295,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       {moreCases.length > 0 && (
         <section className="px-6 md:px-20 py-24 border-t border-white/10 space-y-16">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <h3 className="text-2xl font-light text-gray-400">{t.cases.moreProjects}</h3>
+            <h3 className="type-page-title text-2xl text-gray-400">{t.cases.moreProjects}</h3>
             <Link href="/cases?type=engineering" className="text-sm text-brand-gold hover:underline">
               {t.cases.viewAllProjects} →
             </Link>
@@ -327,7 +327,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                   <span className="text-xs text-brand-gold uppercase tracking-wider">
                     {item.scene[locale]}
                   </span>
-                  <h4 className="text-2xl font-light mt-3 group-hover:text-brand-gold transition-colors">
+                  <h4 className="type-card-title text-2xl mt-3 group-hover:text-brand-gold transition-colors">
                     {item.title[locale]}
                   </h4>
                   <p className="text-gray-400 mt-4 leading-relaxed">{item.desc[locale]}</p>

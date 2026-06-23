@@ -39,8 +39,8 @@ export default function ProductCard({
       )}
       <div className="p-6">
         <div className="flex justify-between items-start gap-2">
-          <h2 className="text-xl font-light">{product.name[locale]}</h2>
-          <span className="text-brand-gold text-sm font-mono shrink-0">
+          <h2 className="type-card-title text-xl">{product.name[locale]}</h2>
+          <span className="text-brand-gold text-sm type-label shrink-0">
             {product.model}
           </span>
         </div>
@@ -48,7 +48,7 @@ export default function ProductCard({
           {product.desc[locale]}
         </p>
         {product.specs && (
-          <p className="text-xs text-gray-500 mt-4 font-mono border-t border-white/5 pt-3">
+          <p className="text-xs text-gray-500 mt-4 type-label border-t border-white/5 pt-3">
             {product.specs[locale]}
           </p>
         )}

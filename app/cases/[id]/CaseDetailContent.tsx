@@ -46,11 +46,11 @@ export default function CaseDetailContent({
           >
             ← {t.cases.backToList}
           </Link>
-          <p className="text-xs uppercase tracking-[0.25em] text-brand-gold mb-3">
+          <p className="type-label text-xs uppercase tracking-[0.25em] text-brand-gold mb-3">
             {caseItem.scene[locale]}
           </p>
-          <h1 className="text-4xl md:text-5xl font-medium">{caseItem.title[locale]}</h1>
-          <p className="text-gray-400 text-sm font-mono mt-4">{caseItem.products}</p>
+          <h1 className="type-hero text-4xl md:text-5xl">{caseItem.title[locale]}</h1>
+          <p className="text-gray-400 text-sm type-label mt-4">{caseItem.products}</p>
           <BrowseGuide
             title={t.guide.exploreTitle}
             items={[
@@ -70,7 +70,7 @@ export default function CaseDetailContent({
         id="case-overview"
         className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
       >
-        <h2 className="text-2xl font-medium mb-6">{t.cases.overview}</h2>
+        <h2 className="type-page-title text-2xl mb-6">{t.cases.overview}</h2>
         <p className="text-gray-400 leading-relaxed text-lg max-w-3xl whitespace-pre-line">
           {body}
         </p>
@@ -91,7 +91,7 @@ export default function CaseDetailContent({
             </ul>
           </div>
         )}
-        <p className="text-sm text-gray-500 font-mono mt-10 border-t border-white/10 pt-6">
+        <p className="text-sm text-gray-500 type-label mt-10 border-t border-white/10 pt-6">
           {t.cases.equipment}: {caseItem.products}
         </p>
       </section>

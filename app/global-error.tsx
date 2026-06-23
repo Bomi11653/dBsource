@@ -15,12 +15,11 @@ export default function GlobalError({
           background: "#000",
           color: "#fff",
           fontFamily:
-            'Inter, "Source Han Sans SC", -apple-system, BlinkMacSystemFont, sans-serif',
-          letterSpacing: "0.02em",
+            '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Arial, sans-serif',
         }}
       >
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <h1 style={{ fontWeight: 300 }}>网站运行异常</h1>
+          <h1 style={{ fontWeight: 600 }}>网站运行异常</h1>
           <p style={{ color: "#888", marginTop: 16 }}>{error.message}</p>
           <p style={{ color: "#666", marginTop: 12, fontSize: 14, maxWidth: 420, textAlign: "center" }}>
             若提示 Loading chunk failed：请关闭所有 dev 窗口，双击「修复预览崩溃.bat」，浏览器按 Ctrl+Shift+R 强刷。

@@ -77,7 +77,7 @@ export default async function RootLayout({
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; letter-spacing: 0.02em; }
+              html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Arial, sans-serif; }
               a { color: inherit; text-decoration: none; }
               img, video { max-width: 100%; height: auto; }
               button { font: inherit; color: inherit; background: transparent; border: none; cursor: pointer; }

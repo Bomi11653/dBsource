@@ -55,7 +55,7 @@ export default function MaintenanceScreen({ message, contacts }: Props) {
           <div className="rounded-sm border border-white/10 bg-white/[0.02] px-8 py-10 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] backdrop-blur-sm">
             <div className="mb-6 h-px w-12 bg-gradient-to-r from-slate-500/80 to-transparent" />
 
-            <h1 className="font-serif text-2xl md:text-3xl font-light tracking-heading text-white">
+            <h1 className="type-page-title text-2xl md:text-3xl text-white">
               Website Under Maintenance
             </h1>
             <p className="mt-2 text-sm tracking-[0.2em] text-slate-400 uppercase">

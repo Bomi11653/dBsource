@@ -15,7 +15,7 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
       id="home-scenes"
       className="section-y page-x max-w-7xl mx-auto scroll-mt-nav"
     >
-      <h2 className="text-2xl sm:text-3xl font-light mb-8 md:mb-12">{t.home.scenesTitle}</h2>
+      <h2 className="type-page-title text-2xl sm:text-3xl mb-8 md:mb-12">{t.home.scenesTitle}</h2>
       <div className="grid gap-5 md:grid-cols-3 md:gap-8">
         {scenes.map((s) => (
           <div
@@ -29,7 +29,7 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
               sizes="(max-width: 768px) 100vw, 33vw"
             />
             <div className="p-4 sm:p-5">
-              <h3 className="text-lg font-medium">{s.name[locale]}</h3>
+              <h3 className="type-card-title text-lg">{s.name[locale]}</h3>
               <p className="text-gray-400 text-sm mt-2 leading-relaxed">{s.desc[locale]}</p>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function HomeProductsPreview({ products }: { products: Product[] }) {
       className="section-y page-x max-w-7xl mx-auto border-t border-white/5 scroll-mt-nav"
     >
       <div className="flex justify-between items-end mb-6 md:mb-10 gap-4">
-        <h2 className="text-2xl sm:text-3xl font-light">{t.home.productsTitle}</h2>
+        <h2 className="type-page-title text-2xl sm:text-3xl">{t.home.productsTitle}</h2>
         <Link
           href="/products"
           className="shrink-0 text-sm text-white/70 hover:text-white transition-colors min-h-[44px] inline-flex items-center touch-active"
@@ -92,7 +92,7 @@ export function HomeCasesPreview({
       className="section-y page-x max-w-7xl mx-auto border-t border-white/5 scroll-mt-nav"
     >
       <div className="flex justify-between items-end mb-8 md:mb-12 gap-4">
-        <h2 className="text-2xl sm:text-3xl font-light">{t.home.casesTitle}</h2>
+        <h2 className="type-page-title text-2xl sm:text-3xl">{t.home.casesTitle}</h2>
         <Link
           href="/cases"
           className="shrink-0 text-sm text-white/70 hover:text-white transition-colors min-h-[44px] inline-flex items-center touch-active"
