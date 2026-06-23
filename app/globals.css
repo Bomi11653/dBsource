@@ -183,10 +183,6 @@ img[data-nimg="fill"],
   animation: hero-wave-drift 8s ease-in-out infinite alternate;
 }
 
-.hero-wave-paused {
-  animation-play-state: paused;
-}
-
 @keyframes hero-wave-drift {
   from { transform: scale(1) translateY(0); }
   to { transform: scale(1.04) translateY(-1%); }
