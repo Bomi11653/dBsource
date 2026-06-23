@@ -25,13 +25,13 @@ export default function CaseDetailContent({
 
   return (
     <div className="bg-black text-white min-h-screen pt-24">
-      <section className="relative h-[50vh] md:h-[60vh] border-b border-white/10">
+      <section className="relative min-h-[min(52vh,420px)] md:h-[60vh] border-b border-white/10 bg-zinc-950">
         {cover ? (
           <Image
             src={cover}
             alt={caseItem.title[locale]}
             fill
-            className="object-cover"
+            className="object-contain object-center md:object-cover md:object-center"
             priority
             sizes="100vw"
           />
@@ -114,14 +114,14 @@ export default function CaseDetailContent({
               key={src + i}
               type="button"
               onClick={() => setLightboxIndex(i)}
-              className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors cursor-zoom-in"
+              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors cursor-zoom-in"
               aria-label={`${caseItem.title[locale]} ${i + 1}`}
             >
               <Image
                 src={src}
                 alt={`${caseItem.title[locale]} ${i + 1}`}
                 fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                className="object-contain object-center p-2 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 640px) 100vw, 33vw"
               />
               <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
@@ -162,13 +162,13 @@ export default function CaseDetailContent({
                 href={`/cases/${c.id}`}
                 className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
               >
-                <div className="relative h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
+                <div className="relative aspect-[16/10] min-h-[180px] md:h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
                   {relatedCover ? (
                   <Image
                     src={relatedCover}
                     alt={c.title[locale]}
                     fill
-                    className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    className="object-cover object-center opacity-80 group-hover:opacity-100 transition-opacity"
                   />
                   ) : null}
                 </div>

@@ -3,7 +3,7 @@
 import type { CaseItem } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
 import { getCaseCoverUrl, hasCaseCover } from "@/lib/case-media";
-import SafeImage from "@/components/SafeImage";
+import SafeImage, { SafeImageAspect } from "@/components/SafeImage";
 import Link from "next/link";
 
 export default function CaseCard({
@@ -24,11 +24,14 @@ export default function CaseCard({
       <article className="flex flex-col md:flex-row gap-0 md:gap-6 border border-white/10 rounded-xl overflow-hidden hover:border-brand-gold/30 transition-colors active:border-brand-gold/20">
         {hasCaseCover(item) ? (
           <div className="w-full md:w-72 shrink-0">
-            <SafeImage
+            <SafeImageAspect
               src={cover}
               alt={item.title[locale]}
-              frameHeight={200}
-              frameWidth="100%"
+              aspectClassName="aspect-[16/10]"
+              minHeightClassName="min-h-[200px] md:min-h-[200px]"
+              fit="cover"
+              frameClassName="bg-zinc-900"
+              imageClassName="object-center"
               sizes="(max-width: 768px) 100vw, 33vw"
               loading="lazy"
             />

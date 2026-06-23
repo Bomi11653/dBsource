@@ -2,7 +2,7 @@
 
 import type { Product } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
-import SafeImage from "@/components/SafeImage";
+import SafeImage, { SafeImageAspect } from "@/components/SafeImage";
 import { Package } from "lucide-react";
 import Link from "next/link";
 
@@ -19,17 +19,18 @@ export default function ProductGridCard({
       href={`/products/${product.id}`}
       className="group card-touch flex flex-col h-full bg-black/80 border border-white/10 rounded-xl overflow-hidden hover:border-white/25 hover:shadow-[0_8px_32px_rgba(255,255,255,0.08)] transition-all duration-300 md:hover:scale-[1.02]"
     >
-      <div className="relative shrink-0" style={{ height: 180 }}>
+      <div className="relative shrink-0 w-full">
         {product.image ? (
-          <SafeImage
+          <SafeImageAspect
             src={product.image}
             alt={product.name[locale]}
-            frameHeight={180}
+            aspectClassName="aspect-[4/3]"
+            minHeightClassName="min-h-[220px] md:min-h-0"
             fit="contain"
-            frameClassName="bg-white p-2"
+            frameClassName="bg-gradient-to-b from-zinc-900 to-black p-3 md:p-2"
             sizes="(max-width: 640px) 100vw, 25vw"
             loading="lazy"
-            className="opacity-95 group-hover:scale-105 group-hover:opacity-100 transition-transform duration-500"
+            imageClassName="opacity-95 md:group-hover:scale-105 md:group-hover:opacity-100 transition-transform duration-500"
           />
         ) : (
           <div

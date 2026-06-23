@@ -44,7 +44,7 @@ function StickyCaseVisual({
             src={cover}
             alt={caseItem.title[locale]}
             fill
-            className="object-cover"
+            className="object-cover object-center"
             priority
             sizes="100vw"
           />
@@ -180,7 +180,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           </p>
         </motion.div>
         <motion.div
-          className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/10"
+          className="relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-2xl overflow-hidden border border-white/10"
           initial={{ opacity: 0, x: 60 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -191,7 +191,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               src={getCaseCoverUrl(profileCase)}
               alt={profileCase.title[locale]}
               fill
-              className="object-cover"
+              className="object-contain object-center md:object-cover md:object-center"
               sizes="50vw"
             />
           ) : (
@@ -203,7 +203,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
       {/* 第四屏：大图切换 */}
       <section className="min-h-screen flex items-center justify-center px-6 py-24">
         <motion.div
-          className="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border border-white/10"
+          className="relative w-full max-w-5xl aspect-video min-h-[240px] md:min-h-0 rounded-2xl overflow-hidden border border-white/10"
           initial={{ opacity: 0, scale: 0.88 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: "-80px" }}
@@ -214,7 +214,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               src={getCaseCoverUrl(spotlightCase)}
               alt={spotlightCase.title[locale]}
               fill
-              className="object-cover"
+              className="object-contain object-center md:object-cover md:object-center"
               sizes="(max-width: 1200px) 90vw"
             />
           ) : (
@@ -316,9 +316,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                   index % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
                 }`}
               >
-                <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
+                <div className="relative aspect-[16/10] min-h-[200px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
                   {cover ? (
-                    <Image src={cover} alt={item.title[locale]} fill className="object-cover" />
+                    <Image src={cover} alt={item.title[locale]} fill className="object-cover object-center" />
                   ) : (
                     <div className="absolute inset-0 bg-zinc-900" aria-hidden />
                   )}
