@@ -12,7 +12,7 @@ import type { AdminSaveResponse, RevalidationPayload } from "@/lib/admin-save-to
 export type { AdminSaveResponse, RevalidationPayload } from "@/lib/admin-save-toast";
 export { formatSaveToast } from "@/lib/admin-save-toast";
 
-type SaveCollection = AdminCollection | "contact-info" | "global-setting";
+type SaveCollection = AdminCollection | "contact-info" | "global-setting" | "social-links";
 
 function primaryModule(modules: RevalidateModule[]): string {
   if (modules.includes("all")) return "all";
@@ -27,8 +27,8 @@ export function runRevalidationForCollection(
   const modules = Array.from(
     new Set(
       collection === "global-setting"
-        ? (["home", "contact"] as RevalidateModule[])
-        : modulesForAdminCollection(collection as AdminCollection | "contact-info")
+        ? modulesForAdminCollection("global-setting")
+        : modulesForAdminCollection(collection)
     )
   );
 
@@ -46,7 +46,9 @@ export function runRevalidationForCollection(
 
   try {
     const detailId =
-      collection !== "contact-info" && collection !== "global-setting"
+      collection !== "contact-info" &&
+      collection !== "global-setting" &&
+      collection !== "social-links"
         ? extractDetailId(collection, data)
         : undefined;
     const { revalidated } = revalidateSiteModules(modules, { detailId });

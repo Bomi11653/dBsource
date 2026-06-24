@@ -9,7 +9,6 @@ export type CmsImageState = {
   imageKey: string;
   handleError: () => void;
   preferUnoptimized: boolean;
-  preferEager: boolean;
 };
 
 /** 规范化 Strapi 图片 URL，并在微信里支持失败重试与缓存规避 */
@@ -57,6 +56,5 @@ export function useCmsImageState(rawSrc: string): CmsImageState {
     imageKey,
     handleError,
     preferUnoptimized,
-    preferEager: isWeChat,
   };
 }

@@ -33,8 +33,8 @@ export default function CaseCard({
               fit="cover"
               frameClassName="bg-zinc-900"
               imageClassName="object-center"
-              sizes="(max-width: 768px) 100vw, 33vw"
-              priority={index < 3}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              priority={index < 2}
             />
           </div>
         ) : (

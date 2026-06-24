@@ -318,7 +318,14 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               >
                 <div className="relative aspect-[16/10] min-h-[200px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 group-hover:border-brand-gold/30 transition-colors">
                   {cover ? (
-                    <CmsImage src={cover} alt={item.title[locale]} fill className="object-cover object-center" />
+                    <CmsImage
+                      src={cover}
+                      alt={item.title[locale]}
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      loading="lazy"
+                    />
                   ) : (
                     <div className="absolute inset-0 bg-zinc-900" aria-hidden />
                   )}

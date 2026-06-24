@@ -1,5 +1,6 @@
 import type { CaseItem } from "@/data/mock";
 import {
+  pickListMediaPath,
   pickMediaPath,
   resolveBrowserMediaUrl,
   resolveCaseGalleryUrls,
@@ -24,13 +25,20 @@ export function caseDocToMediaSource(doc: {
   };
 }
 
-/** 从 Strapi 媒体字段解析封面 URL（含 gallery[0] 兜底） */
+/** 从 Strapi 媒体字段解析列表封面 URL（中等尺寸） */
 export function resolveCaseCoverFromSource(
   source: MediaSource,
   cmsUrl = getCmsUrl()
 ): string {
-  const raw = pickMediaPath(source);
+  const raw = pickListMediaPath(source);
   return raw ? resolveCmsAssetUrl(raw, cmsUrl) : "";
+}
+
+/** 详情页 Hero：优先 gallery 大图，其次封面 */
+export function getCaseHeroUrl(item: CaseItem): string {
+  const gallery = getCaseGalleryUrls(item);
+  if (gallery.length > 0) return gallery[0];
+  return getCaseCoverUrl(item);
 }
 
 /** 映射后的案例封面（全站统一读取此字段） */

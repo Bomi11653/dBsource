@@ -4,7 +4,7 @@ import type { CaseItem } from "@/data/mock";
 import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
-import { getCaseCoverUrl, getCaseGalleryUrls } from "@/lib/case-media";
+import { getCaseCoverUrl, getCaseGalleryUrls, getCaseHeroUrl } from "@/lib/case-media";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useState } from "react";
@@ -20,15 +20,16 @@ export default function CaseDetailContent({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const body = caseItem.detail?.[locale] ?? caseItem.desc[locale];
   const cover = getCaseCoverUrl(caseItem);
+  const heroSrc = getCaseHeroUrl(caseItem);
   const heroImages = getCaseGalleryUrls(caseItem);
   const highlights = caseItem.highlights?.[locale] ?? [];
 
   return (
     <div className="bg-black text-white min-h-screen-safe pt-24">
       <section className="relative min-h-[min(52dvh,420px)] md:h-[60vh] border-b border-white/10 bg-white md:bg-zinc-950">
-        {cover ? (
+        {heroSrc ? (
           <CmsImage
-            src={cover}
+            src={heroSrc}
             alt={caseItem.title[locale]}
             fill
             className="object-contain object-center md:object-cover md:object-center"
@@ -122,7 +123,8 @@ export default function CaseDetailContent({
                 alt={`${caseItem.title[locale]} ${i + 1}`}
                 fill
                 className="object-contain object-center p-2 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 100vw, 33vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={i === 0}
               />
               <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
             </button>

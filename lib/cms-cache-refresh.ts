@@ -21,7 +21,9 @@ export type CacheRefreshResult = {
   errorMessage?: string;
 };
 
-const COLLECTION_TO_TYPES: Partial<Record<AdminCollection | "contact-info" | "global-setting", LkgContentType[]>> = {
+const COLLECTION_TO_TYPES: Partial<
+  Record<AdminCollection | "contact-info" | "global-setting" | "social-links", LkgContentType[]>
+> = {
   products: ["products"],
   cases: ["cases"],
   downloads: ["downloads"],
@@ -32,6 +34,7 @@ const COLLECTION_TO_TYPES: Partial<Record<AdminCollection | "contact-info" | "gl
   "global-setting": ["globalSetting", "contact"],
   leads: [],
   "qr-codes": [],
+  "social-links": [],
 };
 
 async function refreshContentType(type: LkgContentType): Promise<void> {
@@ -64,7 +67,7 @@ async function refreshContentType(type: LkgContentType): Promise<void> {
 }
 
 export async function refreshLkgForAdminCollection(
-  collection: AdminCollection | "contact-info" | "global-setting"
+  collection: AdminCollection | "contact-info" | "global-setting" | "social-links"
 ): Promise<CacheRefreshResult> {
   const types = COLLECTION_TO_TYPES[collection] ?? [];
   const savedAt = new Date().toISOString();

@@ -19,11 +19,13 @@ import {
   pickDownloadFilePath,
   pickDownloadTitleEn,
   pickDownloadTitleZh,
+  pickListMediaPath,
   pickMediaPath,
   pickProductNameEn,
   pickProductNameZh,
   resolveCmsAssetUrl,
   resolveDownloadFileUrl,
+  resolveListMediaUrlFromSource,
   resolveMediaUrlFromSource,
   resolveStrapiMediaUrl,
   unwrapStrapiGallery,
@@ -219,7 +221,7 @@ export function mapStrapiQR(
   cmsUrl: string,
   index: number
 ): QRItem {
-  const image = resolveMediaUrlFromSource({ image: doc.image }, cmsUrl);
+  const image = resolveListMediaUrlFromSource({ image: doc.image }, cmsUrl);
   if (!image) {
     warnStrapiMapping("qr-code", doc.sortOrder ?? index + 1, ["image"]);
   }
@@ -235,7 +237,7 @@ export function mapStrapiScene(
   cmsUrl: string,
   index: number
 ): SceneItem {
-  const image = resolveMediaUrlFromSource({ image: doc.image }, cmsUrl);
+  const image = resolveListMediaUrlFromSource({ image: doc.image }, cmsUrl);
   if (!image) {
     warnStrapiMapping("scene", doc.sortOrder ?? index + 1, ["image"]);
   }
@@ -258,7 +260,7 @@ export function mapStrapiDownload(
     cover: doc.cover,
     thumbnail: doc.thumbnail,
   };
-  const coverPath = pickMediaPath(mediaSource);
+  const coverPath = pickListMediaPath(mediaSource);
   const cover = coverPath ? resolveCmsAssetUrl(coverPath, cmsUrl) : undefined;
   const fileMedia =
     unwrapStrapiMedia(doc.file) ||
@@ -316,7 +318,7 @@ export function mapStrapiProduct(
     cover: doc.cover,
     thumbnail: doc.thumbnail,
   };
-  const image = resolveMediaUrlFromSource(mediaSource, cmsUrl);
+  const image = resolveListMediaUrlFromSource(mediaSource, cmsUrl);
   const nameZh = pickProductNameZh(doc);
   const nameEn = pickProductNameEn(doc);
 

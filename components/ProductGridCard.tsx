@@ -29,8 +29,8 @@ export default function ProductGridCard({
             minHeightClassName="min-h-[220px] md:min-h-0"
             fit="contain"
             frameClassName="bg-white"
-            sizes="(max-width: 640px) 100vw, 25vw"
-            priority={index < 4}
+            sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            priority={index < 2}
             imageClassName="opacity-95 md:group-hover:scale-105 md:group-hover:opacity-100 transition-transform duration-500"
           />
         ) : (

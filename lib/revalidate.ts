@@ -8,6 +8,7 @@ export type RevalidateModule =
   | "about"
   | "contact"
   | "home"
+  | "footer"
   | "all";
 
 export const REVALIDATE_MODULES: Exclude<RevalidateModule, "all">[] = [
@@ -17,19 +18,19 @@ export const REVALIDATE_MODULES: Exclude<RevalidateModule, "all">[] = [
   "downloads",
   "about",
   "contact",
+  "footer",
 ];
 
-export function isRevalidateModule(value: string): value is RevalidateModule {
-  return (
-    value === "all" ||
-    value === "products" ||
-    value === "cases" ||
-    value === "downloads" ||
-    value === "about" ||
-    value === "contact" ||
-    value === "home"
-  );
-}
+/** 带页脚的主站页面（Logo / 二维码 / 社交链接变更时刷新） */
+export const FOOTER_RELATED_PATHS = [
+  "/",
+  "/products",
+  "/cases",
+  "/downloads",
+  "/about",
+  "/contact",
+  "/configurator",
+] as const;
 
 function trackRevalidate(revalidated: Set<string>, path: string, type?: "layout" | "page") {
   try {
@@ -40,7 +41,7 @@ function trackRevalidate(revalidated: Set<string>, path: string, type?: "layout"
   }
 }
 
-/** 按模块刷新官网静态/ISR 缓存 */
+/** 按模块刷新官网静态/ISR 缓存（精准路径，避免无差别全站 layout 刷新） */
 export function revalidateSiteModules(
   modules: RevalidateModule[],
   options?: { detailId?: string }
@@ -48,7 +49,9 @@ export function revalidateSiteModules(
   const revalidated = new Set<string>();
   const detailId = options?.detailId?.trim();
   const runAll = modules.includes("all");
-  const targets = runAll ? REVALIDATE_MODULES : modules.filter((m): m is Exclude<RevalidateModule, "all"> => m !== "all");
+  const targets = runAll
+    ? REVALIDATE_MODULES
+    : modules.filter((m): m is Exclude<RevalidateModule, "all"> => m !== "all");
 
   for (const siteModule of targets) {
     switch (siteModule) {
@@ -56,34 +59,30 @@ export function revalidateSiteModules(
         trackRevalidate(revalidated, "/");
         break;
       case "products":
-        trackRevalidate(revalidated, "/");
         trackRevalidate(revalidated, "/products");
         if (detailId) {
           trackRevalidate(revalidated, `/products/${detailId}`);
-        } else {
-          trackRevalidate(revalidated, "/products", "layout");
         }
         break;
       case "cases":
-        trackRevalidate(revalidated, "/");
         trackRevalidate(revalidated, "/cases");
         if (detailId) {
           trackRevalidate(revalidated, `/cases/${detailId}`);
-        } else {
-          trackRevalidate(revalidated, "/cases", "layout");
         }
         break;
       case "downloads":
-        trackRevalidate(revalidated, "/");
         trackRevalidate(revalidated, "/downloads");
         break;
       case "about":
-        trackRevalidate(revalidated, "/");
         trackRevalidate(revalidated, "/about");
         break;
       case "contact":
-        trackRevalidate(revalidated, "/");
         trackRevalidate(revalidated, "/contact");
+        break;
+      case "footer":
+        for (const path of FOOTER_RELATED_PATHS) {
+          trackRevalidate(revalidated, path);
+        }
         break;
     }
   }
@@ -92,17 +91,19 @@ export function revalidateSiteModules(
 }
 
 export function modulesForAdminCollection(
-  collection: AdminCollection | "contact-info"
+  collection: AdminCollection | "contact-info" | "global-setting" | "social-links"
 ): RevalidateModule[] {
   const map: Record<string, RevalidateModule[]> = {
     products: ["products", "home"],
     cases: ["cases", "home"],
-    downloads: ["downloads", "home"],
-    "about-sections": ["about", "home"],
-    "qr-codes": ["contact", "home"],
+    downloads: ["downloads"],
+    "about-sections": ["about"],
     scenes: ["home"],
-    "product-series-configs": ["home", "products"],
-    "contact-info": ["home", "contact"],
+    "product-series-configs": ["products", "home"],
+    "contact-info": ["contact", "home"],
+    "global-setting": ["home", "footer"],
+    "qr-codes": ["footer"],
+    "social-links": ["footer"],
     leads: [],
   };
   return map[collection] ?? ["home"];
@@ -113,7 +114,10 @@ export function extractDetailId(
   data?: Record<string, unknown>
 ): string | undefined {
   if (collection !== "products" && collection !== "cases") return undefined;
-  const id = data?.legacyId ?? data?.id;
+  const id =
+    collection === "products"
+      ? data?.sortOrder ?? data?.legacyId ?? data?.id
+      : data?.legacyId ?? data?.id;
   if (id == null) return undefined;
   const text = String(id).trim();
   return text || undefined;
@@ -121,7 +125,7 @@ export function extractDetailId(
 
 /** 后台保存 Strapi 内容后调用，与 /api/revalidate 使用相同逻辑 */
 export function revalidateAfterAdminSave(
-  collection: AdminCollection | "contact-info",
+  collection: AdminCollection | "contact-info" | "global-setting" | "social-links",
   data?: Record<string, unknown>
 ): { revalidated: string[]; modules: RevalidateModule[] } {
   const modules = Array.from(new Set(modulesForAdminCollection(collection)));
@@ -129,9 +133,24 @@ export function revalidateAfterAdminSave(
     return { revalidated: [], modules: [] };
   }
   const detailId =
-    collection !== "contact-info" ? extractDetailId(collection, data) : undefined;
+    collection === "products" || collection === "cases"
+      ? extractDetailId(collection, data)
+      : undefined;
   const { revalidated } = revalidateSiteModules(modules, { detailId });
   return { revalidated, modules };
+}
+
+export function isRevalidateModule(value: string): value is RevalidateModule {
+  return (
+    value === "all" ||
+    value === "products" ||
+    value === "cases" ||
+    value === "downloads" ||
+    value === "about" ||
+    value === "contact" ||
+    value === "home" ||
+    value === "footer"
+  );
 }
 
 export function getRevalidateSecret(): string | null {

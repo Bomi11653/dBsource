@@ -128,7 +128,8 @@ export default function ProductDetailContent({
                   alt={`${product.name[locale]} ${i + 1}`}
                   fill
                   className="object-contain object-center p-3 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
-                  sizes="(max-width: 640px) 100vw, 33vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  priority={i === 0}
                 />
                 <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               </button>

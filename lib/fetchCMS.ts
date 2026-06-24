@@ -1,4 +1,4 @@
-import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { resolveBrowserMediaUrl, pickListMediaPath, resolveCmsAssetUrl } from "@/lib/media-url";
 import {
   cases,
   contactInfo,
@@ -111,7 +111,7 @@ const GLOBAL_SETTING_QUERY =
   "/global-setting?populate[logo]=true&populate[homeFeaturedCaseImage]=true";
 const SMART_SELECTION_PAGE_QUERY = "/smart-selection-page";
 const SOCIAL_LINKS_QUERY =
-  "/social-links?populate[qrImage][fields][0]=url&sort[0]=sortOrder:asc";
+  "/social-links?populate[qrImage]=true&sort[0]=sortOrder:asc";
 
 export async function getProducts() {
   if (isMockMode()) return filterByMarket(products);
@@ -422,7 +422,10 @@ export async function getSocialLinks() {
         en: doc.labelEn || doc.platformKey,
       },
       url: doc.url || "",
-      qrImage: resolveBrowserMediaUrl(doc.qrImage?.url ?? "") || undefined,
+      qrImage:
+        resolveBrowserMediaUrl(
+          resolveCmsAssetUrl(pickListMediaPath({ image: doc.qrImage }))
+        ) || undefined,
       sortOrder: doc.sortOrder ?? index + 1,
       enabled: doc.enabled !== false,
     }));

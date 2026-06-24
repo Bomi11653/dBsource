@@ -17,7 +17,7 @@ export default function CmsImage({
   priority,
   ...props
 }: CmsImageProps) {
-  const { displaySrc, imageKey, handleError, preferUnoptimized, preferEager } =
+  const { displaySrc, imageKey, handleError, preferUnoptimized } =
     useCmsImageState(src);
 
   if (!displaySrc) {
@@ -31,7 +31,7 @@ export default function CmsImage({
       alt={alt}
       src={displaySrc}
       unoptimized={unoptimized ?? preferUnoptimized}
-      loading={loading ?? (preferEager || priority ? "eager" : undefined)}
+      loading={loading ?? (priority ? "eager" : "lazy")}
       priority={priority}
       onError={(event) => {
         handleError();

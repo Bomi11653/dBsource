@@ -179,9 +179,9 @@ export function unwrapStrapiGallery(gallery: unknown): unknown[] {
 }
 
 /**
- * 图片相对路径优先级（Strapi 原始路径）
+ * 图片相对路径优先级（Strapi 原始路径）— 详情页 / 大图
  */
-export function pickMediaPath(source: MediaSource): string {
+export function pickDetailMediaPath(source: MediaSource): string {
   const image = unwrapStrapiMedia(source.image);
   const cover = unwrapStrapiMedia(source.cover);
   const thumbnail = unwrapStrapiMedia(source.thumbnail);
@@ -206,6 +206,32 @@ export function pickMediaPath(source: MediaSource): string {
     if (typeof raw === "string" && raw.trim()) return raw.trim();
   }
   return "";
+}
+
+/**
+ * 列表 / 卡片用图：优先 medium / small / thumbnail，避免加载原图
+ */
+export function pickListMediaPath(source: MediaSource): string {
+  const image = unwrapStrapiMedia(source.image);
+  const cover = unwrapStrapiMedia(source.cover);
+  const thumbnail = unwrapStrapiMedia(source.thumbnail);
+  const galleryFirst = unwrapStrapiMedia(unwrapStrapiGallery(source.gallery)[0]);
+
+  const fields = [image, cover, thumbnail, galleryFirst];
+  for (const field of fields) {
+    if (!field) continue;
+    const path =
+      pickFromMediaField(field, ["medium", "small", "thumbnail"]) ||
+      pickFromMediaField(field, ["large"]) ||
+      field.url;
+    if (path?.trim()) return path.trim();
+  }
+  return "";
+}
+
+/** @deprecated 使用 pickDetailMediaPath */
+export function pickMediaPath(source: MediaSource): string {
+  return pickDetailMediaPath(source);
 }
 
 export type CaseMediaSource = MediaSource;
@@ -268,7 +294,14 @@ export function resolveMediaUrlFromSource(
   source: MediaSource,
   _cmsUrl?: string
 ): string {
-  return resolveCmsAssetUrl(pickMediaPath(source), _cmsUrl);
+  return resolveCmsAssetUrl(pickDetailMediaPath(source), _cmsUrl);
+}
+
+export function resolveListMediaUrlFromSource(
+  source: MediaSource,
+  _cmsUrl?: string
+): string {
+  return resolveCmsAssetUrl(pickListMediaPath(source), _cmsUrl);
 }
 
 export function resolveCaseImageUrl(
@@ -290,7 +323,21 @@ export function resolveStrapiMediaUrl(
   media: unknown,
   cmsUrl?: string
 ): string {
-  return resolveMediaUrlFromSource({ image: media }, cmsUrl);
+  return resolveDetailMediaUrlFromSource({ image: media }, cmsUrl);
+}
+
+export function resolveStrapiListMediaUrl(
+  media: unknown,
+  cmsUrl?: string
+): string {
+  return resolveListMediaUrlFromSource({ image: media }, cmsUrl);
+}
+
+export function resolveDetailMediaUrlFromSource(
+  source: MediaSource,
+  cmsUrl?: string
+): string {
+  return resolveCmsAssetUrl(pickDetailMediaPath(source), cmsUrl);
 }
 
 export function resolveCaseGalleryUrls(

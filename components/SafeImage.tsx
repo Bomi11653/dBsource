@@ -34,7 +34,7 @@ function CmsFillImage({
   priority,
   ...rest
 }: Omit<ImageProps, "src" | "fill"> & { rawSrc: string }) {
-  const { displaySrc, imageKey, handleError, preferUnoptimized, preferEager } =
+  const { displaySrc, imageKey, handleError, preferUnoptimized } =
     useCmsImageState(rawSrc);
 
   if (!displaySrc) return null;
@@ -47,7 +47,7 @@ function CmsFillImage({
       fill
       sizes={sizes}
       unoptimized={unoptimized ?? preferUnoptimized}
-      loading={loading ?? (preferEager || priority ? "eager" : undefined)}
+      loading={loading ?? (priority ? "eager" : "lazy")}
       priority={priority}
       className={className}
       onError={handleError}
