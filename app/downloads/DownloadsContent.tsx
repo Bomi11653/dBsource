@@ -39,12 +39,12 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
   return (
     <div className="bg-[#030303] pb-20">
       {/* Hero：整幅背景图 + 左侧文案 */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-[#080808]">
+      <section className="relative overflow-hidden border-b border-white/10 bg-[#080808] min-h-[220px] sm:min-h-[280px]">
         <Image
           src="/images/downloads/banner-unit48.png"
           alt=""
           fill
-          className="object-cover object-right"
+          className="object-cover object-center md:object-right"
           sizes="100vw"
           priority
         />

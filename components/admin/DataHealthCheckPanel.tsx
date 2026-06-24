@@ -10,6 +10,9 @@ const TYPE_FILTERS: Array<{ key: "all" | HealthContentType; label: string }> = [
   { key: "cases", label: "工程案例" },
   { key: "downloads", label: "下载中心" },
   { key: "products", label: "产品中心" },
+  { key: "contact", label: "联系我们" },
+  { key: "qrCodes", label: "页脚二维码" },
+  { key: "socialLinks", label: "社交链接" },
 ];
 
 function formatTime(iso: string): string {
@@ -73,7 +76,7 @@ export default function DataHealthCheckPanel({ enabled }: { enabled: boolean }) 
         <div>
           <p className="text-sm font-medium">数据健康检查</p>
           <p className="text-xs text-gray-500 mt-1">
-            上线前检查案例、下载、产品是否缺标题、图片或文件，并验证媒体 URL 是否可访问。
+            上线前检查案例、下载、产品、联系方式、二维码与社交链接是否完整，并验证媒体 URL 是否可访问。
           </p>
         </div>
         <button
@@ -110,7 +113,7 @@ export default function DataHealthCheckPanel({ enabled }: { enabled: boolean }) 
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-sm">
             <SummaryCard
               label="工程案例"
               total={result.summary.cases.total}
@@ -125,6 +128,21 @@ export default function DataHealthCheckPanel({ enabled }: { enabled: boolean }) 
               label="产品中心"
               total={result.summary.products.total}
               issues={result.summary.products.issues}
+            />
+            <SummaryCard
+              label="联系我们"
+              total={result.summary.contact.total}
+              issues={result.summary.contact.issues}
+            />
+            <SummaryCard
+              label="页脚二维码"
+              total={result.summary.qrCodes.total}
+              issues={result.summary.qrCodes.issues}
+            />
+            <SummaryCard
+              label="社交链接"
+              total={result.summary.socialLinks.total}
+              issues={result.summary.socialLinks.issues}
             />
           </div>
 

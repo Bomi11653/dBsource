@@ -25,7 +25,7 @@ export default function CaseDetailContent({
 
   return (
     <div className="bg-black text-white min-h-screen-safe pt-24">
-      <section className="relative min-h-[min(52dvh,420px)] md:h-[60vh] border-b border-white/10 bg-zinc-950">
+      <section className="relative min-h-[min(52dvh,420px)] md:h-[60vh] border-b border-white/10 bg-white md:bg-zinc-950">
         {cover ? (
           <CmsImage
             src={cover}
@@ -114,7 +114,7 @@ export default function CaseDetailContent({
               key={src + i}
               type="button"
               onClick={() => setLightboxIndex(i)}
-              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors cursor-zoom-in"
+              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors cursor-zoom-in"
               aria-label={`${caseItem.title[locale]} ${i + 1}`}
             >
               <CmsImage

@@ -141,13 +141,13 @@ export default function CmsStabilityPanel({
       const res = await fetch("/api/admin/health-check", { method: "POST" });
       const json = (await res.json()) as {
         ok?: boolean;
-        cms?: { online?: boolean; errorMessage?: string };
+        service?: { strapi?: { ok?: boolean; errorMessage?: string } };
       };
-      if (json.cms?.online) {
+      if (json.service?.strapi?.ok) {
         setMessage("Strapi 连接正常");
       } else {
         setIsError(true);
-        setMessage(json.cms?.errorMessage || "Strapi 连接失败");
+        setMessage(json.service?.strapi?.errorMessage || "Strapi 连接失败");
       }
       await refreshFromSync();
     } catch (e) {

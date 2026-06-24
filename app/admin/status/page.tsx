@@ -35,6 +35,18 @@ export default async function AdminStatusPage() {
 
   return (
     <AdminShell title="系统状态" subtitle="CMS 连接、数据源与内容规模一览">
+      {useMock ? (
+        <div className="mb-6 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-4">
+          <p className="text-sm font-medium text-red-300">
+            警告：当前构建启用了 Mock 数据（NEXT_PUBLIC_USE_MOCK_DATA=true）
+          </p>
+          <p className="text-xs text-red-200/80 mt-2 leading-relaxed">
+            生产环境不应使用 Mock。请确认 .env.production.local 中 USE_MOCK_DATA=false，重新 npm run
+            build 并 pm2 restart dbsource-web。
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
           <p className="text-xs text-gray-500">当前数据源</p>

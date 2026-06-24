@@ -228,13 +228,18 @@ export async function getScenes() {
 export async function getQRCodes() {
   if (isMockMode()) return qrCodes;
 
-  const cmsUrl = getCmsUrl();
-  const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(QR_QUERY);
-  if (docs.length) {
-    return docs.map((doc, index) => mapStrapiQR(doc, cmsUrl, index));
+  try {
+    const cmsUrl = getCmsUrl();
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiQR>[0]>(QR_QUERY);
+    if (docs.length) {
+      return docs.map((doc, index) => mapStrapiQR(doc, cmsUrl, index));
+    }
+    logStrapiEmpty("qr-codes");
+    return [];
+  } catch (e) {
+    console.error("[fetchCMS] qr-codes 读取失败:", e);
+    return [];
   }
-  logStrapiEmpty("qr-codes");
-  return [];
 }
 
 export async function getAboutImages(): Promise<AboutImages> {
@@ -340,78 +345,89 @@ export async function getGlobalSetting() {
 export async function getSmartSelectionPage() {
   if (isMockMode()) return smartSelectionPageDefault;
 
-  type SmartSelectionPageDoc = {
-    titleZh?: string | null;
-    titleEn?: string | null;
-    subtitleZh?: string | null;
-    subtitleEn?: string | null;
-    generateButtonZh?: string | null;
-    generateButtonEn?: string | null;
-    regenerateButtonZh?: string | null;
-    regenerateButtonEn?: string | null;
-    copyButtonZh?: string | null;
-    copyButtonEn?: string | null;
-    contactButtonZh?: string | null;
-    contactButtonEn?: string | null;
-  };
+  try {
+    type SmartSelectionPageDoc = {
+      titleZh?: string | null;
+      titleEn?: string | null;
+      subtitleZh?: string | null;
+      subtitleEn?: string | null;
+      generateButtonZh?: string | null;
+      generateButtonEn?: string | null;
+      regenerateButtonZh?: string | null;
+      regenerateButtonEn?: string | null;
+      copyButtonZh?: string | null;
+      copyButtonEn?: string | null;
+      contactButtonZh?: string | null;
+      contactButtonEn?: string | null;
+    };
 
-  const doc = await fetchStrapiSingle<SmartSelectionPageDoc>(SMART_SELECTION_PAGE_QUERY);
-  if (!doc) return { ...EMPTY_SMART_SELECTION };
+    const doc = await fetchStrapiSingle<SmartSelectionPageDoc>(SMART_SELECTION_PAGE_QUERY);
+    if (!doc) return { ...EMPTY_SMART_SELECTION };
 
-  return {
-    title: {
-      zh: doc.titleZh || EMPTY_SMART_SELECTION.title.zh,
-      en: doc.titleEn || EMPTY_SMART_SELECTION.title.en,
-    },
-    subtitle: {
-      zh: doc.subtitleZh || EMPTY_SMART_SELECTION.subtitle.zh,
-      en: doc.subtitleEn || EMPTY_SMART_SELECTION.subtitle.en,
-    },
-    buttons: {
-      generate: {
-        zh: doc.generateButtonZh || EMPTY_SMART_SELECTION.buttons.generate.zh,
-        en: doc.generateButtonEn || EMPTY_SMART_SELECTION.buttons.generate.en,
+    return {
+      title: {
+        zh: doc.titleZh || EMPTY_SMART_SELECTION.title.zh,
+        en: doc.titleEn || EMPTY_SMART_SELECTION.title.en,
       },
-      regenerate: {
-        zh: doc.regenerateButtonZh || EMPTY_SMART_SELECTION.buttons.regenerate.zh,
-        en: doc.regenerateButtonEn || EMPTY_SMART_SELECTION.buttons.regenerate.en,
+      subtitle: {
+        zh: doc.subtitleZh || EMPTY_SMART_SELECTION.subtitle.zh,
+        en: doc.subtitleEn || EMPTY_SMART_SELECTION.subtitle.en,
       },
-      copy: {
-        zh: doc.copyButtonZh || EMPTY_SMART_SELECTION.buttons.copy.zh,
-        en: doc.copyButtonEn || EMPTY_SMART_SELECTION.buttons.copy.en,
+      buttons: {
+        generate: {
+          zh: doc.generateButtonZh || EMPTY_SMART_SELECTION.buttons.generate.zh,
+          en: doc.generateButtonEn || EMPTY_SMART_SELECTION.buttons.generate.en,
+        },
+        regenerate: {
+          zh: doc.regenerateButtonZh || EMPTY_SMART_SELECTION.buttons.regenerate.zh,
+          en: doc.regenerateButtonEn || EMPTY_SMART_SELECTION.buttons.regenerate.en,
+        },
+        copy: {
+          zh: doc.copyButtonZh || EMPTY_SMART_SELECTION.buttons.copy.zh,
+          en: doc.copyButtonEn || EMPTY_SMART_SELECTION.buttons.copy.en,
+        },
+        contact: {
+          zh: doc.contactButtonZh || EMPTY_SMART_SELECTION.buttons.contact.zh,
+          en: doc.contactButtonEn || EMPTY_SMART_SELECTION.buttons.contact.en,
+        },
       },
-      contact: {
-        zh: doc.contactButtonZh || EMPTY_SMART_SELECTION.buttons.contact.zh,
-        en: doc.contactButtonEn || EMPTY_SMART_SELECTION.buttons.contact.en,
-      },
-    },
-  };
+    };
+  } catch (e) {
+    console.error("[fetchCMS] smart-selection-page 读取失败:", e);
+    return { ...EMPTY_SMART_SELECTION };
+  }
 }
 
 export async function getSocialLinks() {
   if (isMockMode()) return socialLinksDefault;
 
-  type SocialLinkDoc = {
-    platformKey: "wechat" | "douyin" | "channels";
-    labelZh?: string | null;
-    labelEn?: string | null;
-    url?: string | null;
-    qrImage?: { url?: string } | null;
-    sortOrder?: number | null;
-    enabled?: boolean | null;
-  };
-  const docs = await fetchStrapiCollection<SocialLinkDoc>(SOCIAL_LINKS_QUERY);
-  if (!docs.length) return [];
+  try {
+    type SocialLinkDoc = {
+      platformKey: "wechat" | "douyin" | "channels";
+      labelZh?: string | null;
+      labelEn?: string | null;
+      url?: string | null;
+      qrImage?: { url?: string } | null;
+      sortOrder?: number | null;
+      enabled?: boolean | null;
+    };
+    const docs = await fetchStrapiCollection<SocialLinkDoc>(SOCIAL_LINKS_QUERY);
+    if (!docs.length) return [];
 
-  return docs.map((doc, index) => ({
-    platformKey: doc.platformKey,
-    label: {
-      zh: doc.labelZh || doc.platformKey,
-      en: doc.labelEn || doc.platformKey,
-    },
-    url: doc.url || "",
-    qrImage: resolveBrowserMediaUrl(doc.qrImage?.url ?? "") || undefined,
-    sortOrder: doc.sortOrder ?? index + 1,
-    enabled: doc.enabled !== false,
-  }));
+    const cmsUrl = getCmsUrl();
+    return docs.map((doc, index) => ({
+      platformKey: doc.platformKey,
+      label: {
+        zh: doc.labelZh || doc.platformKey,
+        en: doc.labelEn || doc.platformKey,
+      },
+      url: doc.url || "",
+      qrImage: resolveBrowserMediaUrl(doc.qrImage?.url ?? "") || undefined,
+      sortOrder: doc.sortOrder ?? index + 1,
+      enabled: doc.enabled !== false,
+    }));
+  } catch (e) {
+    console.error("[fetchCMS] social-links 读取失败:", e);
+    return [];
+  }
 }

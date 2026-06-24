@@ -115,7 +115,7 @@ export default function ProductDetailContent({
           {gallery.map((src, i) => (
             <div
               key={src + i}
-              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-zinc-900 hover:border-brand-gold/40 transition-colors"
+              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors"
             >
               <button
                 type="button"

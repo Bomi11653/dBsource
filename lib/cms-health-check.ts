@@ -1,4 +1,5 @@
 import { mapCaseMediaFields } from "@/lib/case-media";
+import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
 import {
   pickCaseTitleZh,
   pickDownloadFilePath,
@@ -15,7 +16,13 @@ import {
 import { adminStrapiRequest } from "@/lib/strapi-admin";
 import { getCmsUrl } from "@/lib/strapi-client";
 
-export type HealthContentType = "cases" | "downloads" | "products";
+export type HealthContentType =
+  | "cases"
+  | "downloads"
+  | "products"
+  | "contact"
+  | "qrCodes"
+  | "socialLinks";
 
 export type HealthIssueRow = {
   contentType: HealthContentType;
@@ -32,6 +39,9 @@ export type HealthCheckSummary = {
   cases: { total: number; issues: number };
   downloads: { total: number; issues: number };
   products: { total: number; issues: number };
+  contact: { total: number; issues: number };
+  qrCodes: { total: number; issues: number };
+  socialLinks: { total: number; issues: number };
 };
 
 export type HealthCheckResult = {
@@ -48,6 +58,22 @@ type StrapiRow = Record<string, unknown> & {
   legacyId?: number;
   sortOrder?: number;
   model?: string | null;
+  productLine?: string | null;
+  specsZh?: string | null;
+  specsEn?: string | null;
+  labelZh?: string | null;
+  labelEn?: string | null;
+  platformKey?: string | null;
+  enabled?: boolean | null;
+  url?: string | null;
+  qrImage?: unknown;
+  companyZh?: string | null;
+  companyEn?: string | null;
+  phones?: string | null;
+  email?: string | null;
+  addressZh?: string | null;
+  addressEn?: string | null;
+  mapQuery?: string | null;
   image?: unknown;
   cover?: unknown;
   thumbnail?: unknown;
@@ -62,19 +88,34 @@ const CONTENT_LABEL: Record<HealthContentType, string> = {
   cases: "工程案例",
   downloads: "下载中心",
   products: "产品中心",
+  contact: "联系我们",
+  qrCodes: "页脚二维码",
+  socialLinks: "社交链接",
 };
 
 const EDIT_SECTION: Record<HealthContentType, string> = {
   cases: "cases",
   downloads: "downloads",
   products: "products",
+  contact: "contact",
+  qrCodes: "qr",
+  socialLinks: "home",
 };
 
-const QUERIES: Record<HealthContentType, string> = {
+const COLLECTION_QUERIES: Record<"cases" | "downloads" | "products", string> = {
   cases: "/cases?populate[image]=true&populate[gallery]=true&sort[0]=legacyId:asc&pagination[pageSize]=100",
   downloads:
     "/downloads?populate[cover]=true&populate[file]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100",
   products: "/products?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=200",
+};
+
+const EMPTY_SUMMARY: HealthCheckSummary = {
+  cases: { total: 0, issues: 0 },
+  downloads: { total: 0, issues: 0 },
+  products: { total: 0, issues: 0 },
+  contact: { total: 0, issues: 0 },
+  qrCodes: { total: 0, issues: 0 },
+  socialLinks: { total: 0, issues: 0 },
 };
 
 const SHARED_PLACEHOLDER_PATTERNS = [
@@ -92,12 +133,14 @@ function rowDocumentId(row: StrapiRow): string {
 }
 
 function displayId(type: HealthContentType, row: StrapiRow): string {
+  if (type === "contact") return "contact-info";
   if (type === "cases" && row.legacyId != null) return String(row.legacyId);
   if (row.sortOrder != null) return String(row.sortOrder);
   return rowDocumentId(row) || "—";
 }
 
 function editHref(type: HealthContentType, documentId: string): string {
+  if (type === "contact") return `/admin/${EDIT_SECTION.contact}`;
   return `/admin/${EDIT_SECTION[type]}?doc=${encodeURIComponent(documentId)}`;
 }
 
@@ -131,10 +174,40 @@ function pushIssue(
   });
 }
 
-async function fetchCollection(type: HealthContentType): Promise<StrapiRow[]> {
-  const result = await adminStrapiRequest<{ data?: StrapiRow[] }>("GET", QUERIES[type]);
+async function fetchCollection(type: "cases" | "downloads" | "products"): Promise<StrapiRow[]> {
+  const result = await adminStrapiRequest<{ data?: StrapiRow[] }>("GET", COLLECTION_QUERIES[type]);
   if (!result.ok) {
     throw new Error(result.error || `读取 ${CONTENT_LABEL[type]} 失败`);
+  }
+  return result.data?.data ?? [];
+}
+
+async function fetchContactDoc(): Promise<StrapiRow | null> {
+  const result = await adminStrapiRequest<{ data?: StrapiRow }>("GET", "/contact-info");
+  if (!result.ok) {
+    throw new Error(result.error || "读取联系我们失败");
+  }
+  return result.data?.data ?? null;
+}
+
+async function fetchQrCodeRows(): Promise<StrapiRow[]> {
+  const result = await adminStrapiRequest<{ data?: StrapiRow[] }>(
+    "GET",
+    "/qr-codes?populate[image]=true&sort[0]=sortOrder:asc"
+  );
+  if (!result.ok) {
+    throw new Error(result.error || "读取页脚二维码失败");
+  }
+  return result.data?.data ?? [];
+}
+
+async function fetchSocialLinkRows(): Promise<StrapiRow[]> {
+  const result = await adminStrapiRequest<{ data?: StrapiRow[] }>(
+    "GET",
+    "/social-links?populate[qrImage][fields][0]=url&sort[0]=sortOrder:asc"
+  );
+  if (!result.ok) {
+    throw new Error(result.error || "读取社交链接失败");
   }
   return result.data?.data ?? [];
 }
@@ -348,17 +421,14 @@ async function checkDownloads(
   }
 
   if (missingCoverRows.length >= 2) {
-    for (const row of missingCoverRows) {
-      const title = pickDownloadTitleZh(row as TitleSource);
-      pushIssue(
-        issues,
-        "downloads",
-        row,
-        title,
-        `共 ${missingCoverRows.length} 条下载资源缺少封面，前台将显示无图占位`,
-        ""
-      );
-    }
+    pushIssue(
+      issues,
+      "downloads",
+      missingCoverRows[0],
+      pickDownloadTitleZh(missingCoverRows[0] as TitleSource),
+      `共 ${missingCoverRows.length} 条下载资源缺少封面，前台将显示无图占位`,
+      ""
+    );
   }
 
   return issues;
@@ -402,6 +472,156 @@ async function checkProducts(
     if (!reachable) {
       pushIssue(issues, "products", row, title, `image.url 无法访问（${imageUrl}）`, imageUrl);
     }
+
+    const model = String(row.model ?? "").trim();
+    const productLine = String(row.productLine ?? "default").trim() || "default";
+    const hasCmsSpecs = hasText(row.specsZh, row.specsEn);
+    const hasStaticSpecs =
+      Boolean(model) &&
+      (Boolean(getStackedSpecPages(model)) ||
+        Boolean(getSpecSheetForProduct({ model, productLine })));
+    if (!hasCmsSpecs && !hasStaticSpecs) {
+      pushIssue(
+        issues,
+        "products",
+        row,
+        title,
+        "缺少 specsZh/specsEn 且无内置参数表，详情页技术规格将为空",
+        imageUrl
+      );
+    }
+  }
+
+  return issues;
+}
+
+async function checkContact(doc: StrapiRow | null): Promise<HealthIssueRow[]> {
+  const issues: HealthIssueRow[] = [];
+  const row: StrapiRow = doc ?? { documentId: "contact-info" };
+  const title = hasText(row.companyZh) ? String(row.companyZh) : "联系我们";
+
+  if (!doc) {
+    pushIssue(issues, "contact", row, title, "Strapi 中未找到 contact-info 单页内容", "");
+    return issues;
+  }
+
+  if (!hasText(row.companyZh, row.companyEn)) {
+    pushIssue(issues, "contact", row, title, "缺少 companyZh / companyEn 公司名称", "");
+  }
+  if (!hasText(row.phones)) {
+    pushIssue(issues, "contact", row, title, "缺少 phones 联系电话", "");
+  }
+  if (!hasText(row.email)) {
+    pushIssue(issues, "contact", row, title, "缺少 email 邮箱", "");
+  }
+  if (!hasText(row.addressZh, row.addressEn)) {
+    pushIssue(issues, "contact", row, title, "缺少 addressZh / addressEn 地址", "");
+  }
+  if (!hasText(row.mapQuery)) {
+    pushIssue(issues, "contact", row, title, "缺少 mapQuery 地图定位关键词", "");
+  }
+
+  return issues;
+}
+
+async function checkQrCodes(
+  rows: StrapiRow[],
+  cmsUrl: string,
+  token: string | null
+): Promise<HealthIssueRow[]> {
+  const issues: HealthIssueRow[] = [];
+
+  if (rows.length === 0) {
+    const row: StrapiRow = { documentId: "qr-codes" };
+    pushIssue(issues, "qrCodes", row, "页脚二维码", "未配置任何 qr-codes 条目，页脚「关注我们」将为空", "");
+    return issues;
+  }
+
+  for (const row of rows) {
+    const title = hasText(row.labelZh, row.labelEn)
+      ? String(row.labelZh || row.labelEn)
+      : `二维码 #${displayId("qrCodes", row)}`;
+    const imagePath = pickMediaPath({ image: row.image });
+    const imageUrl = imagePath ? resolveAbsoluteUrl(imagePath, cmsUrl) : "";
+
+    if (!hasText(row.labelZh, row.labelEn)) {
+      pushIssue(issues, "qrCodes", row, title, "缺少 labelZh / labelEn 标签", imageUrl);
+    }
+    if (!imagePath) {
+      pushIssue(issues, "qrCodes", row, title, "缺少 image 二维码图片", imageUrl);
+      continue;
+    }
+    const reachable = await isUrlReachable(imageUrl, token);
+    if (!reachable) {
+      pushIssue(issues, "qrCodes", row, title, `二维码图片无法访问（${imageUrl}）`, imageUrl);
+    }
+  }
+
+  return issues;
+}
+
+async function checkSocialLinks(
+  rows: StrapiRow[],
+  cmsUrl: string,
+  token: string | null
+): Promise<HealthIssueRow[]> {
+  const issues: HealthIssueRow[] = [];
+  const enabled = rows.filter((row) => row.enabled !== false);
+
+  if (enabled.length === 0) {
+    const row: StrapiRow = { documentId: "social-links" };
+    pushIssue(
+      issues,
+      "socialLinks",
+      row,
+      "社交链接",
+      "未启用任何 social-links，页脚平台卡片可能无跳转链接",
+      ""
+    );
+    return issues;
+  }
+
+  for (const row of enabled) {
+    const title = hasText(row.labelZh, row.labelEn)
+      ? String(row.labelZh || row.labelEn)
+      : String(row.platformKey ?? "social");
+    const qrPath = pickMediaPath({ image: row.qrImage });
+    const qrUrl = qrPath ? resolveAbsoluteUrl(qrPath, cmsUrl) : "";
+    const hasUrl = hasText(row.url);
+
+    if (!hasUrl) {
+      pushIssue(
+        issues,
+        "socialLinks",
+        row,
+        title,
+        `平台 ${row.platformKey ?? "—"} 已启用但缺少 url 跳转链接`,
+        qrUrl
+      );
+    }
+
+    if (!qrPath) {
+      pushIssue(
+        issues,
+        "socialLinks",
+        row,
+        title,
+        `平台 ${row.platformKey ?? "—"} 缺少 qrImage 二维码图片（页脚卡片可能无图）`,
+        qrUrl
+      );
+    } else {
+      const reachable = await isUrlReachable(qrUrl, token);
+      if (!reachable) {
+        pushIssue(
+          issues,
+          "socialLinks",
+          row,
+          title,
+          `qrImage 无法访问（${qrUrl}）`,
+          qrUrl
+        );
+      }
+    }
   }
 
   return issues;
@@ -416,30 +636,47 @@ export async function runCmsHealthCheck(): Promise<HealthCheckResult> {
     return {
       ok: false,
       checkedAt,
-      summary: {
-        cases: { total: 0, issues: 0 },
-        downloads: { total: 0, issues: 0 },
-        products: { total: 0, issues: 0 },
-      },
+      summary: { ...EMPTY_SUMMARY },
       issues: [],
       error: "未配置 STRAPI_API_TOKEN，无法读取 Strapi 数据",
     };
   }
 
   try {
-    const [caseRows, downloadRows, productRows] = await Promise.all([
-      fetchCollection("cases"),
-      fetchCollection("downloads"),
-      fetchCollection("products"),
-    ]);
+    const [caseRows, downloadRows, productRows, contactDoc, qrRows, socialRows] =
+      await Promise.all([
+        fetchCollection("cases"),
+        fetchCollection("downloads"),
+        fetchCollection("products"),
+        fetchContactDoc(),
+        fetchQrCodeRows(),
+        fetchSocialLinkRows(),
+      ]);
 
-    const [caseIssues, downloadIssues, productIssues] = await Promise.all([
+    const [
+      caseIssues,
+      downloadIssues,
+      productIssues,
+      contactIssues,
+      qrIssues,
+      socialIssues,
+    ] = await Promise.all([
       checkCases(caseRows, cmsUrl, token),
       checkDownloads(downloadRows, cmsUrl, token),
       checkProducts(productRows, cmsUrl, token),
+      checkContact(contactDoc),
+      checkQrCodes(qrRows, cmsUrl, token),
+      checkSocialLinks(socialRows, cmsUrl, token),
     ]);
 
-    const issues = [...caseIssues, ...downloadIssues, ...productIssues];
+    const issues = [
+      ...caseIssues,
+      ...downloadIssues,
+      ...productIssues,
+      ...contactIssues,
+      ...qrIssues,
+      ...socialIssues,
+    ];
 
     return {
       ok: issues.length === 0,
@@ -448,6 +685,9 @@ export async function runCmsHealthCheck(): Promise<HealthCheckResult> {
         cases: { total: caseRows.length, issues: caseIssues.length },
         downloads: { total: downloadRows.length, issues: downloadIssues.length },
         products: { total: productRows.length, issues: productIssues.length },
+        contact: { total: contactDoc ? 1 : 0, issues: contactIssues.length },
+        qrCodes: { total: qrRows.length, issues: qrIssues.length },
+        socialLinks: { total: socialRows.length, issues: socialIssues.length },
       },
       issues,
     };
@@ -455,11 +695,7 @@ export async function runCmsHealthCheck(): Promise<HealthCheckResult> {
     return {
       ok: false,
       checkedAt,
-      summary: {
-        cases: { total: 0, issues: 0 },
-        downloads: { total: 0, issues: 0 },
-        products: { total: 0, issues: 0 },
-      },
+      summary: { ...EMPTY_SUMMARY },
       issues: [],
       error: e instanceof Error ? e.message : "健康检查失败",
     };
