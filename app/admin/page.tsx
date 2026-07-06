@@ -1,10 +1,12 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { ADMIN_SECTIONS, strapiAdminUrl } from "@/lib/admin-sections";
 import { getAdminStats, getLeadDashboard } from "@/lib/admin-stats";
+import { getConfiguredSiteUrl } from "@/lib/admin-auth";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminDashboardPage() {
+  const sitePreviewLabel = getConfiguredSiteUrl().replace(/^https?:\/\//, "");
   const [stats, leadDashboard] = await Promise.all([getAdminStats(), getLeadDashboard()]);
 
   return (
@@ -85,7 +87,15 @@ export default async function AdminDashboardPage() {
           <li>首次使用请在 <code className="text-brand-gold">.env.local</code> 配置 <code className="text-brand-gold">STRAPI_API_TOKEN</code> 后重启预览</li>
         </ol>
         <p className="text-xs text-gray-500 pt-2">
-          官网预览 <a href="http://127.0.0.1:3003" className="text-brand-gold hover:underline">127.0.0.1:3003</a>
+          官网预览{" "}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-gold hover:underline"
+          >
+            {sitePreviewLabel}
+          </a>
           {" · "}
           <a href="/templates/monthly-lead-review.md" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-gold">
             月度复盘模板

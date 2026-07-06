@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import type { CaseItem, Product } from "@/data/mock";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://www.dbsourceaudio.com";
+/** 生产环境默认正式域名（env 未配置时的 fallback） */
+export const PRODUCTION_SITE_URL = "https://www.dbsource-pro.com";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || PRODUCTION_SITE_URL;
 
 export const siteConfig = {
   name: "dBsource",

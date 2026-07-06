@@ -7,7 +7,7 @@
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name 47.119.181.44 www.dbsourceaudio.com dbsourceaudio.com _;
+    server_name www.dbsource-pro.com dbsource-pro.com _;
 
     client_max_body_size 50m;
 

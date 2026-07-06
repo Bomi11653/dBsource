@@ -16,12 +16,20 @@ export default function AdminLoginForm({ nextPath }: { nextPath: string }) {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-    const data = await res.json();
+    let data: { ok?: boolean; error?: string };
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ token }),
+      });
+      data = await res.json();
+    } catch {
+      setLoading(false);
+      setError("网络错误，请检查网络后重试");
+      return;
+    }
     setLoading(false);
 
     if (data.ok) {

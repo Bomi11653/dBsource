@@ -31,6 +31,6 @@ export async function POST(request: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(ADMIN_COOKIE, token, adminCookieOptions());
+  res.cookies.set(ADMIN_COOKIE, token, adminCookieOptions(60 * 60 * 24 * 7, request));
   return res;
 }

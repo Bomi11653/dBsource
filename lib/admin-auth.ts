@@ -1,7 +1,12 @@
+import { PRODUCTION_SITE_URL } from "@/lib/seo";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export const ADMIN_COOKIE = "dbsource_admin_token";
+
+export function getConfiguredSiteUrl(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL || PRODUCTION_SITE_URL).replace(/\/$/, "");
+}
 
 export function getAdminTokenEnv(): string | null {
   return process.env.ADMIN_TOKEN?.trim() || null;
@@ -34,19 +39,52 @@ export function extractAdminToken(request: NextRequest): string | null {
   );
 }
 
-/** 仅当 NEXT_PUBLIC_SITE_URL 为 https 时启用 Secure Cookie（HTTP/IP 测试环境必须为 false） */
-export function isAdminCookieSecure(): boolean {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
-  return siteUrl.startsWith("https://");
+/** HTTPS 正式环境启用 Secure Cookie；本地 HTTP / IP 预览必须为 false */
+export function isAdminCookieSecure(request?: NextRequest): boolean {
+  if (request) {
+    const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    if (forwarded === "https") return true;
+    if (request.nextUrl.protocol === "https:") return true;
+  }
+  return getConfiguredSiteUrl().startsWith("https://");
 }
 
-export function adminCookieOptions(maxAge = 60 * 60 * 24 * 7) {
+/**
+ * 正式域名下共享 www 与根域 Cookie（如 .dbsource-pro.com）。
+ * 本地开发不设置 domain，避免污染浏览器。
+ */
+export function getAdminCookieDomain(): string | undefined {
+  const siteUrl = getConfiguredSiteUrl();
+  if (!siteUrl.startsWith("https://")) return undefined;
+
+  try {
+    const { hostname } = new URL(siteUrl);
+    if (hostname === "localhost" || hostname === "127.0.0.1") return undefined;
+    if (hostname.startsWith("www.")) {
+      return `.${hostname.slice(4)}`;
+    }
+    const parts = hostname.split(".");
+    if (parts.length >= 2) {
+      return `.${parts.slice(-2).join(".")}`;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function adminCookieOptions(maxAge = 60 * 60 * 24 * 7, request?: NextRequest) {
+  const secure = isAdminCookieSecure(request);
+  const domain = secure ? getAdminCookieDomain() : undefined;
+
   return {
     httpOnly: true,
-    secure: isAdminCookieSecure(),
-    sameSite: "strict" as const,
+    secure,
+    /* lax：登录后跳转 /admin 更稳；HTTPS 下仍防 CSRF */
+    sameSite: "lax" as const,
     path: "/",
     maxAge,
+    ...(domain ? { domain } : {}),
   };
 }
 

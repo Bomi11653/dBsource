@@ -6,6 +6,9 @@ export default [
     name: 'strapi::cors',
     config: {
       origin: [
+        'https://www.dbsource-pro.com',
+        'https://dbsource-pro.com',
+        'https://cms.dbsource-pro.com',
         'http://127.0.0.1:3003',
         'http://localhost:3003',
         'http://localhost:1337',

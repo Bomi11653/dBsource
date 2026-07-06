@@ -120,7 +120,11 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   },
 ];
 
+const PRODUCTION_CMS_URL = "https://cms.dbsource-pro.com";
+
 export function strapiAdminUrl(path: string) {
-  const base = (process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337").replace(/\/$/, "");
+  const fallback =
+    process.env.NODE_ENV === "production" ? PRODUCTION_CMS_URL : "http://localhost:1337";
+  const base = (process.env.NEXT_PUBLIC_CMS_URL || fallback).replace(/\/$/, "");
   return `${base}/admin${path}`;
 }
