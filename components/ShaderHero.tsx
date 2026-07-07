@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { memo, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -28,6 +28,39 @@ function usePageVisible() {
   }, []);
 
   return visible;
+}
+
+function ShaderLoopController({ active }: { active: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const resume = () => {
+      if (document.visibilityState !== "visible") return;
+      invalidate();
+      requestAnimationFrame(() => invalidate());
+    };
+
+    resume();
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("focus", resume);
+
+    return () => {
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("focus", resume);
+    };
+  }, [active, invalidate]);
+
+  useFrame(() => {
+    if (active) {
+      invalidate();
+    }
+  });
+
+  return null;
 }
 
 function Wave({ active }: { active: boolean }) {
@@ -103,9 +136,10 @@ function ShaderHeroCanvas({ active }: { active: boolean }) {
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50 }}
         dpr={[1, 1]}
-        frameloop={active ? "always" : "demand"}
+        frameloop="demand"
         gl={{ antialias: true, powerPreference: "default" }}
       >
+        <ShaderLoopController active={active} />
         <ambientLight intensity={0.4} />
         <Wave active={active} />
       </Canvas>
