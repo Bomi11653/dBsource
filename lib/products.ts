@@ -1,6 +1,7 @@
 import type { CaseItem, Locale, Product, ProductCategory, ProductSeriesGroup } from "@/data/mock";
 import { cases, products } from "@/data/mock";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { rankProductsForList } from "@/lib/search/rank-search";
 
 export type SeriesTab = "all" | ProductSeriesGroup;
 export type CategoryFilter = "all" | ProductCategory;
@@ -172,31 +173,10 @@ export function filterProducts(
   return result;
 }
 
-export function searchProducts(list: Product[], query: string): Product[] {
-  const q = query.trim().toLowerCase();
+export function searchProducts(list: Product[], query: string, locale: Locale = "zh"): Product[] {
+  const q = query.trim();
   if (!q) return list;
-
-  return list.filter((p) => {
-    const haystack = [
-      p.model,
-      p.name.zh,
-      p.name.en,
-      p.desc.zh,
-      p.desc.en,
-      p.detail?.zh,
-      p.detail?.en,
-      p.specs?.zh,
-      p.specs?.en,
-      p.series?.zh,
-      p.series?.en,
-      p.productLine,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(q) || p.model.toLowerCase().startsWith(q);
-  });
+  return rankProductsForList(q, list, locale);
 }
 
 /** Cover + gallery from CMS; URL-deduped, any count (0 → fallback to cover only). */

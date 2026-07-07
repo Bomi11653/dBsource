@@ -1,23 +1,30 @@
 "use client";
 
 import { useI18n } from "@/components/I18nProvider";
+import SearchSuggestList from "@/components/SearchSuggestList";
 import { useSiteData } from "@/components/SiteDataProvider";
-import { smartSearch } from "@/lib/ai/smart-search";
+import { rankSearch } from "@/lib/search/rank-search";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { ArrowRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+const HERO_DISPLAY_LIMIT_DESKTOP = 5;
+const HERO_DISPLAY_LIMIT_MOBILE = 4;
 
 const COPY = {
   zh: {
     placeholder: "搜索产品、应用方案、案例或技术资料...",
     noResults: "未找到相关内容，去产品中心看看",
     submit: "搜索",
+    scene: "应用场景",
   },
   en: {
     placeholder: "Search products, solutions, cases or resources...",
     noResults: "No matches — browse the product center",
     submit: "Search",
+    scene: "Scenes",
   },
 } as const;
 
@@ -28,13 +35,28 @@ export default function HeroSearchBar() {
   const { products, cases, downloads } = useSiteData();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 250);
   const [focused, setFocused] = useState(false);
+  const [mobile, setMobile] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const hits = useMemo(
-    () => smartSearch(query, { products, cases, downloads }, locale).slice(0, 6),
-    [query, products, cases, downloads, locale]
-  );
+  const displayLimit = mobile ? HERO_DISPLAY_LIMIT_MOBILE : HERO_DISPLAY_LIMIT_DESKTOP;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const hits = useMemo(() => {
+    const q = debouncedQuery.trim();
+    if (!q) return [];
+    return rankSearch(q, { products, cases, downloads }, locale, 10);
+  }, [debouncedQuery, products, cases, downloads, locale]);
+
+  const displayHits = useMemo(() => hits.slice(0, displayLimit), [hits, displayLimit]);
 
   const hasQuery = query.trim().length > 0;
   const showDropdown = focused && hasQuery;
@@ -52,18 +74,28 @@ export default function HeroSearchBar() {
   function submit() {
     const q = query.trim();
     if (!q) return;
-    if (hits.length > 0) {
-      router.push(hits[0].href);
+    const submitHits = rankSearch(q, { products, cases, downloads }, locale, 10);
+    const first = submitHits[0];
+    if (first) {
+      router.push(first.href);
     } else {
       router.push(`/products?q=${encodeURIComponent(q)}`);
     }
     setFocused(false);
   }
 
+  const searchLabels = {
+    configurator: t.search.configurator,
+    products: t.search.products,
+    cases: t.search.cases,
+    downloads: t.search.downloads,
+    scene: copy.scene,
+  };
+
   return (
     <div
       ref={wrapRef}
-      className="pointer-events-auto relative w-full max-w-2xl mx-auto mt-6 sm:mt-8"
+      className="pointer-events-auto relative z-[60] w-full max-w-2xl mx-auto mt-6 sm:mt-8 overflow-visible"
     >
       <form
         onSubmit={(e) => {
@@ -94,8 +126,8 @@ export default function HeroSearchBar() {
       </form>
 
       {showDropdown ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden text-left">
-          {hits.length === 0 ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[25] w-full max-h-[220px] sm:max-h-[260px] rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden text-left">
+          {displayHits.length === 0 ? (
             <Link
               href={`/products?q=${encodeURIComponent(query.trim())}`}
               onClick={() => setFocused(false)}
@@ -104,31 +136,13 @@ export default function HeroSearchBar() {
               {copy.noResults} →
             </Link>
           ) : (
-            <ul className="max-h-72 overflow-y-auto py-1.5">
-              {hits.map((hit) => (
-                <li key={`${hit.type}-${hit.id}`}>
-                  <Link
-                    href={hit.href}
-                    onClick={() => setFocused(false)}
-                    className="block px-4 py-2.5 hover:bg-white/5 transition-colors"
-                  >
-                    <span className="text-[10px] text-gray-600 uppercase mr-2">
-                      {hit.type === "scene"
-                        ? t.search.configurator
-                        : hit.type === "product"
-                          ? t.search.products
-                          : hit.type === "case"
-                            ? t.search.cases
-                            : t.search.downloads}
-                    </span>
-                    <span className="text-sm text-white">{hit.title}</span>
-                    {hit.subtitle ? (
-                      <span className="block text-xs text-gray-500 mt-0.5">{hit.subtitle}</span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <SearchSuggestList
+              hits={displayHits}
+              labels={searchLabels}
+              variant="hero"
+              onNavigate={() => setFocused(false)}
+              itemClassName="block px-4 py-2 hover:bg-white/5 transition-colors"
+            />
           )}
         </div>
       ) : null}

@@ -19,14 +19,14 @@ export async function GET(req: NextRequest, { params }: Props) {
 
   const populateMap: Record<AdminCollection, string> = {
     products:
-      "?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=200",
+      "?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc&pagination[pageSize]=200",
     cases:
-      "?populate[image][fields][0]=url&populate[gallery][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=100",
+      "?populate[image]=true&populate[gallery]=true&sort[0]=sortOrder:asc&pagination[pageSize]=100",
     downloads:
-      "?populate[cover][fields][0]=url&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size&sort[0]=sortOrder:asc&pagination[pageSize]=100",
-    scenes: "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
-    "about-sections": "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
-    "qr-codes": "?populate[image][fields][0]=url&sort[0]=sortOrder:asc&pagination[pageSize]=20",
+      "?populate[cover]=true&populate[file][fields][0]=url&populate[file][fields][1]=name&populate[file][fields][2]=size&sort[0]=sortOrder:asc&pagination[pageSize]=100",
+    scenes: "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
+    "about-sections": "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
+    "qr-codes": "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
     leads: "?sort[0]=createdAt:desc&pagination[pageSize]=200",
     "product-series-configs": "?sort[0]=sortOrder:asc&pagination[pageSize]=50",
   };

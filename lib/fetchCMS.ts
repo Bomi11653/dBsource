@@ -25,6 +25,7 @@ import {
   mapStrapiQR,
   mapStrapiScene,
 } from "@/lib/strapi-mapper";
+import { cache } from "react";
 
 function isMockMode(): boolean {
   return shouldUseMockData();
@@ -113,7 +114,7 @@ const SMART_SELECTION_PAGE_QUERY = "/smart-selection-page";
 const SOCIAL_LINKS_QUERY =
   "/social-links?populate[qrImage]=true&sort[0]=sortOrder:asc";
 
-export async function getProducts() {
+export const getProducts = cache(async function getProducts() {
   if (isMockMode()) return filterByMarket(products);
 
   const cmsUrl = getCmsUrl();
@@ -138,14 +139,14 @@ export async function getProducts() {
     },
     []
   );
-}
+});
 
 export async function getProductById(id: number) {
   const list = await getProducts();
   return list.find((p) => p.id === id) ?? null;
 }
 
-export async function getCases() {
+export const getCases = cache(async function getCases() {
   if (isMockMode()) {
     return sortCases(applyCaseImages(filterByMarket(cases)));
   }
@@ -172,14 +173,14 @@ export async function getCases() {
     },
     []
   );
-}
+});
 
 export async function getCaseById(id: number) {
   const list = await getCases();
   return list.find((c) => c.id === id) ?? null;
 }
 
-export async function getDownloads() {
+export const getDownloads = cache(async function getDownloads() {
   if (isMockMode()) return filterByMarket(downloads);
 
   const cmsUrl = getCmsUrl();
@@ -204,7 +205,7 @@ export async function getDownloads() {
     },
     []
   );
-}
+});
 
 export async function getScenes() {
   if (isMockMode()) return scenes;

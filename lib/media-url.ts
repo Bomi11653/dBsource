@@ -229,6 +229,41 @@ export function pickListMediaPath(source: MediaSource): string {
   return "";
 }
 
+/**
+ * 后台缩略图预览：优先 thumbnail / small / medium，避免列表加载原图
+ */
+export function pickAdminPreviewPath(media: unknown): string {
+  if (typeof media === "string") {
+    return media.trim();
+  }
+  const field = unwrapStrapiMedia(media);
+  if (!field) return "";
+  return (
+    pickFromMediaField(field, ["thumbnail", "small", "medium"]) ||
+    field.url ||
+    ""
+  );
+}
+
+function resolveAdminPreviewAbsolute(rawPath: string): string {
+  const trimmed = rawPath.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("/strapi-uploads/")) return trimmed;
+  const cmsBase = (process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337").replace(/\/$/, "");
+  return trimmed.startsWith("/") ? `${cmsBase}${trimmed}` : `${cmsBase}/${trimmed}`;
+}
+
+/** 后台图片预览 URL（含 Strapi formats 降级） */
+export function resolveAdminPreviewUrl(media: unknown): string | undefined {
+  const path = pickAdminPreviewPath(media);
+  if (!path) return undefined;
+  const browser = resolveBrowserMediaUrl(path);
+  if (browser) return browser;
+  const absolute = resolveAdminPreviewAbsolute(path);
+  return absolute || undefined;
+}
+
 /** @deprecated 使用 pickDetailMediaPath */
 export function pickMediaPath(source: MediaSource): string {
   return pickDetailMediaPath(source);

@@ -17,10 +17,28 @@ function useHeroMotionPrefs() {
   return lite;
 }
 
-function Wave() {
+function usePageVisible() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+
+  return visible;
+}
+
+function Wave({ active }: { active: boolean }) {
   const ref = useRef<THREE.Mesh>(null);
+  const frameSkip = useRef(0);
 
   useFrame(({ clock }) => {
+    if (!active) return;
+    frameSkip.current += 1;
+    if (frameSkip.current % 2 !== 0) return;
+
     const material = ref.current?.material as THREE.ShaderMaterial | undefined;
     if (material?.uniforms?.uTime) {
       material.uniforms.uTime.value = clock.elapsedTime;
@@ -29,7 +47,7 @@ function Wave() {
 
   return (
     <mesh ref={ref} rotation={[-0.35, 0, 0]}>
-      <planeGeometry args={[12, 8, 128, 128]} />
+      <planeGeometry args={[12, 8, 64, 64]} />
       <shaderMaterial
         wireframe
         uniforms={{
@@ -79,17 +97,17 @@ function HeroLiteFallback() {
   );
 }
 
-function ShaderHeroCanvas() {
+function ShaderHeroCanvas({ active }: { active: boolean }) {
   return (
     <div className="absolute inset-0">
       <Canvas
         camera={{ position: [0, 0, 6], fov: 50 }}
-        dpr={[1, 1.25]}
-        frameloop="always"
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        dpr={[1, 1]}
+        frameloop={active ? "always" : "demand"}
+        gl={{ antialias: true, powerPreference: "default" }}
       >
         <ambientLight intensity={0.4} />
-        <Wave />
+        <Wave active={active} />
       </Canvas>
     </div>
   );
@@ -97,10 +115,12 @@ function ShaderHeroCanvas() {
 
 function ShaderHero() {
   const lite = useHeroMotionPrefs();
+  const pageVisible = usePageVisible();
+  const active = pageVisible && !lite;
 
   return (
     <div className="relative h-full w-full bg-black">
-      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas />}
+      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas active={active} />}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black" />
     </div>
   );

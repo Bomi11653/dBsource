@@ -8,6 +8,7 @@ import StackedSpecPanel from "@/components/StackedSpecPanel";
 import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
 import { getProductGallery } from "@/lib/products";
+import { formatProductHeading, getProductDisplayTitle } from "@/lib/product-display";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { Check, Copy, Download } from "lucide-react";
 import CmsImage from "@/components/CmsImage";
@@ -26,13 +27,14 @@ export default function ProductDetailContent({
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [specsCopied, setSpecsCopied] = useState(false);
+  const { primary, subtitle, label } = getProductDisplayTitle(product, locale);
   const gallery = getProductGallery(product);
   const body = product.detail?.[locale] ?? product.desc[locale];
   const stackedPages = getStackedSpecPages(product.model);
   const specSheet = stackedPages ? null : getSpecSheetForProduct(product);
 
   const copySpecs = useCallback(async () => {
-    const lines: string[] = [`${product.name[locale]}（${product.model}）`];
+    const lines: string[] = [formatProductHeading(product, locale)];
     if (product.specs) lines.push(product.specs[locale]);
     const sheets = stackedPages ?? (specSheet ? [specSheet] : []);
     for (const sheet of sheets) {
@@ -75,8 +77,10 @@ export default function ProductDetailContent({
             {product.series[locale]}
           </p>
         )}
-        <h1 className="type-hero text-4xl md:text-5xl mb-2">{product.name[locale]}</h1>
-        <p className="text-brand-gold type-label text-lg mb-8">{product.model}</p>
+        <h1 className={`type-hero text-4xl md:text-5xl ${subtitle ? "mb-2" : "mb-8"}`}>{primary}</h1>
+        {subtitle ? (
+          <p className="text-brand-gold type-label text-lg mb-8">{subtitle}</p>
+        ) : null}
         <p className="text-gray-400 leading-relaxed max-w-3xl text-lg">{body}</p>
         <ProductDetailActions product={product} className="mt-8" />
         <div className="mt-6">
@@ -121,11 +125,11 @@ export default function ProductDetailContent({
                 type="button"
                 onClick={() => setLightboxIndex(i)}
                 className="absolute inset-0 cursor-zoom-in"
-                aria-label={`${product.name[locale]} ${i + 1}`}
+                aria-label={`${label} ${i + 1}`}
               >
                 <CmsImage
                   src={src}
-                  alt={`${product.name[locale]} ${i + 1}`}
+                  alt={`${label} ${i + 1}`}
                   fill
                   className="object-contain object-center p-3 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -150,7 +154,7 @@ export default function ProductDetailContent({
 
       <ImageLightbox
         images={gallery}
-        altPrefix={product.name[locale]}
+        altPrefix={label}
         openIndex={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         labels={{
@@ -230,7 +234,9 @@ export default function ProductDetailContent({
           <h2 className="type-page-title text-2xl mb-2">{t.products.recommendedSystems}</h2>
           <p className="text-sm text-gray-500 mb-8">{t.products.recommendedSystemsDesc}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recommendedProducts.map((p) => (
+            {recommendedProducts.map((p) => {
+              const rec = getProductDisplayTitle(p, locale);
+              return (
               <Link
                 key={p.id}
                 href={`/products/${p.id}`}
@@ -240,19 +246,22 @@ export default function ProductDetailContent({
                   {p.image ? (
                     <CmsImage
                       src={p.image}
-                      alt={p.name[locale]}
+                      alt={rec.label}
                       fill
                       className="object-contain object-center p-2 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform"
                       sizes="240px"
                     />
                   ) : null}
                 </div>
-                <p className="text-xs text-brand-gold type-label">{p.model}</p>
-                <p className="type-card-title text-sm mt-1 group-hover:text-brand-gold transition-colors">
-                  {p.name[locale]}
+                <p className="type-card-title text-sm group-hover:text-brand-gold transition-colors">
+                  {rec.primary}
                 </p>
+                {rec.subtitle ? (
+                  <p className="text-xs text-brand-gold/90 type-label mt-1">{rec.subtitle}</p>
+                ) : null}
               </Link>
-            ))}
+            );
+            })}
           </div>
         </section>
       )}

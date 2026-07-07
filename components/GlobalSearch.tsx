@@ -1,18 +1,22 @@
 "use client";
 
 import { useI18n } from "@/components/I18nProvider";
+import SearchSuggestList from "@/components/SearchSuggestList";
 import { useSiteData } from "@/components/SiteDataProvider";
-import { smartSearch } from "@/lib/ai/smart-search";
+import { rankSearch } from "@/lib/search/rank-search";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function GlobalSearch() {
   const { locale, t } = useI18n();
+  const router = useRouter();
   const { products, cases, downloads } = useSiteData();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 250);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -30,15 +34,25 @@ export default function GlobalSearch() {
     if (!open) setQuery("");
   }, [open]);
 
-  const hits = useMemo(
-    () => smartSearch(query, { products, cases, downloads }, locale),
-    [query, products, cases, downloads, locale]
-  );
+  const hits = useMemo(() => {
+    const q = debouncedQuery.trim();
+    if (!q) return [];
+    return rankSearch(q, { products, cases, downloads }, locale, 10);
+  }, [debouncedQuery, products, cases, downloads, locale]);
 
   const hasQuery = query.trim().length > 0;
+  const isPending = query.trim() !== debouncedQuery.trim();
   const hasResults = hits.length > 0;
 
   const close = useCallback(() => setOpen(false), []);
+
+  const searchLabels = {
+    configurator: t.search.configurator,
+    products: t.search.products,
+    cases: t.search.cases,
+    downloads: t.search.downloads,
+    scene: locale === "zh" ? "应用场景" : "Scenes",
+  };
 
   return (
     <>
@@ -79,6 +93,14 @@ export default function GlobalSearch() {
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && hits.length > 0) {
+                      e.preventDefault();
+                      const href = hits[0].href;
+                      close();
+                      router.push(href);
+                    }
+                  }}
                   placeholder={t.search.placeholder}
                   className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:text-gray-600"
                 />
@@ -90,34 +112,18 @@ export default function GlobalSearch() {
               <div className="max-h-[60vh] overflow-y-auto p-3 space-y-4">
                 {!hasQuery ? (
                   <p className="text-xs text-gray-600 px-2 py-4">{t.search.placeholder}</p>
+                ) : isPending ? (
+                  <p className="text-xs text-gray-600 px-2 py-4">…</p>
                 ) : !hasResults ? (
                   <p className="text-sm text-gray-500 px-2 py-4">{t.search.noResults}</p>
                 ) : (
-                  <ul className="space-y-1">
-                    {hits.map((hit) => (
-                      <li key={`${hit.type}-${hit.id}`}>
-                        <Link
-                          href={hit.href}
-                          onClick={close}
-                          className="block px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
-                        >
-                          <span className="text-[10px] text-gray-600 uppercase mr-2">
-                            {hit.type === "scene"
-                              ? t.search.configurator
-                              : hit.type === "product"
-                                ? t.search.products
-                                : hit.type === "case"
-                                  ? t.search.cases
-                                  : t.search.downloads}
-                          </span>
-                          {hit.title}
-                          {hit.subtitle ? (
-                            <span className="block text-xs text-gray-500 mt-0.5">{hit.subtitle}</span>
-                          ) : null}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+                  <SearchSuggestList
+                    hits={hits}
+                    labels={searchLabels}
+                    onNavigate={close}
+                    className="py-0"
+                    itemClassName="block px-3 py-2 rounded-lg hover:bg-white/5 text-sm"
+                  />
                 )}
               </div>
             </motion.div>

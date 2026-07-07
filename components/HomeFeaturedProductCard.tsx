@@ -25,7 +25,7 @@ export default function HomeFeaturedProductCard({
     let cancelled = false;
     const safeSrc = resolveBrowserMediaUrl(product.image);
     setDisplayImage(safeSrc);
-    if (resolvedMode === "lite" || isWeChatWebView()) return;
+    if (resolvedMode !== "high" || isWeChatWebView()) return;
 
     const image = new window.Image();
     image.crossOrigin = "anonymous";

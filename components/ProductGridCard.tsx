@@ -3,6 +3,7 @@
 import type { Product } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
 import SafeImage, { SafeImageAspect } from "@/components/SafeImage";
+import { getProductDisplayTitle } from "@/lib/product-display";
 import { Package } from "lucide-react";
 import Link from "next/link";
 
@@ -15,6 +16,8 @@ export default function ProductGridCard({
   locale: Locale;
   index?: number;
 }) {
+  const { primary, subtitle, label } = getProductDisplayTitle(product, locale);
+
   return (
     <Link
       href={`/products/${product.id}`}
@@ -24,7 +27,7 @@ export default function ProductGridCard({
         {product.image ? (
           <SafeImageAspect
             src={product.image}
-            alt={product.name[locale]}
+            alt={label}
             aspectClassName="aspect-[4/3]"
             minHeightClassName="min-h-[220px] md:min-h-0"
             fit="contain"
@@ -50,9 +53,11 @@ export default function ProductGridCard({
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
         <div>
           <h2 className="type-card-title text-base sm:text-sm leading-snug line-clamp-2 group-hover:text-white transition-colors">
-            {product.name[locale]}
+            {primary}
           </h2>
-          <p className="text-brand-gold text-xs type-label mt-1">{product.model}</p>
+          {subtitle ? (
+            <p className="text-brand-gold text-xs type-label mt-1 line-clamp-1">{subtitle}</p>
+          ) : null}
         </div>
         <p className="text-gray-500 text-xs mt-3 line-clamp-2 leading-relaxed">
           {product.desc[locale]}

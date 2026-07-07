@@ -14,10 +14,12 @@ import {
 } from "@/components/admin/AdminFields";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
+import { resolveAdminPreviewUrl } from "@/lib/media-url";
 import { DOWNLOAD_SUB_CATEGORIES } from "@/lib/downloads";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { sectionToCollection } from "@/lib/strapi-admin";
 import { cn } from "@/lib/utils";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
   ArrowDown,
   ArrowUp,
@@ -87,8 +89,8 @@ function docId(row: StrapiRow) {
 }
 
 function mediaUrl(m?: StrapiMedia | null) {
-  if (!m?.url) return undefined;
-  return m.url.startsWith("http") ? m.url : `${process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337"}${m.url}`;
+  if (!m) return undefined;
+  return resolveAdminPreviewUrl(m);
 }
 
 function getText(row: StrapiRow, key: string) {
@@ -194,6 +196,7 @@ export default function AdminSectionEditor({
   const [contactDraft, setContactDraft] = useState<StrapiRow | null>(null);
   const [leads, setLeads] = useState<StrapiRow[]>([]);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 250);
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
   const [translatingId, setTranslatingId] = useState<string | null>(null);
@@ -223,7 +226,7 @@ export default function AdminSectionEditor({
   }, [searchParams, rows]);
 
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     const searched = q
       ? rows.filter((row) => {
           const draft = drafts[docId(row)] ?? row;
@@ -238,7 +241,7 @@ export default function AdminSectionEditor({
       const matchesPriority = leadPriorityOnly ? (Number(draft.intentScore) || 0) >= 70 : true;
       return matchesStatus && matchesPriority;
     });
-  }, [rows, drafts, search, section, leadStatusFilter, leadPriorityOnly]);
+  }, [rows, drafts, debouncedSearch, section, leadStatusFilter, leadPriorityOnly]);
 
   const load = useCallback(async (preferredOpenId?: string | null) => {
     if (!tokenReady) {

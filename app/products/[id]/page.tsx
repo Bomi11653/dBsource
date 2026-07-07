@@ -2,6 +2,7 @@ import ProductDetailContent from "./ProductDetailContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getCases, getProductById, getProducts } from "@/lib/cms";
 import { getRecommendedProducts, getRelatedCases } from "@/lib/products";
+import { formatProductHeading } from "@/lib/product-display";
 import { pageMetadata, productJsonLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: Props) {
   const product = await getProductById(id);
   if (!product) return {};
   return pageMetadata(
-    `${product.name.zh} | ${product.model}`,
+    formatProductHeading(product, "zh"),
     product.desc.zh,
     `/products/${id}`,
     product.image

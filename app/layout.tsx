@@ -1,3 +1,4 @@
+import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import AdminAwareChrome from "@/components/AdminAwareChrome";
 import Analytics from "@/components/Analytics";
@@ -19,7 +20,6 @@ import {
 import { organizationJsonLd, siteConfig } from "@/lib/seo";
 import { getSeriesConfig } from "@/lib/series-config";
 import { fetchSeriesConfigFromCMS } from "@/lib/fetch-series-config";
-import "./globals.css";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -83,6 +83,14 @@ export default async function RootLayout({
               html, body { background: #000 !important; color: #fff !important; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif; }
               a { color: inherit; text-decoration: none; }
               img, video { max-width: 100%; height: auto; }
+              img[data-nimg="fill"],
+              .relative img[data-nimg="fill"],
+              [style*="position: relative"] img[data-nimg="fill"] {
+                max-width: none;
+                max-height: none;
+                height: 100%;
+                width: 100%;
+              }
               button { font: inherit; color: inherit; background: transparent; border: none; cursor: pointer; }
             `,
           }}

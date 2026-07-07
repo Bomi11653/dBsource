@@ -1,5 +1,6 @@
 "use client";
 
+import { isWeChatWebView } from "@/lib/wechat-webview";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 type PerformanceMode = "auto" | "high" | "lite";
@@ -14,10 +15,11 @@ type PerformanceModeState = {
 const MODE_KEY = "dbsource-performance-mode";
 const AUTO_CACHE_KEY = "dbsource-performance-auto-cache";
 const AUTO_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const RUNTIME_SAMPLE_MS = 1800;
 
 const PerformanceModeContext = createContext<PerformanceModeState>({
   mode: "auto",
-  resolvedMode: "high",
+  resolvedMode: "lite",
   setMode: () => {},
 });
 
@@ -52,20 +54,28 @@ function cacheAutoDecision(mode: ResolvedPerformanceMode) {
   );
 }
 
-async function detectRuntimePerformance(): Promise<ResolvedPerformanceMode> {
+/** 同步快判：明显低配 / 移动端 / 微信 → 直接 lite，跳过长采样 */
+function detectSyncLite(): boolean {
+  if (typeof window === "undefined") return true;
+
   const nav = navigator as Navigator & {
     deviceMemory?: number;
     connection?: { saveData?: boolean };
   };
 
-  const hasLowHardware =
-    Boolean(nav.connection?.saveData) ||
-    (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4) ||
-    (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4);
+  if (isWeChatWebView()) return true;
+  if (window.matchMedia("(max-width: 768px)").matches) return true;
+  if (window.matchMedia("(pointer: coarse)").matches) return true;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+  if (nav.connection?.saveData) return true;
+  if (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4) return true;
+  if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4) return true;
 
-  if (hasLowHardware) return "lite";
+  return false;
+}
 
-  const sampleDurationMs = 6000;
+async function detectRuntimePerformance(): Promise<ResolvedPerformanceMode> {
+  const sampleDurationMs = RUNTIME_SAMPLE_MS;
   const frameBudgetMs = 1000 / 35;
   let frameCount = 0;
   let slowFrameCount = 0;
@@ -112,13 +122,13 @@ async function detectRuntimePerformance(): Promise<ResolvedPerformanceMode> {
 
   const slowFrameRatio = frameCount > 0 ? slowFrameCount / frameCount : 0;
   if (slowFrameRatio >= 0.35) return "lite";
-  if (longTaskTotal >= 240 || longTaskCount >= 6) return "lite";
+  if (longTaskTotal >= 120 || longTaskCount >= 4) return "lite";
   return "high";
 }
 
 export function PerformanceModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<PerformanceMode>("auto");
-  const [resolvedMode, setResolvedMode] = useState<ResolvedPerformanceMode>("high");
+  const [resolvedMode, setResolvedMode] = useState<ResolvedPerformanceMode>("lite");
 
   useEffect(() => {
     const storedMode = getStoredMode();
@@ -139,6 +149,14 @@ export function PerformanceModeProvider({ children }: { children: React.ReactNod
         setResolvedMode(cached);
         return;
       }
+
+      if (detectSyncLite()) {
+        setResolvedMode("lite");
+        cacheAutoDecision("lite");
+        return;
+      }
+
+      setResolvedMode("lite");
 
       const detected = await detectRuntimePerformance();
       if (cancelled) return;
@@ -179,4 +197,3 @@ export function PerformanceModeProvider({ children }: { children: React.ReactNod
 export function usePerformanceMode() {
   return useContext(PerformanceModeContext);
 }
-

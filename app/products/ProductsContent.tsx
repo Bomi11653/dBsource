@@ -19,6 +19,7 @@ import {
 import { getSubSeriesBySlugFromConfig } from "@/lib/series-config";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const VALID_SERIES: SeriesTab[] = ["all", "speaker", "dsp", "software"];
 
@@ -33,6 +34,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [subSeries, setSubSeries] = useState<string | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 250);
 
   const syncUrl = useCallback(
     (next: {
@@ -85,8 +87,8 @@ export default function ProductsContent({ products }: { products: Product[] }) {
 
   const filtered = useMemo(() => {
     const byFilters = filterProducts(products, seriesTab, categoryFilter, subSeries);
-    return searchProducts(byFilters, searchQuery);
-  }, [products, seriesTab, categoryFilter, subSeries, searchQuery]);
+    return searchProducts(byFilters, debouncedSearchQuery, locale);
+  }, [products, seriesTab, categoryFilter, subSeries, debouncedSearchQuery, locale]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PAGE_SIZE));
 

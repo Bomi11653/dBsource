@@ -1,6 +1,7 @@
 "use client";
 
 import { formatFileSize } from "@/lib/format-bytes";
+import { resolveAdminPreviewUrl, resolveBrowserMediaUrl } from "@/lib/media-url";
 import { cn } from "@/lib/utils";
 import { FileArchive, Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
@@ -184,22 +185,28 @@ export function SelectField({
   );
 }
 
-export type GalleryItem = { id?: number; url?: string };
+export type GalleryItem = { id?: number; url?: string; formats?: unknown };
 
-function resolveMediaPreview(url?: string): string | undefined {
+function resolveMediaPreview(url?: string, media?: unknown): string | undefined {
+  if (media != null) {
+    const fromMedia = resolveAdminPreviewUrl(media);
+    if (fromMedia) return fromMedia;
+  }
   if (!url) return undefined;
-  const cmsBase = process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337";
-  return url.startsWith("http") ? url : `${cmsBase}${url}`;
+  return resolveBrowserMediaUrl(url) || resolveAdminPreviewUrl({ url });
 }
 
 export function ImageUploadField({
   label,
   currentUrl,
+  currentMedia,
   onUploaded,
   onRemoved,
 }: {
   label: string;
   currentUrl?: string;
+  /** 含 formats 的 Strapi 媒体对象，预览时优先用小图 */
+  currentMedia?: unknown;
   onUploaded: (mediaId: number, url: string) => void;
   /** 传入后显示右上角删除按钮 */
   onRemoved?: () => void;
@@ -211,8 +218,8 @@ export function ImageUploadField({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setPreview(currentUrl);
-  }, [currentUrl]);
+    setPreview(resolveMediaPreview(currentUrl, currentMedia ?? (currentUrl ? { url: currentUrl } : undefined)));
+  }, [currentUrl, currentMedia]);
 
   async function handleFile(file: File) {
     setUploading(true);
@@ -220,8 +227,7 @@ export function ImageUploadField({
     setProgress(0);
     try {
       const result = await uploadToAdmin(file, setProgress);
-      const cmsBase = process.env.NEXT_PUBLIC_CMS_URL || "http://localhost:1337";
-      setPreview(result.url.startsWith("http") ? result.url : `${cmsBase}${result.url}`);
+      setPreview(resolveMediaPreview(result.url, { url: result.url }));
       onUploaded(result.id, result.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "上传失败");
@@ -236,7 +242,7 @@ export function ImageUploadField({
       <div className="flex flex-wrap items-start gap-4">
         {preview ? (
           <div className="relative w-28 h-28 rounded-lg overflow-hidden border border-white/10 bg-zinc-900 group">
-            <Image src={preview} alt="" fill className="object-cover" unoptimized />
+            <Image src={preview} alt="" fill className="object-cover" unoptimized sizes="112px" />
             {onRemoved ? (
               <button
                 type="button"
@@ -345,14 +351,14 @@ export function GalleryUploadField({
         {items.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {items.map((item, index) => {
-              const src = resolveMediaPreview(item.url);
+              const src = resolveMediaPreview(item.url, item);
               if (!src) return null;
               return (
                 <div
                   key={`${item.id ?? item.url}-${index}`}
                   className="relative w-20 h-20 rounded-lg overflow-hidden border border-white/10 bg-zinc-900 shrink-0"
                 >
-                  <Image src={src} alt="" fill className="object-cover" unoptimized />
+                  <Image src={src} alt="" fill className="object-cover" unoptimized sizes="80px" />
                   <button
                     type="button"
                     title="删除此图"
