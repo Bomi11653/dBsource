@@ -87,6 +87,7 @@ export const ADMIN_COLLECTIONS = {
   downloads: "downloads",
   "about-sections": "about-sections",
   "qr-codes": "qr-codes",
+  "sales-contacts": "sales-contacts",
   leads: "leads",
   "product-series-configs": "product-series-configs",
 } as const;

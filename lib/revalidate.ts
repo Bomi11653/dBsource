@@ -103,6 +103,7 @@ export function modulesForAdminCollection(
     "contact-info": ["contact", "home"],
     "global-setting": ["home", "footer"],
     "qr-codes": ["footer"],
+    "sales-contacts": ["contact"],
     "social-links": ["footer"],
     leads: [],
   };

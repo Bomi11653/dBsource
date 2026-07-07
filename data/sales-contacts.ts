@@ -1,3 +1,14 @@
+export type SalesContactItem = {
+  id: string | number;
+  name: { zh: string; en: string };
+  title?: { zh: string; en: string };
+  phones: string[];
+  wechatId?: string;
+  qrImage: string;
+  sortOrder: number;
+};
+
+/** @deprecated 保留供 sales-routing / AI 静态 fallback */
 export type SalesContact = {
   id: string;
   name: string;
@@ -31,3 +42,13 @@ export const SALES_CONTACTS: SalesContact[] = [
     qrImage: "/images/sales/yang-xuejun.png",
   },
 ];
+
+export function fallbackSalesContacts(): SalesContactItem[] {
+  return SALES_CONTACTS.map((person, index) => ({
+    id: person.id,
+    name: { zh: person.name, en: person.name },
+    phones: person.phones,
+    qrImage: person.qrImage,
+    sortOrder: index + 1,
+  }));
+}

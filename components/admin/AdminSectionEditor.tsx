@@ -46,7 +46,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 
 type StrapiMedia = { id?: number; url?: string; size?: number };
@@ -74,6 +74,46 @@ type HomeFeaturedCaseDraft = StrapiRow & {
   homeFeaturedCaseDescEn?: string;
   homeFeaturedCaseImage?: StrapiMedia | null;
 };
+
+function FieldHint({ children }: { children: ReactNode }) {
+  return <p className="text-[11px] text-gray-500 leading-relaxed mt-1">{children}</p>;
+}
+
+function createDefaultContactDraft(): StrapiRow {
+  return {
+    companyZh: "",
+    companyEn: "",
+    phones: "",
+    email: "",
+    addressZh: "",
+    addressEn: "",
+    mapQuery: "",
+    mapEmbedUrl: "",
+    mapNavUrl: "",
+    mapDisplayAddressZh: "",
+    mapDisplayAddressEn: "",
+    footerIntroZh: "",
+    footerIntroEn: "",
+  };
+}
+
+function parseContactLoadError(error: unknown): string {
+  const raw = typeof error === "string" ? error : "";
+  if (!raw) return "无法读取联系信息，已显示空白表单。请检查 CMS 连接。";
+  if (/mapEmbedUrl|mapNavUrl|mapDisplayAddress|Unknown attribute|Invalid key|populate/i.test(raw)) {
+    return "Strapi 尚未加载地图字段。请重启 CMS 使 schema 生效后刷新本页。";
+  }
+  return raw.length > 180 ? `${raw.slice(0, 180)}…` : raw;
+}
+
+function parseSalesContactLoadError(error: unknown): string {
+  const raw = typeof error === "string" ? error : "";
+  if (!raw) return "无法读取销售顾问列表。请检查 CMS 连接。";
+  if (/sales-contact|salesContact|nameZh|qrImage|Unknown attribute|Invalid key|populate/i.test(raw)) {
+    return "Strapi 尚未加载 sales-contact 字段。请重启 CMS 使 schema 生效后刷新本页。";
+  }
+  return raw.length > 180 ? `${raw.slice(0, 180)}…` : raw;
+}
 
 const LEAD_STATUS_OPTIONS = [
   { value: "new", label: "未处理" },
@@ -226,6 +266,11 @@ export default function AdminSectionEditor({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [contactDraft, setContactDraft] = useState<StrapiRow | null>(null);
+  const [contactLoadError, setContactLoadError] = useState<string | null>(null);
+  const [salesContactRows, setSalesContactRows] = useState<StrapiRow[]>([]);
+  const [salesContactDrafts, setSalesContactDrafts] = useState<Record<string, StrapiRow>>({});
+  const [salesContactOpenId, setSalesContactOpenId] = useState<string | null>(null);
+  const [salesContactLoadError, setSalesContactLoadError] = useState<string | null>(null);
   const [leads, setLeads] = useState<StrapiRow[]>([]);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 250);
@@ -304,17 +349,47 @@ export default function AdminSectionEditor({
     setMessage(null);
 
     if (section === "contact") {
-      const [cRes, lRes] = await Promise.all([
+      const [cRes, lRes, sRes] = await Promise.all([
         fetch("/api/admin/contact-info"),
         fetch("/api/admin/leads"),
+        fetch("/api/admin/sales-contacts"),
       ]);
       const cJson = await cRes.json();
       const lJson = await lRes.json();
+      const sJson = (await sRes.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: { data?: StrapiRow[] };
+      };
       if (cJson.ok && cJson.data?.data) {
         setContactDraft(cJson.data.data as StrapiRow);
+        setContactLoadError(null);
+      } else {
+        setContactDraft(createDefaultContactDraft());
+        setContactLoadError(parseContactLoadError(cJson.error));
       }
       if (lJson.ok && lJson.data?.data) {
         setLeads(lJson.data.data as StrapiRow[]);
+      }
+      if (sJson.ok && sJson.data?.data) {
+        const list = (sJson.data.data as StrapiRow[])
+          .slice()
+          .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+        setSalesContactRows(list);
+        const init: Record<string, StrapiRow> = {};
+        list.forEach((row) => {
+          init[docId(row)] = { ...row };
+        });
+        setSalesContactDrafts(init);
+        setSalesContactLoadError(null);
+        setSalesContactOpenId((current) => {
+          if (current && list.some((item) => docId(item) === current)) return current;
+          return list[0] ? docId(list[0]) : null;
+        });
+      } else {
+        setSalesContactRows([]);
+        setSalesContactDrafts({});
+        setSalesContactLoadError(parseSalesContactLoadError(sJson.error));
       }
       setLoading(false);
       return;
@@ -541,6 +616,7 @@ export default function AdminSectionEditor({
   async function saveContact() {
     if (!contactDraft) return;
     setSavingId("contact");
+    setMessage(null);
     const payload: Record<string, unknown> = { ...contactDraft };
     ["documentId", "id", "createdAt", "updatedAt", "publishedAt"].forEach((k) => delete payload[k]);
 
@@ -554,8 +630,163 @@ export default function AdminSectionEditor({
     if (json.ok) {
       const toast = formatSaveToast(json);
       setMessage({ type: toast.type, text: toast.text });
+      setContactLoadError(null);
+      const reload = await fetch("/api/admin/contact-info");
+      const reloadJson = (await reload.json()) as {
+        ok?: boolean;
+        error?: string;
+        data?: { data?: StrapiRow };
+      };
+      if (reloadJson.ok && reloadJson.data?.data) {
+        setContactDraft(reloadJson.data.data as StrapiRow);
+      }
     } else {
-      setMessage({ type: "error", text: json.error || "保存失败" });
+      setMessage({
+        type: "error",
+        text: parseContactLoadError(json.error) || "保存失败",
+      });
+    }
+  }
+
+  async function saveSalesContactRow(id: string) {
+    const draft = salesContactDrafts[id];
+    if (!draft) return;
+    setSavingId(`sales-${id}`);
+    setMessage(null);
+
+    const payload: Record<string, unknown> = { ...draft };
+    ["documentId", "id", "createdAt", "updatedAt", "publishedAt"].forEach((k) => delete payload[k]);
+
+    try {
+      const res = await fetch(`/api/admin/sales-contacts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text });
+        setSalesContactLoadError(null);
+        const reload = await fetch("/api/admin/sales-contacts");
+        const reloadJson = (await reload.json()) as {
+          ok?: boolean;
+          error?: string;
+          data?: { data?: StrapiRow[] };
+        };
+        if (reloadJson.ok && reloadJson.data?.data) {
+          const list = (reloadJson.data.data as StrapiRow[])
+            .slice()
+            .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+          setSalesContactRows(list);
+          const init: Record<string, StrapiRow> = {};
+          list.forEach((row) => {
+            init[docId(row)] = { ...row };
+          });
+          setSalesContactDrafts(init);
+        }
+      } else {
+        setMessage({
+          type: "error",
+          text: parseSalesContactLoadError(json.error) || "销售顾问保存失败",
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "销售顾问保存失败";
+      setMessage({ type: "error", text: msg });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function deleteSalesContactRow(id: string) {
+    if (!window.confirm("确定删除该销售顾问？此操作不可撤销。")) return;
+    setSavingId(`sales-delete-${id}`);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/sales-contacts/${id}`, { method: "DELETE" });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text });
+        setSalesContactRows((prev) => prev.filter((row) => docId(row) !== id));
+        setSalesContactDrafts((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setSalesContactOpenId((current) => (current === id ? null : current));
+      } else {
+        setMessage({
+          type: "error",
+          text: parseSalesContactLoadError(json.error) || "删除失败",
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "删除失败";
+      setMessage({ type: "error", text: msg });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function addSalesContact() {
+    setSavingId("sales-new");
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/sales-contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nameZh: "新销售顾问",
+          nameEn: "",
+          titleZh: "",
+          titleEn: "",
+          phone: "",
+          wechatId: "",
+          enabled: true,
+          sortOrder: salesContactRows.length + 1,
+        }),
+      });
+      const json = (await res.json()) as AdminSaveResponse & {
+        ok?: boolean;
+        error?: string;
+        data?: { data?: StrapiRow };
+      };
+      if (json.ok) {
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text });
+        setSalesContactLoadError(null);
+        const created = json.data?.data;
+        const createdId = created ? docId(created) : null;
+        const reload = await fetch("/api/admin/sales-contacts");
+        const reloadJson = (await reload.json()) as {
+          ok?: boolean;
+          data?: { data?: StrapiRow[] };
+        };
+        if (reloadJson.ok && reloadJson.data?.data) {
+          const list = (reloadJson.data.data as StrapiRow[])
+            .slice()
+            .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+          setSalesContactRows(list);
+          const init: Record<string, StrapiRow> = {};
+          list.forEach((row) => {
+            init[docId(row)] = { ...row };
+          });
+          setSalesContactDrafts(init);
+          if (createdId) setSalesContactOpenId(createdId);
+        }
+      } else {
+        setMessage({
+          type: "error",
+          text: parseSalesContactLoadError(json.error) || "新增销售顾问失败",
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "新增销售顾问失败";
+      setMessage({ type: "error", text: msg });
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -889,63 +1120,375 @@ export default function AdminSectionEditor({
       ) : null}
 
       {section === "contact" && contactDraft ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
-          <h3 className="font-medium">联系方式</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="公司名（中文）">
-              <input
-                className={inputClass}
-                value={getText(contactDraft, "companyZh")}
-                onChange={(e) => setContactDraft({ ...contactDraft, companyZh: e.target.value })}
-              />
-            </Field>
-            <Field label="公司名（英文）">
-              <input
-                className={inputClass}
-                value={getText(contactDraft, "companyEn")}
-                onChange={(e) => setContactDraft({ ...contactDraft, companyEn: e.target.value })}
-              />
-            </Field>
-            <Field label="电话（每行一个）">
-              <textarea
-                className={cn(inputClass, "min-h-[80px]")}
-                value={getText(contactDraft, "phones")}
-                onChange={(e) => setContactDraft({ ...contactDraft, phones: e.target.value })}
-              />
-            </Field>
-            <Field label="邮箱">
-              <input
-                className={inputClass}
-                value={getText(contactDraft, "email")}
-                onChange={(e) => setContactDraft({ ...contactDraft, email: e.target.value })}
-              />
-            </Field>
-            <Field label="地址（中文）">
-              <input
-                className={inputClass}
-                value={getText(contactDraft, "addressZh")}
-                onChange={(e) => setContactDraft({ ...contactDraft, addressZh: e.target.value })}
-              />
-            </Field>
-            <Field label="地址（英文）">
-              <input
-                className={inputClass}
-                value={getText(contactDraft, "addressEn")}
-                onChange={(e) => setContactDraft({ ...contactDraft, addressEn: e.target.value })}
-              />
-            </Field>
-            <Field label="页脚简介（中文）" className="sm:col-span-2">
-              <textarea
-                className={cn(inputClass, "min-h-[80px]")}
-                value={getText(contactDraft, "footerIntroZh")}
-                onChange={(e) => setContactDraft({ ...contactDraft, footerIntroZh: e.target.value })}
-              />
-            </Field>
+        <div className="space-y-4">
+          {contactLoadError ? (
+            <AdminBanner variant="warn">
+              <p>{contactLoadError}</p>
+            </AdminBanner>
+          ) : null}
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+            <h3 className="font-medium">联系方式</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="公司名（中文）">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "companyZh")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, companyZh: e.target.value })}
+                />
+              </Field>
+              <Field label="公司名（英文）">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "companyEn")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, companyEn: e.target.value })}
+                />
+              </Field>
+              <Field label="电话（每行一个）">
+                <textarea
+                  className={cn(inputClass, "min-h-[80px]")}
+                  value={getText(contactDraft, "phones")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, phones: e.target.value })}
+                />
+              </Field>
+              <Field label="邮箱">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "email")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, email: e.target.value })}
+                />
+              </Field>
+              <Field label="地址（中文）">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "addressZh")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, addressZh: e.target.value })}
+                />
+              </Field>
+              <Field label="地址（英文）">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "addressEn")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, addressEn: e.target.value })}
+                />
+              </Field>
+              <Field label="页脚简介（中文）" className="sm:col-span-2">
+                <textarea
+                  className={cn(inputClass, "min-h-[80px]")}
+                  value={getText(contactDraft, "footerIntroZh")}
+                  onChange={(e) =>
+                    setContactDraft({ ...contactDraft, footerIntroZh: e.target.value })
+                  }
+                />
+              </Field>
+              <Field label="页脚简介（英文）" className="sm:col-span-2">
+                <textarea
+                  className={cn(inputClass, "min-h-[80px]")}
+                  value={getText(contactDraft, "footerIntroEn")}
+                  onChange={(e) =>
+                    setContactDraft({ ...contactDraft, footerIntroEn: e.target.value })
+                  }
+                />
+              </Field>
+            </div>
           </div>
-          <SaveButton saving={savingId === "contact"} onClick={saveContact} />
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+            <h3 className="font-medium">地图设置</h3>
+            <p className="text-xs text-gray-500">
+              配置联系页高德地图。填写 iframe URL 时前台嵌入地图；未填写时显示地址与「打开地图导航」按钮。
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="地图展示地址（中文） mapDisplayAddressZh">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "mapDisplayAddressZh")}
+                  onChange={(e) =>
+                    setContactDraft({ ...contactDraft, mapDisplayAddressZh: e.target.value })
+                  }
+                  placeholder="留空则使用地址（中文）"
+                />
+              </Field>
+              <Field label="地图展示地址（英文） mapDisplayAddressEn">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "mapDisplayAddressEn")}
+                  onChange={(e) =>
+                    setContactDraft({ ...contactDraft, mapDisplayAddressEn: e.target.value })
+                  }
+                  placeholder="留空则使用地址（英文）"
+                />
+              </Field>
+              <Field label="地图定位关键词 mapQuery" className="sm:col-span-2">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "mapQuery")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, mapQuery: e.target.value })}
+                  placeholder="东莞新声电子科技有限公司"
+                />
+                <FieldHint>用于生成默认高德搜索链接，例如：东莞新声电子科技有限公司。</FieldHint>
+              </Field>
+              <Field label="高德 iframe URL mapEmbedUrl" className="sm:col-span-2">
+                <textarea
+                  className={cn(inputClass, "min-h-[88px] font-mono text-xs")}
+                  value={getText(contactDraft, "mapEmbedUrl")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, mapEmbedUrl: e.target.value })}
+                  placeholder="https://..."
+                />
+                <FieldHint>
+                  填写高德地图 iframe/embed URL；不填则前台显示地址和导航按钮。
+                </FieldHint>
+              </Field>
+              <Field label="高德导航链接 mapNavUrl" className="sm:col-span-2">
+                <input
+                  className={inputClass}
+                  value={getText(contactDraft, "mapNavUrl")}
+                  onChange={(e) => setContactDraft({ ...contactDraft, mapNavUrl: e.target.value })}
+                  placeholder="https://uri.amap.com/..."
+                />
+                <FieldHint>
+                  填写高德导航或分享链接；不填则使用地图定位关键词生成高德搜索链接。
+                </FieldHint>
+              </Field>
+            </div>
+          </div>
+
+          <SaveButton saving={savingId === "contact"} onClick={saveContact} label="保存联系与地图设置" />
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="font-medium">销售顾问二维码</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  管理联系页底部销售顾问微信码。与页脚「关注我们」社交二维码（/admin/qr）分开维护。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addSalesContact}
+                disabled={savingId === "sales-new"}
+                className="text-xs px-3 py-2 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-50"
+              >
+                {savingId === "sales-new" ? "新增中…" : "新增销售顾问"}
+              </button>
+            </div>
+
+            {salesContactLoadError ? (
+              <AdminBanner variant="warn">
+                <p>{salesContactLoadError}</p>
+              </AdminBanner>
+            ) : null}
+
+            {salesContactRows.length === 0 ? (
+              <p className="text-sm text-gray-500">暂无销售顾问。点击「新增销售顾问」开始配置。</p>
+            ) : (
+              <div className="space-y-3">
+                {salesContactRows.map((row) => {
+                  const id = docId(row);
+                  const draft = salesContactDrafts[id] ?? row;
+                  const isOpen = salesContactOpenId === id;
+                  const enabled = draft.enabled !== false;
+                  const title = getText(draft, "nameZh") || "未命名销售顾问";
+
+                  return (
+                    <div
+                      key={id}
+                      className={cn(
+                        "rounded-xl border overflow-hidden",
+                        isOpen ? "border-brand-gold/25 bg-white/[0.02]" : "border-white/10"
+                      )}
+                    >
+                      <div className="w-full flex items-center gap-2 px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setSalesContactOpenId(isOpen ? null : id)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate">{title}</span>
+                            <span
+                              className={cn(
+                                "shrink-0 text-[10px] px-1.5 py-0.5 rounded",
+                                enabled
+                                  ? "bg-emerald-500/15 text-emerald-300"
+                                  : "bg-gray-500/20 text-gray-400"
+                              )}
+                            >
+                              {enabled ? "启用" : "禁用"}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-gray-500 font-mono">
+                              #{String(draft.sortOrder ?? "")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">
+                            {getText(draft, "phone") || "未填写手机号"}
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSalesContactOpenId(isOpen ? null : id)}
+                          className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30"
+                          aria-label={isOpen ? "收起" : "展开"}
+                        >
+                          <ChevronDown
+                            size={18}
+                            className={cn("transition-transform", isOpen && "rotate-180")}
+                          />
+                        </button>
+                      </div>
+
+                      {isOpen ? (
+                        <div className="px-4 pb-4 space-y-4 border-t border-white/10">
+                          <div className="grid sm:grid-cols-2 gap-4 pt-4">
+                            <Field label="中文姓名 nameZh">
+                              <input
+                                className={inputClass}
+                                value={getText(draft, "nameZh")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, nameZh: e.target.value },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <Field label="英文姓名 nameEn">
+                              <input
+                                className={inputClass}
+                                value={getText(draft, "nameEn")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, nameEn: e.target.value },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <Field label="中文职位 titleZh">
+                              <input
+                                className={inputClass}
+                                value={getText(draft, "titleZh")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, titleZh: e.target.value },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <Field label="英文职位 titleEn">
+                              <input
+                                className={inputClass}
+                                value={getText(draft, "titleEn")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, titleEn: e.target.value },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <Field label="手机号 phone" className="sm:col-span-2">
+                              <textarea
+                                className={cn(inputClass, "min-h-[72px]")}
+                                value={getText(draft, "phone")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, phone: e.target.value },
+                                  }))
+                                }
+                                placeholder="每行一个，或用逗号、分号分隔"
+                              />
+                            </Field>
+                            <Field label="微信号 wechatId">
+                              <input
+                                className={inputClass}
+                                value={getText(draft, "wechatId")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, wechatId: e.target.value },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <Field label="排序 sortOrder">
+                              <input
+                                type="number"
+                                className={inputClass}
+                                value={String(draft.sortOrder ?? "")}
+                                onChange={(e) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: {
+                                      ...draft,
+                                      sortOrder: Number(e.target.value) || 0,
+                                    },
+                                  }))
+                                }
+                              />
+                            </Field>
+                            <SelectField
+                              label="是否启用 enabled"
+                              value={enabled ? "true" : "false"}
+                              onChange={(v) =>
+                                setSalesContactDrafts((prev) => ({
+                                  ...prev,
+                                  [id]: { ...draft, enabled: v === "true" },
+                                }))
+                              }
+                              options={[
+                                { value: "true", label: "启用（前台显示）" },
+                                { value: "false", label: "禁用（前台隐藏）" },
+                              ]}
+                            />
+                            <div className="sm:col-span-2">
+                              <ImageUploadField
+                                label="二维码图片 qrImage"
+                                currentUrl={mediaUrl(draft.qrImage as StrapiMedia)}
+                                currentMedia={draft.qrImage as StrapiMedia}
+                                onUploaded={(mediaId, url) =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, qrImage: { id: mediaId, url } },
+                                  }))
+                                }
+                                onRemoved={() =>
+                                  setSalesContactDrafts((prev) => ({
+                                    ...prev,
+                                    [id]: { ...draft, qrImage: null },
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <SaveButton
+                              saving={savingId === `sales-${id}`}
+                              onClick={() => saveSalesContactRow(id)}
+                              label="保存销售顾问"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => deleteSalesContactRow(id)}
+                              disabled={savingId === `sales-delete-${id}`}
+                              className="text-xs px-4 py-2 rounded-lg border border-red-400/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                            >
+                              {savingId === `sales-delete-${id}` ? "删除中…" : "删除"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {leads.length > 0 ? (
-            <div className="pt-6 border-t border-white/10">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 pt-6">
               <h3 className="font-medium mb-3">最近询盘（只读）</h3>
               <div className="space-y-2 text-sm text-gray-400">
                 {leads.slice(0, 10).map((l) => (

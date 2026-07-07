@@ -256,6 +256,37 @@ const QR_SEEDS = [
   },
 ];
 
+const SALES_CONTACT_SEEDS = [
+  {
+    sortOrder: 1,
+    nameZh: '刘德琰',
+    nameEn: 'Liu Deyan',
+    phone: '13712769500',
+    qrImage: '/images/sales/liu-deyan.png',
+  },
+  {
+    sortOrder: 2,
+    nameZh: '孙立霆Darren',
+    nameEn: 'Sun Liting',
+    phone: '18368729678\n13713323136',
+    qrImage: '/images/sales/sun-liting.png',
+  },
+  {
+    sortOrder: 3,
+    nameZh: '钟明远',
+    nameEn: 'Zhong Mingyuan',
+    phone: '18122928166',
+    qrImage: '/images/sales/zhong-mingyuan.png',
+  },
+  {
+    sortOrder: 4,
+    nameZh: '杨雪军',
+    nameEn: 'Yang Xuejun',
+    phone: '18688610987',
+    qrImage: '/images/sales/yang-xuejun.png',
+  },
+];
+
 function mimeFor(ext: string): string {
   const e = ext.toLowerCase();
   if (e === '.png') return 'image/png';
@@ -371,6 +402,26 @@ export async function seedWebsiteContent(strapi: Core.Strapi) {
         status: 'published',
       });
       strapi.log.info(`[seed] QR "${item.labelZh}" published.`);
+    }
+  }
+
+  const salesContactCount = await strapi.documents('api::sales-contact.sales-contact').count({});
+  if (salesContactCount === 0) {
+    strapi.log.info('[seed] Importing 4 sales contacts…');
+    for (const item of SALES_CONTACT_SEEDS) {
+      const qrImageId = await uploadPublicFile(strapi, publicRoot, item.qrImage, uploadCache);
+      await strapi.documents('api::sales-contact.sales-contact').create({
+        data: {
+          sortOrder: item.sortOrder,
+          nameZh: item.nameZh,
+          nameEn: item.nameEn,
+          phone: item.phone,
+          qrImage: qrImageId,
+          enabled: true,
+        },
+        status: 'published',
+      });
+      strapi.log.info(`[seed] Sales contact "${item.nameZh}" published.`);
     }
   }
 

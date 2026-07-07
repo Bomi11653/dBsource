@@ -308,6 +308,8 @@ export const translations = {
       copyPhone: "复制号码",
       copied: "已复制",
       wechatQr: "微信二维码",
+      wechatId: "微信",
+      openMapNav: "打开地图导航",
     },
     footer: {
       rights: "dBsource © 2024 版权所有",
@@ -629,6 +631,8 @@ export const translations = {
       copyPhone: "Copy number",
       copied: "Copied",
       wechatQr: "WeChat QR code",
+      wechatId: "WeChat",
+      openMapNav: "Open in Maps",
     },
     footer: {
       rights: "dBsource © 2024 All Rights Reserved",

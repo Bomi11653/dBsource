@@ -12,6 +12,7 @@ import {
   type ContactInfo,
 } from "@/data/mock";
 import { aboutImages, type AboutImages } from "@/data/about";
+import { fallbackSalesContacts } from "@/data/sales-contacts";
 import { applyCaseImages, sortCases } from "@/lib/cases";
 import { shouldUseMockData } from "@/lib/cms-data-source";
 import { withLastKnownGood } from "@/lib/cms-lkg-cache";
@@ -23,6 +24,7 @@ import {
   mapStrapiDownload,
   mapStrapiProduct,
   mapStrapiQR,
+  mapStrapiSalesContact,
   mapStrapiScene,
 } from "@/lib/strapi-mapper";
 import { cache } from "react";
@@ -37,6 +39,7 @@ const EMPTY_CONTACT: ContactInfo = {
   email: "",
   address: { zh: "", en: "" },
   mapQuery: "",
+  mapDisplayAddress: { zh: "", en: "" },
   footerIntro: { zh: "", en: "" },
 };
 
@@ -100,6 +103,8 @@ const CASES_QUERY =
   "/cases?populate[image]=true&populate[gallery]=true&sort[0]=legacyId:asc&pagination[pageSize]=100";
 const QR_QUERY =
   "/qr-codes?populate[image]=true&sort[0]=sortOrder:asc";
+const SALES_CONTACTS_QUERY =
+  "/sales-contacts?filters[enabled][$eq]=true&populate[qrImage]=true&sort[0]=sortOrder:asc&pagination[pageSize]=50";
 const SCENES_QUERY =
   "/scenes?populate[image]=true&sort[0]=sortOrder:asc";
 const DOWNLOADS_QUERY =
@@ -240,6 +245,33 @@ export async function getQRCodes() {
   } catch (e) {
     console.error("[fetchCMS] qr-codes 读取失败:", e);
     return [];
+  }
+}
+
+export async function getSalesContacts() {
+  const fallback = fallbackSalesContacts();
+  if (isMockMode()) return fallback;
+
+  try {
+    const cmsUrl = getCmsUrl();
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiSalesContact>[0]>(
+      SALES_CONTACTS_QUERY
+    );
+    if (!docs.length) {
+      logStrapiEmpty("sales-contacts");
+      return fallback;
+    }
+
+    const mapped = docs
+      .filter((doc) => doc.enabled !== false)
+      .map((doc, index) => mapStrapiSalesContact(doc, cmsUrl, index))
+      .filter((item) => item.phones.length > 0 && item.qrImage)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    return mapped.length ? mapped : fallback;
+  } catch (e) {
+    console.error("[fetchCMS] sales-contacts 读取失败:", e);
+    return fallback;
   }
 }
 

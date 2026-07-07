@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sales_contacts",
+  "info": {
+    "singularName": "sales-contact",
+    "pluralName": "sales-contacts",
+    "displayName": "⑧ 销售顾问 SalesContact",
+    "description": "联系页销售顾问微信二维码 · Contact page sales team QR codes"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nameZh": {
+      "type": "string",
+      "required": true
+    },
+    "nameEn": {
+      "type": "string"
+    },
+    "titleZh": {
+      "type": "string"
+    },
+    "titleEn": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "text"
+    },
+    "wechatId": {
+      "type": "string"
+    },
+    "qrImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

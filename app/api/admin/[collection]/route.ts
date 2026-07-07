@@ -27,6 +27,7 @@ export async function GET(req: NextRequest, { params }: Props) {
     scenes: "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
     "about-sections": "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
     "qr-codes": "?populate[image]=true&sort[0]=sortOrder:asc&pagination[pageSize]=20",
+    "sales-contacts": "?populate[qrImage]=true&sort[0]=sortOrder:asc&pagination[pageSize]=50",
     leads: "?sort[0]=createdAt:desc&pagination[pageSize]=200",
     "product-series-configs": "?sort[0]=sortOrder:asc&pagination[pageSize]=50",
   };

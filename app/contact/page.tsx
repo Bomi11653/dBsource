@@ -1,6 +1,6 @@
 import ContactContent from "./ContactContent";
 import SiteFooter from "@/components/SiteFooter";
-import { getContactInfo } from "@/lib/cms";
+import { getContactInfo, getSalesContacts } from "@/lib/cms";
 import { pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 
@@ -11,12 +11,12 @@ export const metadata = pageMetadata(
 );
 
 export default async function ContactPage() {
-  const contact = await getContactInfo();
+  const [contact, salesContacts] = await Promise.all([getContactInfo(), getSalesContacts()]);
 
   return (
     <main className="min-h-screen-safe">
       <Suspense fallback={<div className="pt-28 page-x text-gray-500">Loading…</div>}>
-        <ContactContent contact={contact} />
+        <ContactContent contact={contact} salesContacts={salesContacts} />
       </Suspense>
       <SiteFooter />
     </main>

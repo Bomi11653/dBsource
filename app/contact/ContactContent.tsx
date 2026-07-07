@@ -1,13 +1,21 @@
 "use client";
 
 import type { ContactInfo } from "@/data/mock";
+import type { SalesContactItem } from "@/data/sales-contacts";
 import { useI18n } from "@/components/I18nProvider";
 import BrowseGuide from "@/components/BrowseGuide";
 import SalesContactCards from "@/components/SalesContactCards";
-import { FormEvent, useEffect, useState } from "react";
+import { isAllowedAmapEmbedUrl, resolveMapNavUrl } from "@/lib/amap-map";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function ContactContent({ contact }: { contact: ContactInfo }) {
+export default function ContactContent({
+  contact,
+  salesContacts,
+}: {
+  contact: ContactInfo;
+  salesContacts: SalesContactItem[];
+}) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
   const productModel = searchParams.get("product") ?? "";
@@ -25,7 +33,15 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
     language: locale === "zh" ? "zh-CN" : "en",
   });
 
-  const mapSrc =`https://www.google.com/maps?q=${encodeURIComponent(contact.mapQuery)}&output=embed&z=15`;
+  const mapEmbedUrl = contact.mapEmbedUrl?.trim() ?? "";
+  const showMapEmbed = Boolean(mapEmbedUrl && isAllowedAmapEmbedUrl(mapEmbedUrl));
+  const mapDisplayAddress =
+    contact.mapDisplayAddress[locale] || contact.address[locale];
+  const mapNavUrl = useMemo(
+    () => resolveMapNavUrl(contact.mapNavUrl, contact.mapQuery),
+    [contact.mapNavUrl, contact.mapQuery]
+  );
+
   const defaultMessage = productModel
     ? locale === "zh"
       ? `我想咨询产品型号：${productModel}`
@@ -104,7 +120,9 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
           items={[
             { label: t.guide.contactForm, targetId: "contact-form" },
             { label: t.guide.contactInfo, targetId: "contact-info" },
-            { label: t.contact.salesTitle, targetId: "contact-sales" },
+            ...(salesContacts.length
+              ? [{ label: t.contact.salesTitle, targetId: "contact-sales" }]
+              : []),
             { label: t.guide.productsSpeaker, href: "/products" },
           ]}
           layout="stack"
@@ -187,19 +205,38 @@ export default function ContactContent({ contact }: { contact: ContactInfo }) {
               </div>
             </div>
 
-            <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10]">
-              <iframe
-                title={contact.company[locale]}
-                src={mapSrc}
-                className="w-full h-full min-h-[240px] border-0 grayscale opacity-80"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
+            {showMapEmbed ? (
+              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10] bg-black">
+                <iframe
+                  title={contact.company[locale]}
+                  src={mapEmbedUrl}
+                  className="w-full h-full min-h-[240px] border-0 grayscale opacity-80"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10] min-h-[240px] bg-gradient-to-b from-white/[0.04] via-black to-black flex flex-col items-center justify-center gap-5 p-6 sm:p-8 text-center">
+                <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md">
+                  {mapDisplayAddress}
+                </p>
+                {mapNavUrl ? (
+                  <a
+                    href={mapNavUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[44px] items-center justify-center px-6 rounded-xl border border-brand-gold/40 bg-brand-gold/10 text-brand-gold text-sm font-medium hover:bg-brand-gold/20 transition-colors touch-active"
+                  >
+                    {t.contact.openMapNav}
+                  </a>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
 
-        <SalesContactCards />
+        <SalesContactCards contacts={salesContacts} />
       </section>
     </div>
   );

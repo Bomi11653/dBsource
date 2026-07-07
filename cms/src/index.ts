@@ -9,6 +9,7 @@ const PUBLIC_UIDS = [
   'api::download.download',
   'api::scene.scene',
   'api::qr-code.qr-code',
+  'api::sales-contact.sales-contact',
   'api::about-section.about-section',
   'api::contact-info.contact-info',
   'api::product-series.product-series',

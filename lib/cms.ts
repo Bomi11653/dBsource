@@ -9,11 +9,13 @@ export {
   getDownloads,
   getScenes,
   getQRCodes,
+  getSalesContacts,
   getAboutImages,
   getContactInfo,
 } from "./fetchCMS";
 
 export { PRODUCTS_PAGE_SIZE } from "@/data/mock";
+export type { SalesContactItem } from "@/data/sales-contacts";
 export type {
   Product,
   ProductCategory,

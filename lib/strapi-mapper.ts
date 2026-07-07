@@ -10,6 +10,7 @@ import type {
   QRItem,
   SceneItem,
 } from "@/data/mock";
+import type { SalesContactItem } from "@/data/sales-contacts";
 import type { AboutImages } from "@/data/about";
 import { mapCaseMediaFields } from "@/lib/case-media";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
@@ -232,6 +233,57 @@ export function mapStrapiQR(
   };
 }
 
+function parseSalesPhones(phone?: string | null): string[] {
+  return (phone ?? "")
+    .split(/[\n,，;；]+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+type StrapiSalesContactDoc = {
+  documentId?: string;
+  sortOrder?: number | null;
+  nameZh?: string | null;
+  nameEn?: string | null;
+  titleZh?: string | null;
+  titleEn?: string | null;
+  phone?: string | null;
+  wechatId?: string | null;
+  qrImage?: StrapiMedia | null;
+  enabled?: boolean | null;
+};
+
+export function mapStrapiSalesContact(
+  doc: StrapiSalesContactDoc,
+  cmsUrl: string,
+  index: number
+): SalesContactItem {
+  const nameZh = doc.nameZh?.trim() || "";
+  const nameEn = doc.nameEn?.trim() || nameZh;
+  const titleZh = doc.titleZh?.trim() || "";
+  const titleEn = doc.titleEn?.trim() || "";
+  const qrImage = resolveStrapiMediaUrl(doc.qrImage, cmsUrl) || "";
+  if (!qrImage) {
+    warnStrapiMapping("sales-contact", doc.sortOrder ?? index + 1, ["qrImage"]);
+  }
+
+  return {
+    id: doc.documentId ?? doc.sortOrder ?? index + 1,
+    name: { zh: nameZh, en: nameEn },
+    title:
+      titleZh || titleEn
+        ? {
+            zh: titleZh,
+            en: titleEn || titleZh,
+          }
+        : undefined,
+    phones: parseSalesPhones(doc.phone),
+    wechatId: doc.wechatId?.trim() || undefined,
+    qrImage,
+    sortOrder: doc.sortOrder ?? index + 1,
+  };
+}
+
 export function mapStrapiScene(
   doc: StrapiSceneDoc,
   cmsUrl: string,
@@ -392,6 +444,9 @@ export type ContactInfoData = {
   email: string;
   address: { zh: string; en: string };
   mapQuery: string;
+  mapEmbedUrl?: string;
+  mapNavUrl?: string;
+  mapDisplayAddress: { zh: string; en: string };
   footerIntro: { zh: string; en: string };
   homeFeaturedCase?: {
     caseId?: number;
@@ -409,6 +464,10 @@ type StrapiContactDoc = {
   addressZh: string;
   addressEn: string;
   mapQuery: string;
+  mapEmbedUrl?: string | null;
+  mapNavUrl?: string | null;
+  mapDisplayAddressZh?: string | null;
+  mapDisplayAddressEn?: string | null;
   footerIntroZh?: string | null;
   footerIntroEn?: string | null;
   homeFeaturedCaseId?: number | null;
@@ -435,6 +494,20 @@ export function mapStrapiContactInfo(
     email: doc.email || fallback.email,
     address: { zh: doc.addressZh, en: doc.addressEn },
     mapQuery: doc.mapQuery || fallback.mapQuery,
+    mapEmbedUrl: doc.mapEmbedUrl?.trim() || fallback.mapEmbedUrl,
+    mapNavUrl: doc.mapNavUrl?.trim() || fallback.mapNavUrl,
+    mapDisplayAddress: {
+      zh:
+        doc.mapDisplayAddressZh?.trim() ||
+        doc.addressZh ||
+        fallback.mapDisplayAddress.zh ||
+        fallback.address.zh,
+      en:
+        doc.mapDisplayAddressEn?.trim() ||
+        doc.addressEn ||
+        fallback.mapDisplayAddress.en ||
+        fallback.address.en,
+    },
     footerIntro: {
       zh: doc.footerIntroZh || fallback.footerIntro.zh,
       en: doc.footerIntroEn || fallback.footerIntro.en,
