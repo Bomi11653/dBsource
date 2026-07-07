@@ -21,7 +21,7 @@ function usePageVisible() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const update = () => setVisible(!document.hidden);
+    const update = () => setVisible(document.visibilityState === "visible");
     update();
     document.addEventListener("visibilitychange", update);
     return () => document.removeEventListener("visibilitychange", update);
@@ -30,28 +30,44 @@ function usePageVisible() {
   return visible;
 }
 
+function useCanvasRemountKey() {
+  const [canvasKey, setCanvasKey] = useState(0);
+
+  useEffect(() => {
+    let rafId = 0;
+
+    const bumpIfVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        setCanvasKey((v) => v + 1);
+      });
+    };
+
+    document.addEventListener("visibilitychange", bumpIfVisible);
+    window.addEventListener("pageshow", bumpIfVisible);
+    window.addEventListener("focus", bumpIfVisible);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      document.removeEventListener("visibilitychange", bumpIfVisible);
+      window.removeEventListener("pageshow", bumpIfVisible);
+      window.removeEventListener("focus", bumpIfVisible);
+    };
+  }, []);
+
+  return canvasKey;
+}
+
 function ShaderLoopController({ active }: { active: boolean }) {
   const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
     if (!active) return;
-
-    const resume = () => {
-      if (document.visibilityState !== "visible") return;
-      invalidate();
-      requestAnimationFrame(() => invalidate());
-    };
-
-    resume();
-    document.addEventListener("visibilitychange", resume);
-    window.addEventListener("pageshow", resume);
-    window.addEventListener("focus", resume);
-
-    return () => {
-      document.removeEventListener("visibilitychange", resume);
-      window.removeEventListener("pageshow", resume);
-      window.removeEventListener("focus", resume);
-    };
+    invalidate();
+    const raf = requestAnimationFrame(() => invalidate());
+    return () => cancelAnimationFrame(raf);
   }, [active, invalidate]);
 
   useFrame(() => {
@@ -130,10 +146,11 @@ function HeroLiteFallback() {
   );
 }
 
-function ShaderHeroCanvas({ active }: { active: boolean }) {
+function ShaderHeroCanvas({ active, canvasKey }: { active: boolean; canvasKey: number }) {
   return (
     <div className="absolute inset-0">
       <Canvas
+        key={canvasKey}
         camera={{ position: [0, 0, 6], fov: 50 }}
         dpr={[1, 1]}
         frameloop="demand"
@@ -150,11 +167,12 @@ function ShaderHeroCanvas({ active }: { active: boolean }) {
 function ShaderHero() {
   const lite = useHeroMotionPrefs();
   const pageVisible = usePageVisible();
+  const canvasKey = useCanvasRemountKey();
   const active = pageVisible && !lite;
 
   return (
     <div className="relative h-full w-full bg-black">
-      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas active={active} />}
+      {lite ? <HeroLiteFallback /> : <ShaderHeroCanvas active={active} canvasKey={canvasKey} />}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black" />
     </div>
   );
