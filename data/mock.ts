@@ -124,6 +124,9 @@ export type ContactInfo = {
   email: string;
   address: { zh: string; en: string };
   mapQuery: string;
+  mapEmbedUrl?: string;
+  mapNavUrl?: string;
+  mapDisplayAddress: { zh: string; en: string };
   footerIntro: { zh: string; en: string };
   homeFeaturedCase?: {
     caseId?: number;
@@ -177,6 +180,10 @@ export const contactInfo: ContactInfo = {
     en: "No.1 Xinfeng West 3rd Rd, Mowu, Wanjiang, Dongguan, Guangdong",
   },
   mapQuery: "广东省东莞市万江街道莫屋新丰西三路1号",
+  mapDisplayAddress: {
+    zh: "广东省东莞市万江街道莫屋新丰西三路1号",
+    en: "No.1 Xinfeng West 3rd Rd, Mowu, Wanjiang, Dongguan, Guangdong",
+  },
   footerIntro: {
     zh: "dBsource 专注专业音响系统研发与工程交付，为演出、体育、政企等场景提供从设计到调试的一站式声场解决方案。",
     en: "dBsource delivers professional audio systems and turnkey sound solutions for live events, sports venues and corporate projects.",
