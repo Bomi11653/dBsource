@@ -455,6 +455,10 @@ export interface ApiContactInfoContactInfo extends Struct.SingleTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<"oneToMany", "api::contact-info.contact-info"> &
       Schema.Attribute.Private;
+    mapDisplayAddressEn: Schema.Attribute.String;
+    mapDisplayAddressZh: Schema.Attribute.String;
+    mapEmbedUrl: Schema.Attribute.String;
+    mapNavUrl: Schema.Attribute.String;
     mapQuery: Schema.Attribute.String & Schema.Attribute.Required;
     market: Schema.Attribute.Enumeration<["cn", "global", "all"]> &
       Schema.Attribute.DefaultTo<"all">;
@@ -725,6 +729,38 @@ export interface ApiQrCodeQrCode extends Struct.CollectionTypeSchema {
     sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<"oneToOne", "admin::user"> & Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSalesContactSalesContact extends Struct.CollectionTypeSchema {
+  collectionName: "sales_contacts";
+  info: {
+    description: "\u8054\u7CFB\u9875\u9500\u552E\u987E\u95EE\u5FAE\u4FE1\u4E8C\u7EF4\u7801 \u00B7 Contact page sales team QR codes";
+    displayName: "\u2467 \u9500\u552E\u987E\u95EE SalesContact";
+    pluralName: "sales-contacts";
+    singularName: "sales-contact";
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<"oneToOne", "admin::user"> & Schema.Attribute.Private;
+    enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<"oneToMany", "api::sales-contact.sales-contact"> &
+      Schema.Attribute.Private;
+    nameEn: Schema.Attribute.String;
+    nameZh: Schema.Attribute.String & Schema.Attribute.Required;
+    phone: Schema.Attribute.Text;
+    publishedAt: Schema.Attribute.DateTime;
+    qrImage: Schema.Attribute.Media<"images">;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    titleEn: Schema.Attribute.String;
+    titleZh: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<"oneToOne", "admin::user"> & Schema.Attribute.Private;
+    wechatId: Schema.Attribute.String;
   };
 }
 
@@ -1262,6 +1298,7 @@ declare module "@strapi/strapi" {
       "api::product-series.product-series": ApiProductSeriesProductSeries;
       "api::product.product": ApiProductProduct;
       "api::qr-code.qr-code": ApiQrCodeQrCode;
+      "api::sales-contact.sales-contact": ApiSalesContactSalesContact;
       "api::scene.scene": ApiSceneScene;
       "api::smart-selection-page.smart-selection-page": ApiSmartSelectionPageSmartSelectionPage;
       "api::social-link.social-link": ApiSocialLinkSocialLink;

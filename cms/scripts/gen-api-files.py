@@ -6,6 +6,7 @@ APIS = [
     ("download", "download"),
     ("scene", "scene"),
     ("qr-code", "qr-code"),
+    ("sales-contact", "sales-contact"),
     ("about-section", "about-section"),
 ]
 

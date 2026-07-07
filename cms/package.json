@@ -11,6 +11,8 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "strapi": "strapi",
+    "ts:generate-types": "strapi ts:generate-types",
+    "prebuild": "strapi ts:generate-types",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
