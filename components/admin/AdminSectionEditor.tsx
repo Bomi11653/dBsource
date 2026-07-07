@@ -1,5 +1,6 @@
 "use client";
 
+import ProductSpecsEditor from "@/components/admin/ProductSpecsEditor";
 import {
   AdminBanner,
   Field,
@@ -12,6 +13,19 @@ import {
   SelectField,
   inputClass,
 } from "@/components/admin/AdminFields";
+import {
+  ADMIN_PRODUCT_SERIES_TABS,
+  compareAdminProductRows,
+  countAdminProductsBySeriesFilter,
+  getAdminProductRowMeta,
+  matchAdminProductSeriesFilter,
+  type AdminProductSeriesFilter,
+} from "@/lib/admin-product-categories";
+import {
+  ADMIN_CASE_SCENE_OPTIONS,
+  getAdminCaseSceneLabel,
+  resolveAdminCaseSceneSelectValue,
+} from "@/lib/case-scene-filters";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
 import { resolveAdminPreviewUrl } from "@/lib/media-url";
@@ -124,12 +138,18 @@ function rowSubtitle(section: string, draft: StrapiRow): string | null {
     const fileName = getText(draft, "fileName");
     return [size && size !== "—" ? size : null, fileName].filter(Boolean).join(" · ") || null;
   }
-  if (section === "products") return getText(draft, "model") || null;
+  if (section === "products") {
+    const meta = getAdminProductRowMeta(draft);
+    return meta.subtitle || null;
+  }
   if (section === "cases") {
     const typeLabel = getText(draft, "type") === "performance" ? "演出案例" : "工程案例";
+    const sceneLabel = getAdminCaseSceneLabel(getText(draft, "sceneSlug"));
     const products = getText(draft, "products");
     const sortOrder = Number(draft.sortOrder) || 0;
-    return [typeLabel, products, sortOrder > 0 ? `排序 ${sortOrder}` : null].filter(Boolean).join(" · ");
+    return [typeLabel, sceneLabel, products, sortOrder > 0 ? `排序 ${sortOrder}` : null]
+      .filter(Boolean)
+      .join(" · ");
   }
   if (section === "leads") {
     const status = leadStatusLabel(getText(draft, "status") || "new");
@@ -149,7 +169,7 @@ function compareCaseRows(a: StrapiRow, b: StrapiRow) {
 }
 
 function rowSearchText(section: string, draft: StrapiRow): string {
-  return [
+  const base = [
     rowTitle(draft),
     rowSubtitle(section, draft),
     getText(draft, "nameEn"),
@@ -163,10 +183,22 @@ function rowSearchText(section: string, draft: StrapiRow): string {
     getText(draft, "owner"),
     getText(draft, "country"),
     getText(draft, "utmSource"),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  ];
+
+  if (section === "products") {
+    base.push(
+      getText(draft, "productLine"),
+      getText(draft, "seriesZh"),
+      getText(draft, "seriesEn"),
+      getText(draft, "descZh"),
+      getText(draft, "descEn"),
+      getText(draft, "category"),
+      getText(draft, "seriesGroup"),
+      getAdminProductRowMeta(draft).seriesLabel
+    );
+  }
+
+  return base.filter(Boolean).join(" ").toLowerCase();
 }
 
 const CREATABLE_SECTIONS = new Set([
@@ -204,8 +236,15 @@ export default function AdminSectionEditor({
   const [homeFeaturedCaseDraft, setHomeFeaturedCaseDraft] = useState<HomeFeaturedCaseDraft | null>(null);
   const [leadStatusFilter, setLeadStatusFilter] = useState("all");
   const [leadPriorityOnly, setLeadPriorityOnly] = useState(false);
+  const [productSeriesFilter, setProductSeriesFilter] = useState<AdminProductSeriesFilter>("all");
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
+
+  const productSeriesTabCounts = useMemo(() => {
+    if (section !== "products") return null;
+    const draftsRows = rows.map((row) => drafts[docId(row)] ?? row);
+    return countAdminProductsBySeriesFilter(draftsRows);
+  }, [section, rows, drafts]);
 
   useEffect(() => {
     if (localStorage.getItem("dbsource-admin-hint") === "hidden") setShowHint(false);
@@ -233,6 +272,19 @@ export default function AdminSectionEditor({
           return rowSearchText(section, draft).includes(q);
         })
       : rows;
+
+    if (section === "products") {
+      const seriesFiltered = searched.filter((row) => {
+        const draft = drafts[docId(row)] ?? row;
+        return matchAdminProductSeriesFilter(draft, productSeriesFilter);
+      });
+      return [...seriesFiltered].sort((a, b) => {
+        const draftA = drafts[docId(a)] ?? a;
+        const draftB = drafts[docId(b)] ?? b;
+        return compareAdminProductRows(draftA, draftB);
+      });
+    }
+
     if (section !== "leads") return searched;
     return searched.filter((row) => {
       const draft = drafts[docId(row)] ?? row;
@@ -241,7 +293,7 @@ export default function AdminSectionEditor({
       const matchesPriority = leadPriorityOnly ? (Number(draft.intentScore) || 0) >= 70 : true;
       return matchesStatus && matchesPriority;
     });
-  }, [rows, drafts, debouncedSearch, section, leadStatusFilter, leadPriorityOnly]);
+  }, [rows, drafts, debouncedSearch, section, leadStatusFilter, leadPriorityOnly, productSeriesFilter]);
 
   const load = useCallback(async (preferredOpenId?: string | null) => {
     if (!tokenReady) {
@@ -434,13 +486,13 @@ export default function AdminSectionEditor({
       cases: {
         legacyId: maxLegacyId + 1,
         type: "engineering",
-        sceneSlug: "stadium",
+        sceneSlug: "festival",
         titleZh: "新案例",
         titleEn: "New Case",
         descZh: "案例简介",
         descEn: "Case summary",
-        sceneZh: "体育场馆",
-        sceneEn: "Stadium",
+        sceneZh: "演唱会 / 音乐节",
+        sceneEn: "Concerts & Festivals",
         products: "",
         market: "all",
         sortOrder: rows.length + 1,
@@ -808,6 +860,31 @@ export default function AdminSectionEditor({
               </button>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {section === "products" && productSeriesTabCounts ? (
+        <div className="flex flex-wrap gap-2">
+          {ADMIN_PRODUCT_SERIES_TABS.map((tab) => {
+            const active = productSeriesFilter === tab.id;
+            const count = productSeriesTabCounts[tab.id];
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setProductSeriesFilter(tab.id)}
+                className={cn(
+                  "text-xs px-3 py-2 rounded-lg border transition-colors",
+                  active
+                    ? "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
+                    : "border-white/15 text-gray-400 hover:text-white hover:border-white/30"
+                )}
+              >
+                {tab.label}
+                <span className="ml-1.5 font-mono text-[10px] opacity-80">{count}</span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
@@ -1204,104 +1281,133 @@ function renderFields(
   }
 
   if (section === "products") {
-    fields.push(textField("model", "型号"));
-    fields.push(textField("nameZh", "名称（中文）"));
-    fields.push(textField("nameEn", "名称（英文）"));
-    fields.push(textField("descZh", "简介（中文）", true));
-    fields.push(textField("descEn", "简介（英文）", true));
-    fields.push(textField("seriesZh", "系列（中文）"));
-    fields.push(textField("seriesEn", "系列（英文）"));
-    fields.push(textField("specsZh", "规格（中文）", true));
-    fields.push(textField("specsEn", "规格（英文）", true));
-    fields.push(
-      <PdfSpecImportField
-        key="pdf-spec-import"
-        modelHint={getText(draft, "model")}
-        onExtract={(data) =>
-          onChange({
-            specsZh: data.specsZh,
-            specsEn: data.specsEn,
-            descZh: data.descZh ?? getText(draft, "descZh"),
-            descEn: data.descEn ?? getText(draft, "descEn"),
-          })
-        }
-      />
+    const PRODUCT_LINE_OPTIONS = [
+      "la", "lw", "mi", "do", "sol", "k", "re", "p",
+      "driver", "electronics", "accessory", "tour",
+      "unit48", "suite", "turnkey", "c",
+    ];
+
+    const sectionCard = (title: string, children: React.ReactNode) => (
+      <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
+        <h4 className="text-sm font-medium text-gray-200">{title}</h4>
+        <div className="grid sm:grid-cols-2 gap-4">{children}</div>
+      </div>
     );
-    fields.push(
-      <SelectField
-        key="seriesGroup"
-        label="产品大类"
-        value={getText(draft, "seriesGroup") || "speaker"}
-        onChange={(v) => onChange({ seriesGroup: v })}
-        options={[
-          { value: "speaker", label: "音箱" },
-          { value: "dsp", label: "处理器" },
-          { value: "software", label: "软件" },
-          { value: "engineering", label: "工程" },
-        ]}
-      />
-    );
-    fields.push(
-      <SelectField
-        key="category"
-        label="前台分类"
-        value={getText(draft, "category") || "speaker"}
-        onChange={(v) => onChange({ category: v })}
-        options={[
-          { value: "speaker", label: "音箱" },
-          { value: "dsp", label: "处理器" },
-          { value: "software", label: "软件" },
-        ]}
-      />
-    );
-    fields.push(
-      <SelectField
-        key="market"
-        label="市场标签"
-        value={getText(draft, "market") || "all"}
-        onChange={(v) => onChange({ market: v })}
-        options={[
-          { value: "all", label: "全部市场" },
-          { value: "cn", label: "仅中国站" },
-          { value: "global", label: "仅海外站" },
-        ]}
-      />
-    );
-    fields.push(
-      <Field key="productLine" label="系列标识（如 la、sol、unit）">
-        <input
-          className={inputClass}
-          value={getText(draft, "productLine")}
-          onChange={(e) => onChange({ productLine: e.target.value })}
-        />
-      </Field>
-    );
-    fields.push(
-      <Field key="sortOrder" label="排序（数字越小越靠前）">
-        <input
-          type="number"
-          className={inputClass}
-          value={String(draft.sortOrder ?? "")}
-          onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
-        />
-      </Field>
-    );
-    fields.push(
-      <ImageUploadField
-        key="image"
-        label="封面图"
-        currentUrl={mediaUrl(draft.image as StrapiMedia)}
-        onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
-        onRemoved={() => onChange({ image: null })}
-      />
-    );
-    fields.push(
-      <div key="gallery" className="sm:col-span-2">
-        <GalleryUploadField
-          label="产品图集"
-          items={(draft.gallery as StrapiMedia[]) ?? []}
-          onChange={(gallery) => onChange({ gallery })}
-        />
+
+    return (
+      <div className="grid sm:grid-cols-2 gap-4">
+        {sectionCard(
+          "一、基础信息",
+          <>
+            {textField("model", "型号")}
+            {textField("nameZh", "名称（中文）")}
+            {textField("nameEn", "名称（英文）")}
+            {textField("seriesZh", "系列（中文）")}
+            {textField("seriesEn", "系列（英文）")}
+            <SelectField
+              key="productLine"
+              label="系列标识 productLine"
+              value={getText(draft, "productLine") || "la"}
+              onChange={(v) => onChange({ productLine: v })}
+              options={PRODUCT_LINE_OPTIONS.map((value) => ({ value, label: value }))}
+            />
+            <SelectField
+              key="category"
+              label="前台分类"
+              value={getText(draft, "category") || "speaker"}
+              onChange={(v) => onChange({ category: v })}
+              options={[
+                { value: "speaker", label: "音箱" },
+                { value: "dsp", label: "处理器" },
+                { value: "software", label: "软件" },
+              ]}
+            />
+            <SelectField
+              key="market"
+              label="市场标签"
+              value={getText(draft, "market") || "all"}
+              onChange={(v) => onChange({ market: v })}
+              options={[
+                { value: "all", label: "全部市场" },
+                { value: "cn", label: "仅中国站" },
+                { value: "global", label: "仅海外站" },
+              ]}
+            />
+            <Field key="sortOrder" label="排序（数字越小越靠前）">
+              <input
+                type="number"
+                className={inputClass}
+                value={String(draft.sortOrder ?? "")}
+                onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
+              />
+            </Field>
+            <SelectField
+              key="seriesGroup"
+              label="产品大类"
+              value={getText(draft, "seriesGroup") || "speaker"}
+              onChange={(v) => onChange({ seriesGroup: v })}
+              options={[
+                { value: "speaker", label: "音箱" },
+                { value: "dsp", label: "处理器" },
+                { value: "software", label: "软件" },
+                { value: "engineering", label: "工程" },
+              ]}
+            />
+          </>
+        )}
+
+        {sectionCard(
+          "二、产品介绍",
+          <>
+            {textField("descZh", "简介（中文）", true)}
+            {textField("descEn", "简介（英文）", true)}
+            {textField("detailZh", "详情 / 适用范围（中文）", true)}
+            {textField("detailEn", "详情 / 适用范围（英文）", true)}
+            <p className="sm:col-span-2 text-[11px] text-gray-500">
+              适用范围暂无独立字段，请在「详情」中维护；简介用于列表与卡片摘要。
+            </p>
+          </>
+        )}
+
+        <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <h4 className="text-sm font-medium text-gray-200">三、技术规格</h4>
+          <ProductSpecsEditor
+            specsZh={getText(draft, "specsZh")}
+            specsEn={getText(draft, "specsEn")}
+            onChange={(patch) => onChange(patch)}
+          />
+          <PdfSpecImportField
+            modelHint={getText(draft, "model")}
+            onExtract={(data) =>
+              onChange({
+                specsZh: data.specsZh,
+                specsEn: data.specsEn,
+                descZh: data.descZh ?? getText(draft, "descZh"),
+                descEn: data.descEn ?? getText(draft, "descEn"),
+              })
+            }
+          />
+        </div>
+
+        {sectionCard(
+          "四、产品图片",
+          <>
+            <ImageUploadField
+              key="image"
+              label="封面图"
+              currentUrl={mediaUrl(draft.image as StrapiMedia)}
+              onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+              onRemoved={() => onChange({ image: null })}
+            />
+            <div className="sm:col-span-2">
+              <GalleryUploadField
+                label="产品图集"
+                items={(draft.gallery as StrapiMedia[]) ?? []}
+                onChange={(gallery) => onChange({ gallery })}
+              />
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -1323,6 +1429,29 @@ function renderFields(
         ]}
       />
     );
+    const sceneSlug = getText(draft, "sceneSlug");
+    const needsRecategorize =
+      sceneSlug && !ADMIN_CASE_SCENE_OPTIONS.some((option) => option.value === sceneSlug);
+    fields.push(
+      <div key="sceneSlug" className="sm:col-span-2 space-y-1">
+        <SelectField
+          label="应用场景分类"
+          value={resolveAdminCaseSceneSelectValue(sceneSlug)}
+          onChange={(v) => onChange({ sceneSlug: v })}
+          options={[...ADMIN_CASE_SCENE_OPTIONS]}
+        />
+        {needsRecategorize ? (
+          <p className="text-[11px] text-amber-400/90">
+            当前 sceneSlug 为「{sceneSlug}」，请重新选择上述分类后保存。
+          </p>
+        ) : null}
+        <p className="text-[11px] text-gray-500">
+          用于首页应用场景跳转与案例页筛选；展示文案仍可使用 sceneZh / sceneEn。
+        </p>
+      </div>
+    );
+    fields.push(textField("sceneZh", "场景展示（中文）"));
+    fields.push(textField("sceneEn", "场景展示（英文）"));
     fields.push(textField("products", "设备配置（型号列表）"));
     fields.push(
       <SelectField

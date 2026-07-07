@@ -106,6 +106,7 @@ export interface DownloadItem {
 
 export interface SceneItem {
   id: number;
+  sortOrder?: number;
   name: { zh: string; en: string };
   desc: { zh: string; en: string };
   image: string;
@@ -244,7 +245,7 @@ export const cases: CaseItem[] = [
   {
     id: 1,
     type: "engineering",
-    sceneSlug: "livehouse",
+    sceneSlug: "festival",
     title: { zh: "AK Live House", en: "AK Live House" },
     desc: {
       zh: "万江 AK Live House，dBsource 音响系统稳定运营一周年",
@@ -266,7 +267,7 @@ export const cases: CaseItem[] = [
   {
     id: 2,
     type: "engineering",
-    sceneSlug: "livehouse",
+    sceneSlug: "festival",
     title: { zh: "梅州 YoYo Music", en: "Meizhou YoYo Music" },
     desc: {
       zh: "DO 系列主扩 + 多路乐队输入，精宏音响科技交付",
@@ -313,7 +314,7 @@ export const cases: CaseItem[] = [
   {
     id: 4,
     type: "engineering",
-    sceneSlug: "corporate",
+    sceneSlug: "auditorium",
     title: { zh: "乌兰浩特 城市声场", en: "Ulanhot Urban Soundscape" },
     desc: {
       zh: "城市公共声场扩声系统工程交付",
@@ -489,6 +490,7 @@ export const downloads: DownloadItem[] = [
 export const scenes: SceneItem[] = [
   {
     id: 1,
+    sortOrder: 1,
     name: { zh: "演唱会 / 音乐节", en: "Concerts & Festivals" },
     desc: {
       zh: "Tour 级系统，均匀覆盖万人场地",
@@ -498,6 +500,7 @@ export const scenes: SceneItem[] = [
   },
   {
     id: 2,
+    sortOrder: 2,
     name: { zh: "体育场馆", en: "Stadiums" },
     desc: {
       zh: "远投、语言清晰度与紧急广播一体化",
@@ -507,6 +510,7 @@ export const scenes: SceneItem[] = [
   },
   {
     id: 3,
+    sortOrder: 3,
     name: { zh: "会议 / 礼堂", en: "Conference & Auditorium" },
     desc: {
       zh: "优雅外观与可靠语音还原",

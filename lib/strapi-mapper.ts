@@ -243,6 +243,7 @@ export function mapStrapiScene(
   }
   return {
     id: doc.sortOrder ?? index + 1,
+    sortOrder: doc.sortOrder ?? index + 1,
     name: { zh: doc.nameZh?.trim() || "", en: doc.nameEn?.trim() || "" },
     desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
     image,

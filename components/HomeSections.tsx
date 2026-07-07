@@ -2,6 +2,7 @@
 
 import { buildHomeFeaturedProducts, getHomeFeaturedCaseWithImage } from "@/data/home-featured";
 import type { CaseItem, Product, SceneItem } from "@/data/mock";
+import { getHomeSceneHref } from "@/lib/case-scene-filters";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 import CaseCard from "./CaseCard";
@@ -18,9 +19,10 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
       <h2 className="type-page-title text-2xl sm:text-3xl mb-8 md:mb-12">{t.home.scenesTitle}</h2>
       <div className="grid gap-5 md:grid-cols-3 md:gap-8">
         {scenes.map((s, i) => (
-          <div
+          <Link
             key={s.id}
-            className="reveal-on-scroll rounded-xl overflow-hidden border border-white/10 card-touch"
+            href={getHomeSceneHref(s)}
+            className="reveal-on-scroll group block rounded-xl overflow-hidden border border-white/10 card-touch transition-colors hover:border-brand-gold/35 active:border-brand-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/50"
           >
             <SafeImage
               src={s.image}
@@ -30,10 +32,12 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
               priority={i === 0}
             />
             <div className="p-4 sm:p-5">
-              <h3 className="type-card-title text-lg">{s.name[locale]}</h3>
+              <h3 className="type-card-title text-lg group-hover:text-brand-gold transition-colors">
+                {s.name[locale]}
+              </h3>
               <p className="text-gray-400 text-sm mt-2 leading-relaxed">{s.desc[locale]}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
