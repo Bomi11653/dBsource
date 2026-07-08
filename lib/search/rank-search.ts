@@ -5,6 +5,7 @@ import {
   SEARCH_SCENE_LABELS,
 } from "@/data/search-aliases";
 import { expandSearchQuery, extractModelCodes } from "@/lib/ai/synonyms";
+import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
 
 export type SmartSearchHit = {
@@ -245,7 +246,7 @@ function collectSceneHits(rawQuery: string, terms: string[], locale: Locale): Sc
       id: `series-${sub.slug}`,
       title: sub.label[locale],
       subtitle: locale === "zh" ? "产品系列" : "Product series",
-      href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
+      href: getProductSeriesHref(sub.slug),
       score: SEARCH_SCORE.series,
     });
   }

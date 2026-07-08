@@ -6,6 +6,7 @@ import { usePerformanceMode } from "@/components/PerformanceModeProvider";
 import CmsImage from "@/components/CmsImage";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import { isWeChatWebView } from "@/lib/wechat-webview";
+import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -126,7 +127,7 @@ export default function HomeFeaturedProductCard({
           {t.home.learnMore}
         </Link>
         <Link
-          href="/products?series=speaker&sub=tour"
+          href={getProductSeriesHref("tour")}
           className="relative z-[3] inline-flex items-center justify-center min-h-[48px] rounded-full border border-white/30 px-5 py-2.5 text-sm text-white hover:bg-white/10 transition-colors touch-active md:group-hover:border-white/50"
         >
           {t.home.exploreProducts}

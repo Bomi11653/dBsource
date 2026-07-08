@@ -136,6 +136,39 @@ export function isProductSeriesTab(value: string): value is ProductSeriesTabFilt
   return PRODUCT_SERIES_TAB_ID_SET.has(value);
 }
 
+/** Sub-series / legacy group slug → canonical `series` query param */
+const CANONICAL_SERIES_QUERY: Record<string, ProductSeriesTabFilter | "all"> = {
+  speaker: "all",
+  engineering: "all",
+  dsp: "electronics",
+  software: "software",
+  la: "la",
+  lw: "lw",
+  mi: "mi",
+  do: "do",
+  sol: "sol",
+  k: "k",
+  re: "re",
+  c: "c",
+  electronics: "electronics",
+  accessory: "electronics",
+  unit48: "electronics",
+  driver: "electronics",
+  suite: "software",
+  tour: "other",
+  p: "other",
+  turnkey: "other",
+};
+
+/** Build canonical /products series URL (new format). */
+export function getProductSeriesHref(slugOrGroup: string): string {
+  const key = slugOrGroup.trim().toLowerCase();
+  const resolved =
+    CANONICAL_SERIES_QUERY[key] ?? (isProductSeriesTab(key) ? key : null);
+  if (!resolved || resolved === "all") return "/products";
+  return `/products?series=${resolved}`;
+}
+
 /** 解析 URL 参数（兼容旧版 series=speaker&sub=la 等链接） */
 export function parseProductSeriesTabFromParams(
   series: string | null,

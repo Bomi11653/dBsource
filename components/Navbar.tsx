@@ -10,6 +10,7 @@ import {
   type DownloadTab,
 } from "@/lib/downloads";
 import { useSiteData } from "@/components/SiteDataProvider";
+import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import {
   getSubSeriesForGroupFromConfig,
   getVisibleSeriesGroups,
@@ -145,7 +146,7 @@ function ProductsMegaPanel({
   const subItems = getSubSeriesForGroupFromConfig(activeSeries, seriesConfig);
   const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
     key: sub.slug,
-    href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
+    href: getProductSeriesHref(sub.slug),
     label: seriesEntryLabel(sub, locale),
   }));
   const firstColumnCount = activeSeries === "speaker" ? 5 : subLinks.length;
@@ -162,10 +163,10 @@ function ProductsMegaPanel({
           {visibleGroups.map((series) => (
             <li key={series}>
               <Link
-                href={`/products?series=${series}`}
+                href={getProductSeriesHref(series)}
                 onMouseEnter={() => onSeriesHover(series)}
                 onFocus={() => onSeriesHover(series)}
-                onClick={(e) => onNavigate(e, `/products?series=${series}`)}
+                onClick={(e) => onNavigate(e, getProductSeriesHref(series))}
                 className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
                   activeSeries === series
                     ? "text-white"
@@ -691,8 +692,8 @@ export default function Navbar() {
                         visibleGroups.map((s) => (
                           <div key={s}>
                             <Link
-                              href={`/products?series=${s}`}
-                              onClick={(e) => handleNavClick(e, `/products?series=${s}`)}
+                              href={getProductSeriesHref(s)}
+                              onClick={(e) => handleNavClick(e, getProductSeriesHref(s))}
                               className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
                             >
                               {seriesLabels[s]}
@@ -700,12 +701,9 @@ export default function Navbar() {
                             {getSubSeriesForGroupFromConfig(s, seriesConfig).map((sub) => (
                               <Link
                                 key={sub.slug}
-                                href={`/products?series=${sub.seriesGroup}&sub=${sub.slug}`}
+                                href={getProductSeriesHref(sub.slug)}
                                 onClick={(e) =>
-                                  handleNavClick(
-                                    e,
-                                    `/products?series=${sub.seriesGroup}&sub=${sub.slug}`
-                                  )
+                                  handleNavClick(e, getProductSeriesHref(sub.slug))
                                 }
                                 className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
                               >

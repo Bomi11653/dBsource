@@ -1,5 +1,6 @@
 import type { CaseItem, DownloadItem, Product } from "@/data/mock";
 import { matchProductsByModelCodes } from "@/lib/ai/synonyms";
+import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
 
 export type AiLink = {
@@ -44,7 +45,7 @@ export function buildAiLinks(
           links.push({
             type: "series",
             label: sub.label[locale],
-            href: `/products?series=${sub.seriesGroup}&sub=${sub.slug}`,
+            href: getProductSeriesHref(sub.slug),
           });
         }
       }
