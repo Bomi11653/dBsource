@@ -83,50 +83,50 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
 
   const columnClass =
     contacts.length === 1
-      ? "grid-cols-1 max-w-sm"
+      ? "grid-cols-1 max-w-sm mx-auto"
       : contacts.length === 2
-        ? "grid-cols-1 sm:grid-cols-2 max-w-2xl"
+        ? "grid-cols-1 sm:grid-cols-2"
         : contacts.length === 3
-          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl"
-          : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 max-w-6xl";
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <section
       id="contact-sales"
-      className="scroll-mt-nav rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] via-white/[0.02] to-transparent p-5 sm:p-8 md:p-10"
+      className="scroll-mt-nav rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6 min-w-0"
     >
-      <div className="text-center mb-6 sm:mb-8">
-        <p className="text-[11px] uppercase tracking-[0.28em] text-gray-500 mb-2">
+      <div className="text-center mb-4 sm:mb-5">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-gray-500 mb-1.5">
           {t.contact.salesLabel}
         </p>
-        <h2 className="text-xl sm:text-2xl font-medium text-white">{t.contact.salesTitle}</h2>
-        <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-lg mx-auto leading-relaxed">
+        <h2 className="text-lg sm:text-xl font-medium text-white">{t.contact.salesTitle}</h2>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1.5 max-w-lg mx-auto leading-relaxed">
           {t.contact.salesHint}
         </p>
       </div>
 
-      <ul className={`grid ${columnClass} gap-4 sm:gap-5 mx-auto`}>
-        {contacts.map((person, index) => {
+      <ul className={`grid ${columnClass} gap-3 sm:gap-4`}>
+        {contacts.map((person) => {
           const displayName = person.name[locale] || person.name.zh;
           const displayTitle = person.title?.[locale] || person.title?.zh;
 
           return (
             <li
               key={String(person.id)}
-              className="flex flex-col rounded-2xl border border-white/10 bg-black/40 p-4 sm:p-5 transition-colors hover:border-brand-gold/25 min-w-0"
+              className="flex flex-col rounded-xl border border-white/10 bg-black/30 p-3 sm:p-4 min-w-0"
             >
               <div className="flex flex-col items-center text-center">
-                <div className="flex items-center justify-center w-40 h-40 sm:w-44 sm:h-44 rounded-xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] p-2.5 shrink-0">
+                <div className="flex items-center justify-center w-40 h-40 min-w-[160px] min-h-[160px] rounded-lg border border-white/10 bg-white p-2 shrink-0">
                   <Image
                     src={person.qrImage}
                     alt={`${displayName} ${t.contact.wechatQr}`}
-                    width={168}
-                    height={168}
+                    width={160}
+                    height={160}
                     className="w-full h-full object-contain"
                     sizes="160px"
                   />
                 </div>
-                <p className="mt-4 text-base font-medium text-white leading-snug break-words max-w-full">
+                <p className="mt-3 text-sm sm:text-base font-medium text-white leading-snug break-words max-w-full">
                   {displayName}
                 </p>
                 {displayTitle ? (
@@ -136,7 +136,7 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
                 ) : null}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-white/10 space-y-2 w-full min-w-0">
+              <div className="mt-3 pt-3 border-t border-white/10 space-y-2 w-full min-w-0">
                 {person.phones.map((phone) => (
                   <PhoneRow key={phone} phone={phone} />
                 ))}
