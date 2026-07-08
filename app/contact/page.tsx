@@ -10,6 +10,8 @@ export const metadata = pageMetadata(
   "/contact"
 );
 
+export const revalidate = 60;
+
 export default async function ContactPage() {
   const [contact, salesContacts] = await Promise.all([getContactInfo(), getSalesContacts()]);
 

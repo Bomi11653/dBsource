@@ -34,6 +34,7 @@ const COLLECTION_TO_TYPES: Partial<
   "global-setting": ["globalSetting", "contact"],
   leads: [],
   "qr-codes": [],
+  "sales-contacts": [],
   "social-links": [],
 };
 

@@ -26,6 +26,7 @@ import {
   getAdminCaseSceneLabel,
   resolveAdminCaseSceneSelectValue,
 } from "@/lib/case-scene-filters";
+import { serializeSalesContactPayload } from "@/lib/admin-sales-contact-payload";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
 import { resolveAdminPreviewUrl } from "@/lib/media-url";
@@ -654,8 +655,7 @@ export default function AdminSectionEditor({
     setSavingId(`sales-${id}`);
     setMessage(null);
 
-    const payload: Record<string, unknown> = { ...draft };
-    ["documentId", "id", "createdAt", "updatedAt", "publishedAt"].forEach((k) => delete payload[k]);
+    const payload = serializeSalesContactPayload(draft);
 
     try {
       const res = await fetch(`/api/admin/sales-contacts/${id}`, {

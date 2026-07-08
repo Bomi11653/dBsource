@@ -104,7 +104,7 @@ const CASES_QUERY =
 const QR_QUERY =
   "/qr-codes?populate[image]=true&sort[0]=sortOrder:asc";
 const SALES_CONTACTS_QUERY =
-  "/sales-contacts?filters[enabled][$eq]=true&populate[qrImage]=true&sort[0]=sortOrder:asc&pagination[pageSize]=50";
+  "/sales-contacts?filters[enabled][$eq]=true&populate[qrImage]=true&sort[0]=sortOrder:asc&pagination[pageSize]=50&publicationState=live";
 const SCENES_QUERY =
   "/scenes?populate[image]=true&sort[0]=sortOrder:asc";
 const DOWNLOADS_QUERY =
@@ -255,22 +255,19 @@ export async function getSalesContacts() {
   try {
     const cmsUrl = getCmsUrl();
     const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiSalesContact>[0]>(
-      SALES_CONTACTS_QUERY
+      SALES_CONTACTS_QUERY,
+      false
     );
-    if (!docs.length) {
-      logStrapiEmpty("sales-contacts");
-      return fallback;
-    }
 
     const mapped = docs
       .filter((doc) => doc.enabled !== false)
       .map((doc, index) => mapStrapiSalesContact(doc, cmsUrl, index))
-      .filter((item) => item.phones.length > 0 && item.qrImage)
+      .filter((item) => Boolean(item.qrImage))
       .sort((a, b) => a.sortOrder - b.sortOrder);
 
-    return mapped.length ? mapped : fallback;
+    return mapped;
   } catch (e) {
-    console.error("[fetchCMS] sales-contacts 读取失败:", e);
+    console.error("[fetchCMS] sales-contacts 读取失败，使用 fallback:", e);
     return fallback;
   }
 }

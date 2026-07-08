@@ -65,7 +65,8 @@ export async function POST(request: NextRequest, { params }: Props) {
     }
   }
 
-  const result = await adminStrapiRequest("POST", `/${params.collection}`, {
+  const publishQuery = params.collection === "sales-contacts" ? "?status=published" : "";
+  const result = await adminStrapiRequest("POST", `/${params.collection}${publishQuery}`, {
     data: { ...data, publishedAt: new Date().toISOString() },
   });
   if (!result.ok) {

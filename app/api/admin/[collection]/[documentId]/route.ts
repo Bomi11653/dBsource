@@ -39,9 +39,10 @@ export async function PUT(request: NextRequest, { params }: Props) {
     }
   }
 
+  const publishQuery = params.collection === "sales-contacts" ? "?status=published" : "";
   const result = await adminStrapiRequest(
     "PUT",
-    `/${params.collection}/${params.documentId}`,
+    `/${params.collection}/${params.documentId}${publishQuery}`,
     { data: { ...data, publishedAt: new Date().toISOString() } }
   );
   if (!result.ok) {
