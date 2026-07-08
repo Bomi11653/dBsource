@@ -2,8 +2,7 @@ import ProductDetailContent from "./ProductDetailContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getCases, getProductById, getProducts } from "@/lib/cms";
 import { getRecommendedProducts, getRelatedCases } from "@/lib/products";
-import { formatProductHeading } from "@/lib/product-display";
-import { pageMetadata, productJsonLd } from "@/lib/seo";
+import { productPageMetadata, productJsonLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 type Props = { params: { id: string } };
@@ -17,12 +16,7 @@ export async function generateMetadata({ params }: Props) {
   const id = Number(params.id);
   const product = await getProductById(id);
   if (!product) return {};
-  return pageMetadata(
-    formatProductHeading(product, "zh"),
-    product.desc.zh,
-    `/products/${id}`,
-    product.image
-  );
+  return productPageMetadata(product);
 }
 
 export default async function ProductDetailPage({ params }: Props) {

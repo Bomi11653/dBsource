@@ -1,11 +1,4 @@
 import Hero from "@/components/Hero";
-import { pageMetadata } from "@/lib/seo";
-
-export const metadata = pageMetadata(
-  "dBsource | 专业音响品牌官网",
-  "dBsource 专业音响系统 — 产品中心、工程案例、软件下载与工程服务。东莞新声电子科技有限公司。",
-  "/"
-);
 import {
   HomeCasesPreview,
   HomeProductsPreview,
@@ -13,6 +6,9 @@ import {
 } from "@/components/HomeSections";
 import SiteFooter from "@/components/SiteFooter";
 import { getCases, getContactInfo, getProducts, getScenes } from "@/lib/fetchCMS";
+import { PAGE_SEO, pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata(PAGE_SEO.home, "/", undefined, { absoluteTitle: true });
 
 export default async function HomePage() {
   const [scenes, cases, products, contactInfo] = await Promise.all([

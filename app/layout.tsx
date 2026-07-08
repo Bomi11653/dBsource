@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  keywords: ["专业音响", "线阵列", "dBsource", "音响工程", "东莞新声电子"],
+  keywords: ["专业音响", "线阵列", "dBsource", "音响工程", "东莞新声电子", "professional audio", "line array"],
   robots: { index: true, follow: true },
   icons: {
     icon: "/favicon.png",

@@ -1,9 +1,8 @@
 import CaseDetailContent from "./CaseDetailContent";
 import SiteFooter from "@/components/SiteFooter";
-import { getCaseCoverUrl } from "@/lib/case-media";
-import { getCaseById, getCases } from "@/lib/cms";
 import { getRelatedCases } from "@/lib/cases";
-import { caseJsonLd, pageMetadata } from "@/lib/seo";
+import { getCaseById, getCases } from "@/lib/cms";
+import { caseJsonLd, casePageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 type Props = { params: { id: string } };
@@ -17,12 +16,7 @@ export async function generateMetadata({ params }: Props) {
   const id = Number(params.id);
   const caseItem = await getCaseById(id);
   if (!caseItem) return {};
-  return pageMetadata(
-    caseItem.title.zh,
-    caseItem.desc.zh,
-    `/cases/${id}`,
-    getCaseCoverUrl(caseItem)
-  );
+  return casePageMetadata(caseItem);
 }
 
 export default async function CaseDetailPage({ params }: Props) {

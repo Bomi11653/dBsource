@@ -2,31 +2,40 @@ import { MetadataRoute } from "next";
 import { getCases, getProducts } from "@/lib/fetchCMS";
 import { siteConfig } from "@/lib/seo";
 
+const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
+  { path: "", priority: 1, changeFrequency: "weekly" },
+  { path: "/products", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/cases", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/downloads", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/about", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/contact", priority: 0.85, changeFrequency: "monthly" },
+];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteConfig.url;
-  const staticRoutes = ["", "/about", "/products", "/cases", "/downloads", "/configurator", "/contact"];
+  const now = new Date();
 
-  const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
-    url: `${base}${route}`,
-    lastModified: new Date(),
-    changeFrequency: route === "" ? "weekly" : "monthly",
-    priority: route === "" ? 1 : 0.8,
+  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map(({ path, priority, changeFrequency }) => ({
+    url: `${base}${path}`,
+    lastModified: now,
+    changeFrequency,
+    priority,
   }));
 
   const products = await getProducts();
   const productEntries: MetadataRoute.Sitemap = products.map((p) => ({
     url: `${base}/products/${p.id}`,
-    lastModified: new Date(),
+    lastModified: now,
     changeFrequency: "monthly",
-    priority: 0.6,
+    priority: 0.7,
   }));
 
   const caseList = await getCases();
   const caseEntries: MetadataRoute.Sitemap = caseList.map((c) => ({
     url: `${base}/cases/${c.id}`,
-    lastModified: new Date(),
+    lastModified: now,
     changeFrequency: "monthly",
-    priority: 0.65,
+    priority: 0.7,
   }));
 
   return [...staticEntries, ...productEntries, ...caseEntries];

@@ -1,13 +1,9 @@
 import DownloadsContent from "./DownloadsContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getDownloads } from "@/lib/cms";
-import { pageMetadata } from "@/lib/seo";
+import { PAGE_SEO, pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata(
-  "下载中心",
-  "调音软件、系统配置工具与产品画册下载",
-  "/downloads"
-);
+export const metadata = pageMetadata(PAGE_SEO.downloads, "/downloads");
 
 export default async function DownloadsPage() {
   const downloads = await getDownloads();

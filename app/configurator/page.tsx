@@ -2,13 +2,9 @@ import ConfiguratorContent from "./ConfiguratorContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getCases, getProducts } from "@/lib/cms";
 import { getSmartSelectionPage } from "@/lib/fetchCMS";
-import { pageMetadata } from "@/lib/seo";
+import { PAGE_SEO, pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata(
-  "智能选型",
-  "Live House、体育馆、会议礼堂扩声系统免费选型工具",
-  "/configurator"
-);
+export const metadata = pageMetadata(PAGE_SEO.configurator, "/configurator");
 
 export default async function ConfiguratorPage() {
   const [products, cases, cmsCopy] = await Promise.all([

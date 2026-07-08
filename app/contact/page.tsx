@@ -1,14 +1,10 @@
 import ContactContent from "./ContactContent";
 import SiteFooter from "@/components/SiteFooter";
 import { getContactInfo, getSalesContacts } from "@/lib/cms";
-import { pageMetadata } from "@/lib/seo";
+import { PAGE_SEO, pageMetadata } from "@/lib/seo";
 import { Suspense } from "react";
 
-export const metadata = pageMetadata(
-  "联系我们",
-  "联系 dBsource — 产品咨询、工程合作。东莞新声电子科技有限公司。",
-  "/contact"
-);
+export const metadata = pageMetadata(PAGE_SEO.contact, "/contact");
 
 export const revalidate = 60;
 
