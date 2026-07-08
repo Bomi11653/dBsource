@@ -1288,7 +1288,9 @@ export default function AdminSectionEditor({
                   onChange={(e) => setContactDraft({ ...contactDraft, mapQuery: e.target.value })}
                   placeholder="东莞新声电子科技有限公司"
                 />
-                <FieldHint>用于生成默认高德搜索链接，例如：东莞新声电子科技有限公司。</FieldHint>
+                <FieldHint>
+                  可填写经纬度：113.xxx,23.xxx，或公司地址，用于自动生成导航链接。
+                </FieldHint>
               </Field>
               <Field label="高德 iframe URL mapEmbedUrl" className="sm:col-span-2">
                 <textarea
@@ -1308,7 +1310,9 @@ export default function AdminSectionEditor({
                   onChange={(e) => setContactDraft({ ...contactDraft, mapNavUrl: e.target.value })}
                   placeholder="https://uri.amap.com/..."
                 />
-                <FieldHint>用于前台打开地图导航按钮。</FieldHint>
+                <FieldHint>
+                  建议填写高德 URI API 导航链接，例如 https://uri.amap.com/navigation?...；不要直接填写高德网页版地址，否则可能出现登录或验证。
+                </FieldHint>
               </Field>
             </div>
           </div>
