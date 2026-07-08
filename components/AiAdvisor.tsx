@@ -208,23 +208,39 @@ export default function AiAdvisor() {
   const lowQuota = remaining !== null && remaining <= 3;
   const charCount = input.length;
   const showSalesFooter = messages.some((m) => m.needsHuman) || !aiReady;
+  const isContactPage = pathname === "/contact";
+  const advisorFabClass =
+    "fixed z-[90] bottom-5 right-4 sm:right-6 safe-bottom flex items-center gap-2 min-h-[48px] px-4 rounded-full bg-brand-gold/90 text-black text-sm font-medium shadow-md hover:bg-brand-gold transition-colors touch-active";
 
   return (
     <>
       <AnimatePresence>
         {!open ? (
-          <motion.button
-            type="button"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={() => setOpen(true)}
-            className="fixed z-[90] bottom-5 right-4 sm:right-6 safe-bottom flex items-center gap-2 min-h-[48px] px-4 rounded-full bg-brand-gold/90 text-black text-sm font-medium shadow-lg hover:bg-brand-gold transition-colors touch-active"
-            aria-label={t.ai.title}
-          >
-            <Bot size={18} />
-            <span className="hidden sm:inline">{t.ai.title}</span>
-          </motion.button>
+          isContactPage ? (
+            <button
+              type="button"
+              data-perf-chrome="true"
+              onClick={() => setOpen(true)}
+              className={advisorFabClass}
+              aria-label={t.ai.title}
+            >
+              <Bot size={18} />
+              <span className="hidden sm:inline">{t.ai.title}</span>
+            </button>
+          ) : (
+            <motion.button
+              type="button"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={() => setOpen(true)}
+              className={`${advisorFabClass} shadow-lg`}
+              aria-label={t.ai.title}
+            >
+              <Bot size={18} />
+              <span className="hidden sm:inline">{t.ai.title}</span>
+            </motion.button>
+          )
         ) : null}
       </AnimatePresence>
 

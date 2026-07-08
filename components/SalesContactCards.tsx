@@ -124,6 +124,7 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
                     height={160}
                     className="w-full h-full object-contain"
                     sizes="160px"
+                    decoding="async"
                   />
                 </div>
                 <p className="mt-3 text-sm sm:text-base font-medium text-white leading-snug break-words max-w-full">

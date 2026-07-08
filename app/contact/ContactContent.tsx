@@ -6,7 +6,7 @@ import { useI18n } from "@/components/I18nProvider";
 import BrowseGuide from "@/components/BrowseGuide";
 import SalesContactCards from "@/components/SalesContactCards";
 import { resolveMapEmbedSrc, resolveMapNavUrl } from "@/lib/amap-map";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail, MapPin, Navigation, Phone } from "lucide-react";
 
@@ -50,7 +50,67 @@ function MapNavButton({ href, className = "" }: { href: string; className?: stri
   );
 }
 
-const MAP_HEIGHT_CLASS = "h-[260px] lg:h-[320px]";
+const MAP_HEIGHT_CLASS = "h-[260px] lg:h-[280px]";
+const MAP_SHELL_CLASS = `contact-map-shell rounded-2xl overflow-hidden border border-white/10 bg-zinc-950 [contain:layout_paint] ${MAP_HEIGHT_CLASS} w-full`;
+
+function useIsLgViewport(): boolean | null {
+  const [isLg, setIsLg] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsLg(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  return isLg;
+}
+
+function buildMapCard(
+  allowEmbed: boolean,
+  showMapEmbed: boolean,
+  mapEmbedSrc: string,
+  companyName: string,
+  mapDisplayAddress: string,
+  showMapNavButton: boolean,
+  mapNavUrl: string,
+  mapNotConfigured: string
+): ReactNode {
+  return (
+    <div className="space-y-3 min-w-0">
+      {showMapEmbed ? (
+        <div className={MAP_SHELL_CLASS}>
+          {allowEmbed ? (
+            <iframe
+              title={companyName}
+              src={mapEmbedSrc}
+              className="h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          ) : (
+            <div className="h-full w-full bg-zinc-950" aria-hidden />
+          )}
+        </div>
+      ) : (
+        <div
+          className={`contact-map-shell rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center [contain:layout_paint] ${MAP_HEIGHT_CLASS} w-full`}
+        >
+          {mapDisplayAddress ? (
+            <p className="text-sm text-gray-400 leading-relaxed max-w-md break-words">
+              {mapDisplayAddress}
+            </p>
+          ) : null}
+          <p className="text-xs text-gray-500 leading-relaxed max-w-sm">{mapNotConfigured}</p>
+          {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
+        </div>
+      )}
+      {showMapEmbed && showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
+    </div>
+  );
+}
 
 export default function ContactContent({
   contact,
@@ -88,6 +148,28 @@ export default function ContactContent({
     [contact.mapNavUrl, contact.mapQuery, mapDisplayAddress]
   );
   const showMapNavButton = Boolean(mapNavUrl);
+  const isLg = useIsLgViewport();
+  const companyName = contact.company[locale];
+  const desktopMapCard = buildMapCard(
+    isLg === true,
+    showMapEmbed,
+    mapEmbedSrc,
+    companyName,
+    mapDisplayAddress,
+    showMapNavButton,
+    mapNavUrl,
+    t.contact.mapNotConfigured
+  );
+  const mobileMapCard = buildMapCard(
+    isLg === false,
+    showMapEmbed,
+    mapEmbedSrc,
+    companyName,
+    mapDisplayAddress,
+    showMapNavButton,
+    mapNavUrl,
+    t.contact.mapNotConfigured
+  );
 
   const defaultMessage = productModel
     ? locale === "zh"
@@ -208,40 +290,6 @@ export default function ContactContent({
     </div>
   );
 
-  const mapCard = (
-    <div className="space-y-3 min-w-0">
-      {showMapEmbed ? (
-        <div
-          className={`rounded-2xl overflow-hidden border border-white/10 bg-zinc-950 ${MAP_HEIGHT_CLASS} w-full`}
-        >
-          <iframe
-            title={contact.company[locale]}
-            src={mapEmbedSrc}
-            className="h-full w-full border-0"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div
-          className={`rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center ${MAP_HEIGHT_CLASS} w-full`}
-        >
-          {mapDisplayAddress ? (
-            <p className="text-sm text-gray-400 leading-relaxed max-w-md break-words">
-              {mapDisplayAddress}
-            </p>
-          ) : null}
-          <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
-            {t.contact.mapNotConfigured}
-          </p>
-          {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
-        </div>
-      )}
-      {showMapEmbed && showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
-    </div>
-  );
-
   const contactForm = (
     <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 min-w-0">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -323,8 +371,8 @@ export default function ContactContent({
   );
 
   return (
-    <div className="bg-black text-white overflow-x-hidden">
-      <section className="pt-24 sm:pt-28 pb-6 sm:pb-8 page-x text-center hero-fade-in">
+    <div className="contact-page bg-black text-white overflow-x-hidden">
+      <section className="pt-24 sm:pt-28 pb-6 sm:pb-8 page-x text-center">
         <h1 className="text-2xl sm:text-4xl md:text-5xl font-light leading-snug">{t.contact.title}</h1>
         <p className="text-gray-400 mt-3 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
           {t.contact.subtitle}
@@ -362,13 +410,16 @@ export default function ContactContent({
                   description={mapDisplayAddress}
                   compact
                 />
-                {mapCard}
+                {desktopMapCard}
               </section>
             </aside>
           </div>
 
-          {salesContacts.length > 0 ? (
-            <section id="contact-sales" className="hidden lg:block mt-8 lg:mt-10 scroll-mt-nav min-w-0">
+          {salesContacts.length > 0 && isLg === true ? (
+            <section
+              id="contact-sales"
+              className="contact-sales-shell hidden lg:block mt-8 lg:mt-10 scroll-mt-nav min-w-0"
+            >
               <SalesContactCards contacts={salesContacts} />
             </section>
           ) : null}
@@ -380,8 +431,8 @@ export default function ContactContent({
               {companyCard}
             </section>
 
-            {salesContacts.length > 0 ? (
-              <section id="contact-sales" className="scroll-mt-nav min-w-0">
+            {salesContacts.length > 0 && isLg === false ? (
+              <section id="contact-sales" className="contact-sales-shell scroll-mt-nav min-w-0">
                 <SalesContactCards contacts={salesContacts} />
               </section>
             ) : null}
@@ -392,7 +443,7 @@ export default function ContactContent({
                 description={mapDisplayAddress}
                 compact
               />
-              {mapCard}
+              {mobileMapCard}
             </section>
 
             <section id="contact-form" className="scroll-mt-nav min-w-0">

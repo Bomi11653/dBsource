@@ -9,7 +9,10 @@ export default function PerformanceModeSwitcher() {
   const autoLabel = locale === "zh" ? "自动" : "Auto";
 
   return (
-    <div className="fixed bottom-4 left-4 z-[70] hidden md:flex items-center gap-1 rounded-full border border-white/20 bg-black/65 px-2 py-1.5 backdrop-blur-xl">
+    <div
+      data-perf-chrome="true"
+      className="fixed bottom-4 left-4 z-[70] hidden md:flex items-center gap-1 rounded-full border border-white/20 bg-black/80 px-2 py-1.5"
+    >
       <span className="px-2 text-[11px] text-gray-400">
         {mode === "auto"
           ? `${autoLabel}:${resolvedMode === "lite" ? "Lite" : "High"}`
