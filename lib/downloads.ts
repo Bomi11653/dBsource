@@ -143,13 +143,25 @@ export function buildDownloadPageUrl(file: DownloadItem, origin: string): string
 
 export type ShareDownloadResult = "shared" | "copied" | "cancelled" | "failed";
 
-/** 优先 navigator.share，失败或不可用时复制页面分享链接。 */
+/** 仅手机非微信浏览器尝试系统分享；桌面端与微信直接复制链接。 */
+export function canUseNativeShare(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("micromessenger")) return false;
+
+  const isMobile = /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent);
+  if (!isMobile) return false;
+
+  return typeof navigator.share === "function" && window.isSecureContext;
+}
+
+/** 手机端优先 navigator.share；桌面端与微信直接复制页面分享链接。 */
 export async function shareDownloadResource(options: {
   file: DownloadItem;
   title: string;
   text: string;
   origin: string;
-  skipNativeShare?: boolean;
 }): Promise<ShareDownloadResult> {
   const shareUrl = buildDownloadShareUrl(options.file, options.origin);
   const shareData = {
@@ -158,12 +170,7 @@ export async function shareDownloadResource(options: {
     url: shareUrl,
   };
 
-  if (
-    !options.skipNativeShare &&
-    typeof navigator !== "undefined" &&
-    typeof navigator.share === "function" &&
-    window.isSecureContext
-  ) {
+  if (canUseNativeShare()) {
     try {
       await navigator.share(shareData);
       return "shared";

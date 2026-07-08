@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
 import { filterDownloads, buildDownloadShareUrl, shareDownloadResource } from "@/lib/downloads";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
-import { isWeChatWebView } from "@/lib/wechat-webview";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /* ---------- 展示层分类（不改动数据结构，纯前端映射） ---------- */
@@ -311,7 +310,6 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
         title,
         text,
         origin,
-        skipNativeShare: isWeChatWebView(),
       });
 
       if (result === "cancelled") return;
