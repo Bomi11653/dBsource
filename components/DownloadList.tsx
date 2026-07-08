@@ -6,7 +6,7 @@ import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
-import { filterDownloads, buildDownloadShareUrl, shareDownloadResource } from "@/lib/downloads";
+import { filterDownloads, buildDownloadShareUrl, shareDownloadResource, getDownloadFileApiPath, parseDownloadShareTargetId } from "@/lib/downloads";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -192,10 +192,44 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [sharedId, setSharedId] = useState<number | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<"started" | "notfound" | null>(null);
   const [shareFallback, setShareFallback] = useState<{ url: string; fileId: number } | null>(
     null
   );
   const rowRefs = useRef<Record<number, HTMLLIElement | null>>({});
+  const autoDownloadTriggeredRef = useRef(false);
+
+  const clearDownloadQueryParam = useCallback(
+    (fileId: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("download");
+      params.delete("file");
+      const hash = `#download-${fileId}`;
+      const query = params.toString();
+      const next = query ? `${pathname}?${query}${hash}` : `${pathname}${hash}`;
+      router.replace(next, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const scrollToDownloadCard = useCallback((fileId: number) => {
+    const el = rowRefs.current[fileId];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-1", "ring-white/30", "bg-white/[0.06]");
+    window.setTimeout(() => {
+      el.classList.remove("ring-1", "ring-white/30", "bg-white/[0.06]");
+    }, 2400);
+  }, []);
+
+  const triggerFileDownload = useCallback((fileId: number) => {
+    const a = document.createElement("a");
+    a.href = getDownloadFileApiPath(fileId);
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }, []);
 
   const syncUrl = useCallback(
     (next: CategoryKey) => {
@@ -215,27 +249,60 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     }
   }, [searchParams]);
 
-  /* 分享/导航链接 ?file=ID 或 #download-ID：滚动定位并高亮 */
+  /* 分享/导航链接 ?download=ID、?file=ID 或 #download-ID：滚动定位并高亮 */
   useEffect(() => {
     const hashMatch =
       typeof window !== "undefined"
         ? window.location.hash.match(/^#download-(\d+)$/)
         : null;
     const fromHash = hashMatch ? Number(hashMatch[1]) : NaN;
-    const fromQuery = Number(searchParams.get("file"));
-    const fileId = Number.isFinite(fromHash) ? fromHash : fromQuery;
-    if (!Number.isFinite(fileId)) return;
-    const el = rowRefs.current[fileId];
-    if (el) {
-      window.setTimeout(() => {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("ring-1", "ring-white/30", "bg-white/[0.06]");
-        window.setTimeout(() => {
-          el.classList.remove("ring-1", "ring-white/30", "bg-white/[0.06]");
-        }, 2400);
-      }, 300);
-    }
-  }, [searchParams, category, items]);
+    const fromQuery = parseDownloadShareTargetId(searchParams);
+    const fileId = Number.isFinite(fromHash)
+      ? fromHash
+      : fromQuery !== null && Number.isFinite(fromQuery)
+        ? fromQuery
+        : null;
+    if (fileId === null) return;
+    window.setTimeout(() => scrollToDownloadCard(fileId), 300);
+  }, [searchParams, category, items, scrollToDownloadCard]);
+
+  /* 分享链接 ?download=ID：自动触发下载（仅一次），并清理 query */
+  useEffect(() => {
+    const downloadParam = searchParams.get("download");
+    if (!downloadParam) return;
+    const downloadId = Number(downloadParam);
+    if (!Number.isFinite(downloadId)) return;
+    if (autoDownloadTriggeredRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      if (autoDownloadTriggeredRef.current) return;
+
+      const file = items.find((f) => f.id === downloadId);
+      scrollToDownloadCard(downloadId);
+
+      if (!file) {
+        setDownloadNotice("notfound");
+        autoDownloadTriggeredRef.current = true;
+        clearDownloadQueryParam(downloadId);
+        window.setTimeout(() => setDownloadNotice(null), 3000);
+        return;
+      }
+
+      autoDownloadTriggeredRef.current = true;
+      triggerFileDownload(downloadId);
+      setDownloadNotice("started");
+      clearDownloadQueryParam(downloadId);
+      window.setTimeout(() => setDownloadNotice(null), 3000);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    searchParams,
+    items,
+    scrollToDownloadCard,
+    triggerFileDownload,
+    clearDownloadQueryParam,
+  ]);
 
   /* 旧 sub 参数仍然生效（来自旧分享链接） */
   const legacySub = searchParams.get("sub");
@@ -275,7 +342,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     return buildDownloadShareUrl(file, origin);
   }, []);
 
-  const downloadHref = useCallback((file: DownloadItem) => `/api/downloads/${file.id}/file`, []);
+  const downloadHref = useCallback((file: DownloadItem) => getDownloadFileApiPath(file.id), []);
 
   const copyShareLink = useCallback(async (file: DownloadItem) => {
     const url = shareLink(file);
@@ -337,6 +404,19 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   return (
     <div>
+      {downloadNotice ? (
+        <p
+          className={`mb-4 text-sm text-center ${
+            downloadNotice === "started" ? "text-brand-gold" : "text-red-400"
+          }`}
+          role="status"
+        >
+          {downloadNotice === "started"
+            ? t.downloads.downloadStarted
+            : t.downloads.downloadNotFound}
+        </p>
+      ) : null}
+
       {shareFallback ? (
         <div
           className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"

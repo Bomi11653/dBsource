@@ -246,6 +246,8 @@ export const translations = {
       shareSuccess: "分享成功",
       shareFailed: "复制失败，请手动复制页面链接",
       shareCopyButton: "复制链接",
+      downloadStarted: "下载已开始",
+      downloadNotFound: "未找到该下载资源",
       size: "大小",
     },
     cases: {
@@ -578,6 +580,8 @@ export const translations = {
       shareSuccess: "Shared successfully",
       shareFailed: "Copy failed. Please copy the page link manually.",
       shareCopyButton: "Copy link",
+      downloadStarted: "Download started",
+      downloadNotFound: "Download resource not found",
       size: "Size",
     },
     cases: {

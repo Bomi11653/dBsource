@@ -127,13 +127,27 @@ export function filterDownloads(
   return result;
 }
 
-/** 资源在下载页的分享链接（页面锚点，非文件直链） */
+/** 资源分享链接：进入下载页、定位卡片并自动触发下载 */
 export function buildDownloadShareUrl(file: DownloadItem, origin: string): string {
   const base = origin.replace(/\/$/, "");
   const params = new URLSearchParams();
   params.set("tab", file.type);
-  params.set("file", String(file.id));
+  params.set("download", String(file.id));
   return `${base}/downloads?${params.toString()}#download-${file.id}`;
+}
+
+/** 公开文件下载 API 路径（站内下载按钮与自动下载共用） */
+export function getDownloadFileApiPath(id: number): string {
+  return `/api/downloads/${id}/file`;
+}
+
+/** 从分享链接 query 解析资源 ID（兼容旧 file 参数） */
+export function parseDownloadShareTargetId(searchParams: URLSearchParams): number | null {
+  const fromDownload = Number(searchParams.get("download"));
+  if (Number.isFinite(fromDownload)) return fromDownload;
+  const fromFile = Number(searchParams.get("file"));
+  if (Number.isFinite(fromFile)) return fromFile;
+  return null;
 }
 
 /** 下载页定位链接（站内跳转、高亮资源） */
