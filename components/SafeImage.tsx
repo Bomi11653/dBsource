@@ -48,6 +48,7 @@ function CmsFillImage({
       sizes={sizes}
       unoptimized={unoptimized ?? preferUnoptimized}
       loading={loading ?? (priority ? "eager" : "lazy")}
+      decoding="async"
       priority={priority}
       className={className}
       onError={handleError}

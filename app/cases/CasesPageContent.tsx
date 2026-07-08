@@ -1,11 +1,11 @@
 "use client";
 
 import CaseCard from "@/components/CaseCard";
-import CasesScrollStory from "@/components/CasesScrollStory";
 import BrowseGuide from "@/components/BrowseGuide";
 import PageHeader from "@/components/PageHeader";
 import type { CaseItem, CaseType } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
+import dynamic from "next/dynamic";
 import {
   filterCasesBySceneFilter,
   getCaseSceneFilterLabel,
@@ -21,6 +21,10 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+
+const CasesScrollStory = dynamic(() => import("@/components/CasesScrollStory"), {
+  loading: () => <div className="min-h-screen-safe bg-black" aria-hidden />,
+});
 
 export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
   const { locale, t } = useI18n();

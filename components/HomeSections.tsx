@@ -29,7 +29,6 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
               alt={s.name[locale]}
               frameHeight={200}
               sizes="(max-width: 768px) 100vw, 33vw"
-              priority={i === 0}
             />
             <div className="p-4 sm:p-5">
               <h3 className="type-card-title text-lg group-hover:text-brand-gold transition-colors break-words">

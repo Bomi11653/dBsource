@@ -4,6 +4,7 @@ import type { HomeFeaturedProduct } from "@/data/home-featured";
 import { useI18n } from "@/components/I18nProvider";
 import { usePerformanceMode } from "@/components/PerformanceModeProvider";
 import CmsImage from "@/components/CmsImage";
+import { shouldBlockHeavyClientEffects } from "@/lib/client-performance";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import { isWeChatWebView } from "@/lib/wechat-webview";
 import { getProductSeriesHref } from "@/lib/product-series-tabs";
@@ -26,7 +27,7 @@ export default function HomeFeaturedProductCard({
     let cancelled = false;
     const safeSrc = resolveBrowserMediaUrl(product.image);
     setDisplayImage(safeSrc);
-    if (resolvedMode !== "high" || isWeChatWebView()) return;
+    if (resolvedMode !== "high" || isWeChatWebView() || shouldBlockHeavyClientEffects()) return;
 
     const image = new window.Image();
     image.crossOrigin = "anonymous";
@@ -113,7 +114,6 @@ export default function HomeFeaturedProductCard({
             fill
             className="object-contain object-center drop-shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-[filter] duration-500 group-hover:drop-shadow-[0_20px_50px_rgba(255,255,255,0.12)]"
             sizes="(max-width: 768px) 80vw, 380px"
-            priority={index === 0}
             unoptimized={displayImage.startsWith("data:image/")}
           />
         </div>

@@ -32,6 +32,7 @@ export default function CmsImage({
       src={displaySrc}
       unoptimized={unoptimized ?? preferUnoptimized}
       loading={loading ?? (priority ? "eager" : "lazy")}
+      decoding="async"
       priority={priority}
       onError={(event) => {
         handleError();

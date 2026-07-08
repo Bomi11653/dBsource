@@ -8,6 +8,45 @@ import SalesContactCards from "@/components/SalesContactCards";
 import { isAllowedAmapEmbedUrl, resolveMapNavUrl } from "@/lib/amap-map";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Mail, MapPin, Navigation, Phone } from "lucide-react";
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="mb-5 sm:mb-6">
+      {eyebrow ? (
+        <p className="text-[11px] uppercase tracking-[0.28em] text-gray-500 mb-2">{eyebrow}</p>
+      ) : null}
+      <h2 className="text-xl sm:text-2xl font-medium text-white">{title}</h2>
+      {description ? (
+        <p className="text-sm text-gray-500 mt-2 max-w-2xl leading-relaxed">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function MapNavButton({ href, className = "" }: { href: string; className?: string }) {
+  const { t } = useI18n();
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-2 px-6 rounded-xl border border-brand-gold/40 bg-brand-gold/10 text-brand-gold text-sm font-medium hover:bg-brand-gold/20 transition-colors touch-active ${className}`}
+    >
+      <Navigation size={16} aria-hidden />
+      {t.contact.openMapNav}
+    </a>
+  );
+}
 
 export default function ContactContent({
   contact,
@@ -110,134 +149,195 @@ export default function ContactContent({
     }
   }
 
+  const guideItems = [
+    { label: t.guide.contactInfo, targetId: "contact-info" },
+    ...(salesContacts.length
+      ? [{ label: t.contact.salesTitle, targetId: "contact-sales" }]
+      : []),
+    { label: t.contact.mapSectionTitle, targetId: "contact-map" },
+    { label: t.guide.contactForm, targetId: "contact-form" },
+  ];
+
   return (
     <div className="bg-black text-white">
-      <section className="pt-24 sm:pt-28 pb-12 page-x text-center hero-fade-in">
-        <h1 className="text-2xl sm:text-4xl md:text-6xl font-light leading-snug">{t.contact.title}</h1>
-        <p className="text-gray-400 mt-4 max-w-2xl mx-auto">{t.contact.subtitle}</p>
+      <section className="pt-24 sm:pt-28 pb-8 sm:pb-10 page-x text-center hero-fade-in">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-light leading-snug">{t.contact.title}</h1>
+        <p className="text-gray-400 mt-3 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+          {t.contact.subtitle}
+        </p>
         <BrowseGuide
           title={t.guide.exploreTitle}
-          items={[
-            { label: t.guide.contactForm, targetId: "contact-form" },
-            { label: t.guide.contactInfo, targetId: "contact-info" },
-            ...(salesContacts.length
-              ? [{ label: t.contact.salesTitle, targetId: "contact-sales" }]
-              : []),
-            { label: t.guide.productsSpeaker, href: "/products" },
-          ]}
+          items={guideItems}
           layout="stack"
-          className="mt-8 items-center"
+          className="mt-6 sm:mt-8 items-center"
         />
       </section>
 
-      <section id="contact-form" className="page-x pb-12 scroll-mt-nav">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-16">
-          <div className="space-y-6 min-w-0">
-            <form onSubmit={handleSubmit} className="space-y-5">
-            <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-            {productModel ? (
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">{t.contact.productLabel}</label>
-                <input
-                  name="product"
-                  defaultValue={productModel}
-                  readOnly
-                  className="w-full rounded-xl border border-brand-gold/30 bg-brand-gold/5 px-4 py-3 text-sm text-brand-gold"
-                />
-              </div>
-            ) : null}
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">{t.contact.name}</label>
-              <input name="name" required className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">{t.contact.company}</label>
-              <input name="company" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">{t.contact.email}</label>
-                <input name="email" type="email" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">{t.contact.phone}</label>
-                <input name="phone" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">{t.contact.message}</label>
-              <textarea
-                name="message"
-                required
-                rows={5}
-                defaultValue={defaultMessage}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm resize-y min-h-[120px]"
-              />
-            </div>
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
-            {sent ? (
-              <p className="text-sm text-brand-gold">{t.contact.sent}</p>
-            ) : (
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-brand-gold/90 text-black font-medium hover:bg-brand-gold transition-colors disabled:opacity-60 touch-active"
-              >
-                {loading ? t.contact.sending : t.contact.submit}
-              </button>
-            )}
-            </form>
-          </div>
+      <div className="page-x pb-10 md:pb-14">
+        <div className="max-w-6xl mx-auto space-y-8 sm:space-y-10 md:space-y-14">
+          {/* 1. 公司联系方式 */}
+          <section id="contact-info" className="scroll-mt-nav">
+            <SectionHeading title={t.contact.companySectionTitle} />
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-5 sm:p-8 space-y-5 overflow-hidden">
+              <h3 className="text-lg sm:text-xl font-medium break-words">{contact.company[locale]}</h3>
 
-          <div id="contact-info" className="space-y-6 scroll-mt-nav min-w-0">
-            <div className="rounded-2xl border border-white/10 p-5 sm:p-8 space-y-4 overflow-hidden">
-              <h2 className="text-xl font-medium break-words">{contact.company[locale]}</h2>
-              <p className="text-gray-400 text-sm leading-relaxed break-words">{contact.address[locale]}</p>
-              <div className="space-y-2 text-sm min-w-0">
-                {contact.phones.map((phone) => (
-                  <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block text-brand-gold hover:underline break-all">
-                    {phone}
+              <div className="flex gap-3 min-w-0">
+                <MapPin size={18} className="text-brand-gold/80 shrink-0 mt-0.5" aria-hidden />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <p className="text-sm text-gray-400 leading-relaxed break-words">
+                    {contact.address[locale]}
+                  </p>
+                  {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-white/10">
+                <div className="space-y-2 min-w-0">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{t.contact.tel}</p>
+                  {contact.phones.map((phone) => (
+                    <a
+                      key={phone}
+                      href={`tel:${phone.replace(/\s/g, "")}`}
+                      className="flex items-center gap-2 text-sm text-brand-gold hover:underline break-all touch-active"
+                    >
+                      <Phone size={15} className="shrink-0" aria-hidden />
+                      <span className="tabular-nums tracking-wide">{phone}</span>
+                    </a>
+                  ))}
+                </div>
+                <div className="space-y-2 min-w-0">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">{t.contact.email}</p>
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="flex items-center gap-2 text-sm text-gray-300 hover:text-white break-all touch-active"
+                  >
+                    <Mail size={15} className="shrink-0" aria-hidden />
+                    {contact.email}
                   </a>
-                ))}
-                <a href={`mailto:${contact.email}`} className="block text-gray-300 hover:text-white break-all">
-                  {contact.email}
-                </a>
+                </div>
               </div>
             </div>
+          </section>
 
+          {/* 2. 销售顾问二维码 */}
+          <SalesContactCards contacts={salesContacts} />
+
+          {/* 3. 地图与导航 */}
+          <section id="contact-map" className="scroll-mt-nav">
+            <SectionHeading
+              title={t.contact.mapSectionTitle}
+              description={mapDisplayAddress}
+            />
             {showMapEmbed ? (
-              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] bg-black">
-                <iframe
-                  title={contact.company[locale]}
-                  src={mapEmbedUrl}
-                  className="w-full h-full min-h-[200px] sm:min-h-[240px] border-0 grayscale opacity-80"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  allowFullScreen
-                />
+              <div className="space-y-4">
+                <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] max-h-[240px] sm:max-h-none bg-black">
+                  <iframe
+                    title={contact.company[locale]}
+                    src={mapEmbedUrl}
+                    className="w-full h-full min-h-[200px] border-0 grayscale opacity-80"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    allowFullScreen
+                  />
+                </div>
+                {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] min-h-[200px] sm:min-h-[240px] bg-gradient-to-b from-white/[0.04] via-black to-black flex flex-col items-center justify-center gap-5 p-6 sm:p-8 text-center">
-                <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md">
+              <div className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-6 sm:p-8 flex flex-col items-center justify-center gap-5 text-center min-h-[200px]">
+                <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md break-words">
                   {mapDisplayAddress}
                 </p>
-                {mapNavUrl ? (
-                  <a
-                    href={mapNavUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center px-6 rounded-xl border border-brand-gold/40 bg-brand-gold/10 text-brand-gold text-sm font-medium hover:bg-brand-gold/20 transition-colors touch-active"
-                  >
-                    {t.contact.openMapNav}
-                  </a>
-                ) : null}
+                {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
               </div>
             )}
-          </div>
-        </div>
+          </section>
 
-        <SalesContactCards contacts={salesContacts} />
-      </section>
+          {/* 4. 留言表单 */}
+          <section id="contact-form" className="scroll-mt-nav">
+            <SectionHeading
+              title={t.contact.formTitle}
+              description={t.contact.formSubtitle}
+            />
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-8 max-w-3xl">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                  aria-hidden="true"
+                />
+                {productModel ? (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">{t.contact.productLabel}</label>
+                    <input
+                      name="product"
+                      defaultValue={productModel}
+                      readOnly
+                      className="w-full rounded-xl border border-brand-gold/30 bg-brand-gold/5 px-4 py-3 text-sm text-brand-gold"
+                    />
+                  </div>
+                ) : null}
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">{t.contact.name}</label>
+                  <input
+                    name="name"
+                    required
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">{t.contact.company}</label>
+                  <input
+                    name="company"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                  />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div className="min-w-0">
+                    <label className="block text-sm text-gray-400 mb-2">{t.contact.email}</label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <label className="block text-sm text-gray-400 mb-2">{t.contact.phone}</label>
+                    <input
+                      name="phone"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">{t.contact.message}</label>
+                  <textarea
+                    name="message"
+                    required
+                    rows={5}
+                    defaultValue={defaultMessage}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm resize-y min-h-[120px]"
+                  />
+                </div>
+                {error ? <p className="text-sm text-red-400">{error}</p> : null}
+                {sent ? (
+                  <p className="text-sm text-brand-gold">{t.contact.sent}</p>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-brand-gold/90 text-black font-medium hover:bg-brand-gold transition-colors disabled:opacity-60 touch-active"
+                  >
+                    {loading ? t.contact.sending : t.contact.submit}
+                  </button>
+                )}
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

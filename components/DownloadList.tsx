@@ -178,6 +178,7 @@ function DownloadCover({
       fill
       className="object-contain object-center p-3 transition-transform duration-500 md:group-hover:scale-[1.03]"
       sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 320px"
+      loading="lazy"
     />
   );
 }

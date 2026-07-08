@@ -45,7 +45,6 @@ function StickyCaseVisual({
             alt={caseItem.title[locale]}
             fill
             className="object-cover object-center"
-            priority
             sizes="100vw"
           />
         ) : (

@@ -46,7 +46,7 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
           fill
           className="object-cover object-center md:object-right"
           sizes="100vw"
-          priority
+          loading="lazy"
         />
         <div
           className="absolute inset-0 bg-gradient-to-r from-[#030303]/95 via-[#030303]/75 to-[#030303]/20"

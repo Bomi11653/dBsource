@@ -58,7 +58,6 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
               fill
               className="object-cover object-[center_45%]"
               sizes="(max-width: 1024px) 100vw, 1024px"
-              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           </div>
