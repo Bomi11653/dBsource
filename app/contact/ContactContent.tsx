@@ -53,6 +53,119 @@ function MapNavButton({ href, className = "" }: { href: string; className?: stri
 const MAP_HEIGHT_CLASS = "h-[260px] lg:h-[280px]";
 const MAP_SHELL_CLASS = `contact-map-shell rounded-2xl overflow-hidden border border-white/10 bg-zinc-950 [contain:layout_paint] ${MAP_HEIGHT_CLASS} w-full`;
 
+function MapActionButton({
+  onClick,
+  children,
+  variant = "secondary",
+}: {
+  onClick: () => void;
+  children: ReactNode;
+  variant?: "primary" | "secondary";
+}) {
+  const base =
+    "inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center gap-2 px-6 rounded-xl text-sm font-medium transition-colors touch-active";
+  const styles =
+    variant === "primary"
+      ? "border border-brand-gold/40 bg-brand-gold/10 text-brand-gold hover:bg-brand-gold/20"
+      : "border border-white/20 bg-white/5 text-white hover:bg-white/10";
+
+  return (
+    <button type="button" onClick={onClick} className={`${base} ${styles}`}>
+      {children}
+    </button>
+  );
+}
+
+function MapCard({
+  allowEmbed,
+  showMapEmbed,
+  mapEmbedSrc,
+  companyName,
+  mapDisplayAddress,
+  showMapNavButton,
+  mapNavUrl,
+  isMapVisible,
+  onShowMap,
+  onHideMap,
+}: {
+  allowEmbed: boolean;
+  showMapEmbed: boolean;
+  mapEmbedSrc: string;
+  companyName: string;
+  mapDisplayAddress: string;
+  showMapNavButton: boolean;
+  mapNavUrl: string;
+  isMapVisible: boolean;
+  onShowMap: () => void;
+  onHideMap: () => void;
+}) {
+  const { t } = useI18n();
+  const showIframe = isMapVisible && showMapEmbed && allowEmbed;
+
+  const actionRow = (
+    <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full sm:w-auto">
+      {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
+      {showMapEmbed && allowEmbed ? (
+        showIframe ? (
+          <MapActionButton onClick={onHideMap}>{t.contact.hideMap}</MapActionButton>
+        ) : (
+          <MapActionButton onClick={onShowMap} variant="primary">
+            {t.contact.viewMap}
+          </MapActionButton>
+        )
+      ) : null}
+    </div>
+  );
+
+  if (!showMapEmbed) {
+    return (
+      <div className="space-y-3 min-w-0">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center min-w-0">
+          {mapDisplayAddress ? (
+            <p className="text-sm text-gray-400 leading-relaxed max-w-md break-words">
+              {mapDisplayAddress}
+            </p>
+          ) : null}
+          <p className="text-xs text-gray-500 leading-relaxed max-w-sm">{t.contact.mapNotConfigured}</p>
+          {showMapNavButton ? actionRow : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (showIframe) {
+    return (
+      <div className="space-y-3 min-w-0">
+        <div className={MAP_SHELL_CLASS}>
+          <iframe
+            title={companyName}
+            src={mapEmbedSrc}
+            className="h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
+        {actionRow}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 min-w-0">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center min-w-0">
+        {mapDisplayAddress ? (
+          <p className="text-sm text-gray-400 leading-relaxed max-w-md break-words">
+            {mapDisplayAddress}
+          </p>
+        ) : null}
+        <p className="text-xs text-gray-500 leading-relaxed max-w-sm">{t.contact.mapLoadHint}</p>
+        {actionRow}
+      </div>
+    </div>
+  );
+}
+
 function useIsLgViewport(): boolean | null {
   const [isLg, setIsLg] = useState<boolean | null>(null);
 
@@ -65,51 +178,6 @@ function useIsLgViewport(): boolean | null {
   }, []);
 
   return isLg;
-}
-
-function buildMapCard(
-  allowEmbed: boolean,
-  showMapEmbed: boolean,
-  mapEmbedSrc: string,
-  companyName: string,
-  mapDisplayAddress: string,
-  showMapNavButton: boolean,
-  mapNavUrl: string,
-  mapNotConfigured: string
-): ReactNode {
-  return (
-    <div className="space-y-3 min-w-0">
-      {showMapEmbed ? (
-        <div className={MAP_SHELL_CLASS}>
-          {allowEmbed ? (
-            <iframe
-              title={companyName}
-              src={mapEmbedSrc}
-              className="h-full w-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              allowFullScreen
-            />
-          ) : (
-            <div className="h-full w-full bg-zinc-950" aria-hidden />
-          )}
-        </div>
-      ) : (
-        <div
-          className={`contact-map-shell rounded-2xl overflow-hidden border border-white/10 bg-white/[0.03] p-5 sm:p-6 flex flex-col items-center justify-center gap-3 text-center [contain:layout_paint] ${MAP_HEIGHT_CLASS} w-full`}
-        >
-          {mapDisplayAddress ? (
-            <p className="text-sm text-gray-400 leading-relaxed max-w-md break-words">
-              {mapDisplayAddress}
-            </p>
-          ) : null}
-          <p className="text-xs text-gray-500 leading-relaxed max-w-sm">{mapNotConfigured}</p>
-          {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
-        </div>
-      )}
-      {showMapEmbed && showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
-    </div>
-  );
 }
 
 export default function ContactContent({
@@ -125,6 +193,7 @@ export default function ContactContent({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [tracking, setTracking] = useState({
     utmSource: "",
     utmMedium: "",
@@ -150,26 +219,18 @@ export default function ContactContent({
   const showMapNavButton = Boolean(mapNavUrl);
   const isLg = useIsLgViewport();
   const companyName = contact.company[locale];
-  const desktopMapCard = buildMapCard(
-    isLg === true,
+
+  const mapCardProps = {
     showMapEmbed,
     mapEmbedSrc,
     companyName,
     mapDisplayAddress,
     showMapNavButton,
     mapNavUrl,
-    t.contact.mapNotConfigured
-  );
-  const mobileMapCard = buildMapCard(
-    isLg === false,
-    showMapEmbed,
-    mapEmbedSrc,
-    companyName,
-    mapDisplayAddress,
-    showMapNavButton,
-    mapNavUrl,
-    t.contact.mapNotConfigured
-  );
+    isMapVisible,
+    onShowMap: () => setIsMapVisible(true),
+    onHideMap: () => setIsMapVisible(false),
+  };
 
   const defaultMessage = productModel
     ? locale === "zh"
@@ -410,7 +471,7 @@ export default function ContactContent({
                   description={mapDisplayAddress}
                   compact
                 />
-                {desktopMapCard}
+                <MapCard {...mapCardProps} allowEmbed={isLg === true} />
               </section>
             </aside>
           </div>
@@ -443,7 +504,7 @@ export default function ContactContent({
                 description={mapDisplayAddress}
                 compact
               />
-              {mobileMapCard}
+              <MapCard {...mapCardProps} allowEmbed={isLg === false} />
             </section>
 
             <section id="contact-form" className="scroll-mt-nav min-w-0">

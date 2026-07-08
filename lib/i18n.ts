@@ -315,6 +315,9 @@ export const translations = {
       wechatId: "微信",
       openMapNav: "打开地图导航",
       mapNotConfigured: "地图暂未配置，可点击导航查看位置",
+      mapLoadHint: "点击查看地图，或直接打开导航",
+      viewMap: "查看地图",
+      hideMap: "收起地图",
     },
     footer: {
       rights: "dBsource © 2024 版权所有",
@@ -643,6 +646,9 @@ export const translations = {
       wechatId: "WeChat",
       openMapNav: "Open map navigation",
       mapNotConfigured: "Map embed is not configured. Use the button below for directions.",
+      mapLoadHint: "Click to view the map, or open directions below.",
+      viewMap: "View map",
+      hideMap: "Hide map",
     },
     footer: {
       rights: "dBsource © 2024 All Rights Reserved",
