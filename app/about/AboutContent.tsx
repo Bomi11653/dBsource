@@ -27,6 +27,7 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
           <SectionLabel>{t.about.label}</SectionLabel>
           <BrowseGuide
             title={t.guide.exploreTitle}
+            layout="stack"
             items={[
               { label: t.guide.aboutStory, targetId: "about-story" },
               { label: t.guide.aboutSystem, targetId: "about-system" },
@@ -39,10 +40,10 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
             {t.about.origin.body.map((paragraph, i) => (
               <p
                 key={i}
-                className={`font-light leading-[1.85] text-gray-200 ${
+                className={`font-light leading-[1.85] text-gray-200 break-words ${
                   i === 0
-                    ? "text-2xl md:text-3xl lg:text-4xl tracking-tight"
-                    : "text-lg md:text-xl text-gray-400"
+                    ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-tight"
+                    : "text-base sm:text-lg md:text-xl text-gray-400"
                 }`}
               >
                 {paragraph}

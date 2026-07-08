@@ -76,7 +76,7 @@ export default function HomeFeaturedProductCard({
 
   return (
     <article
-      className={`group card-touch relative overflow-hidden rounded-2xl md:rounded-[1.75rem] min-h-[300px] md:min-h-[480px] flex flex-col items-center justify-between text-center px-5 sm:px-6 pt-8 md:pt-12 pb-8 md:pb-12 border border-white/10 transition-all duration-500 ease-out md:hover:-translate-y-1 md:hover:border-white/35 md:hover:shadow-[0_24px_60px_rgba(255,255,255,0.08)] cursor-pointer ${
+      className={`group card-touch relative overflow-hidden rounded-2xl md:rounded-[1.75rem] min-h-[280px] md:min-h-[480px] flex flex-col items-center justify-between text-center px-4 sm:px-6 pt-6 md:pt-12 pb-6 md:pb-12 border border-white/10 transition-all duration-500 ease-out md:hover:-translate-y-1 md:hover:border-white/35 md:hover:shadow-[0_24px_60px_rgba(255,255,255,0.08)] cursor-pointer ${
         index === 0
           ? "bg-gradient-to-b from-zinc-800/90 to-zinc-950"
           : "bg-gradient-to-b from-slate-800/80 via-zinc-900 to-black"
@@ -84,7 +84,7 @@ export default function HomeFeaturedProductCard({
     >
       <Link
         href={product.detailHref}
-        className="absolute inset-0 z-[1] rounded-[1.75rem]"
+        className="absolute inset-0 z-[1] rounded-2xl md:rounded-[1.75rem]"
         aria-label={product.name[locale]}
       />
 
@@ -94,13 +94,13 @@ export default function HomeFeaturedProductCard({
       />
 
       <div className="relative z-[2] pointer-events-none flex flex-col items-center w-full">
-        <h3 className="type-card-title text-xl sm:text-2xl md:text-4xl text-white md:group-hover:scale-[1.02] transition-transform duration-500">
+        <h3 className="type-card-title text-xl sm:text-2xl md:text-4xl text-white md:group-hover:scale-[1.02] transition-transform duration-500 break-words max-w-full">
           {product.name[locale]}
         </h3>
         <p className="text-sm md:text-base text-gray-400 mt-3 max-w-sm leading-relaxed group-hover:text-gray-300 transition-colors">
           {product.desc[locale]}
         </p>
-        <p className="text-xs text-brand-gold/90 type-label mt-4">
+        <p className="text-xs text-brand-gold/90 type-label mt-4 break-words max-w-full">
           {product.models[locale]}
         </p>
       </div>

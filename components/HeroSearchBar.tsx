@@ -95,14 +95,14 @@ export default function HeroSearchBar() {
   return (
     <div
       ref={wrapRef}
-      className="pointer-events-auto relative z-[60] w-full max-w-2xl mx-auto mt-6 sm:mt-8 overflow-visible"
+      className="pointer-events-auto relative z-[60] w-full max-w-2xl mx-auto mt-5 sm:mt-8 overflow-visible px-1"
     >
       <form
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
-        className={`flex items-center gap-3 rounded-full border bg-black/55 backdrop-blur-xl pl-5 pr-2 py-2 transition-colors duration-300 ${
+        className={`flex min-w-0 w-full items-center gap-2 sm:gap-3 rounded-full border bg-black/55 backdrop-blur-xl pl-4 sm:pl-5 pr-2 py-2 transition-colors duration-300 ${
           focused ? "border-white/40" : "border-white/15 hover:border-white/30"
         }`}
       >
@@ -114,7 +114,7 @@ export default function HeroSearchBar() {
           onFocus={() => setFocused(true)}
           placeholder={copy.placeholder}
           aria-label={copy.submit}
-          className="flex-1 min-w-0 appearance-none border-0 bg-transparent p-0 min-h-[44px] text-sm text-white placeholder:text-gray-500 outline-none focus:outline-none focus:ring-0 focus:border-0 shadow-none"
+          className="flex-1 min-w-0 appearance-none border-0 bg-transparent p-0 min-h-[44px] text-xs sm:text-sm text-white placeholder:text-gray-500 outline-none focus:outline-none focus:ring-0 focus:border-0 shadow-none"
         />
         <button
           type="submit"
@@ -126,7 +126,7 @@ export default function HeroSearchBar() {
       </form>
 
       {showDropdown ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[25] w-full max-h-[220px] sm:max-h-[260px] rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden text-left">
+        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[25] w-full max-w-[calc(100vw-2rem)] max-h-[min(220px,50dvh)] sm:max-h-[260px] rounded-2xl border border-white/10 bg-zinc-950/95 backdrop-blur-xl shadow-2xl overflow-hidden overflow-x-hidden text-left">
           {displayHits.length === 0 ? (
             <Link
               href={`/products?q=${encodeURIComponent(query.trim())}`}

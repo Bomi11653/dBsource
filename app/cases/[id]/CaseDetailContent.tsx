@@ -40,7 +40,7 @@ export default function CaseDetailContent({
           <div className="absolute inset-0 bg-zinc-900" aria-hidden />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-20 py-12 max-w-6xl mx-auto">
+        <div className="absolute bottom-0 left-0 right-0 page-x py-10 md:py-12 max-w-6xl mx-auto">
           <Link
             href="/cases"
             className="text-sm text-brand-gold hover:underline mb-6 inline-block"
@@ -50,10 +50,11 @@ export default function CaseDetailContent({
           <p className="type-label text-xs uppercase tracking-[0.25em] text-brand-gold mb-3">
             {caseItem.scene[locale]}
           </p>
-          <h1 className="type-hero text-4xl md:text-5xl">{caseItem.title[locale]}</h1>
-          <p className="text-gray-400 text-sm type-label mt-4">{caseItem.products}</p>
+          <h1 className="type-hero text-3xl md:text-5xl break-words">{caseItem.title[locale]}</h1>
+          <p className="text-gray-400 text-sm type-label mt-4 break-words">{caseItem.products}</p>
           <BrowseGuide
             title={t.guide.exploreTitle}
+            layout="stack"
             items={[
               { label: t.guide.caseOverview, targetId: "case-overview" },
               { label: t.guide.caseGallery, targetId: "case-gallery" },
@@ -69,7 +70,7 @@ export default function CaseDetailContent({
 
       <section
         id="case-overview"
-        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
+        className="page-x py-12 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
       >
         <h2 className="type-page-title text-2xl mb-6">{t.cases.overview}</h2>
         <p className="text-gray-400 leading-relaxed text-lg max-w-3xl whitespace-pre-line">
@@ -92,14 +93,14 @@ export default function CaseDetailContent({
             </ul>
           </div>
         )}
-        <p className="text-sm text-gray-500 type-label mt-10 border-t border-white/10 pt-6">
+        <p className="text-sm text-gray-500 type-label mt-10 border-t border-white/10 pt-6 break-words">
           {t.cases.equipment}: {caseItem.products}
         </p>
       </section>
 
       <section
         id="case-gallery"
-        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
+        className="page-x py-12 md:py-20 max-w-6xl mx-auto border-b border-white/10 scroll-mt-28"
       >
         <h2 className="text-2xl font-medium mb-8">{t.cases.gallery}</h2>
         {heroImages.length > 0 ? (
@@ -115,7 +116,7 @@ export default function CaseDetailContent({
               key={src + i}
               type="button"
               onClick={() => setLightboxIndex(i)}
-              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors cursor-zoom-in"
+              className="group relative aspect-[4/3] min-h-[200px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors cursor-zoom-in"
               aria-label={`${caseItem.title[locale]} ${i + 1}`}
             >
               <CmsImage
@@ -152,7 +153,7 @@ export default function CaseDetailContent({
       {relatedCases.length > 0 && (
         <section
           id="case-related"
-          className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28"
+          className="page-x py-12 md:py-20 max-w-6xl mx-auto scroll-mt-28"
         >
           <h2 className="text-2xl font-medium mb-8">{t.cases.related}</h2>
           <div className="grid md:grid-cols-2 gap-8">
@@ -177,7 +178,7 @@ export default function CaseDetailContent({
                 <span className="text-xs text-brand-gold uppercase tracking-wider">
                   {c.scene[locale]}
                 </span>
-                <h3 className="text-xl font-medium mt-2 group-hover:text-brand-gold transition-colors">
+                <h3 className="text-xl font-medium mt-2 group-hover:text-brand-gold transition-colors break-words">
                   {c.title[locale]}
                 </h3>
                 <p className="text-gray-400 text-sm mt-2 line-clamp-2">{c.desc[locale]}</p>

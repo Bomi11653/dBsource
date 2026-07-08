@@ -52,7 +52,7 @@ export default function ProductGridCard({
       </div>
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
         <div>
-          <h2 className="type-card-title text-base sm:text-sm leading-snug line-clamp-2 group-hover:text-white transition-colors">
+          <h2 className="type-card-title text-sm leading-snug line-clamp-2 break-words group-hover:text-white transition-colors">
             {primary}
           </h2>
           {subtitle ? (

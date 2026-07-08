@@ -24,13 +24,13 @@ function CopyPhone({ phone }: { phone: string }) {
     <button
       type="button"
       onClick={copy}
-      className="inline-flex items-center justify-center gap-1.5 min-h-[32px] px-2 rounded-lg text-brand-gold hover:bg-white/5 transition-colors touch-active group w-full"
+      className="inline-flex items-center justify-center gap-1.5 min-h-[32px] px-2 rounded-lg text-brand-gold hover:bg-white/5 transition-colors touch-active group w-full min-w-0"
       title={t.contact.copyPhone}
     >
       <a
         href={`tel:${phone}`}
         onClick={(e) => e.stopPropagation()}
-        className="hover:underline tabular-nums tracking-wide"
+        className="hover:underline tabular-nums tracking-wide break-all"
       >
         {phone}
       </a>
@@ -52,7 +52,7 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
   }
 
   return (
-    <section id="contact-sales" className="scroll-mt-nav pt-10 border-t border-white/10">
+    <section id="contact-sales" className="scroll-mt-nav pt-8 border-t border-white/10">
       <div className="text-center mb-6 sm:mb-8">
         <p className="text-[11px] uppercase tracking-[0.28em] text-gray-500 mb-2">
           {t.contact.salesLabel}
@@ -61,7 +61,7 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
         <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-md mx-auto">{t.contact.salesHint}</p>
       </div>
 
-      <ul className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 max-w-3xl mx-auto">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 max-w-3xl mx-auto">
         {contacts.map((person, index) => {
           const displayName = person.name[locale] || person.name.zh;
           const displayTitle = person.title?.[locale] || person.title?.zh;
@@ -69,32 +69,32 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
           return (
             <li
               key={String(person.id)}
-              className="flex flex-col items-center rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-3 sm:p-4 transition-colors hover:border-brand-gold/25"
+              className="flex flex-col items-center rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4 sm:p-5 transition-colors hover:border-brand-gold/25 min-w-0 w-full max-w-sm mx-auto sm:max-w-none"
             >
-              <div className="flex items-center justify-center w-[132px] h-[132px] sm:w-[148px] sm:h-[148px] rounded-xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] p-2 sm:p-2.5">
+              <div className="flex items-center justify-center w-40 h-40 sm:w-44 sm:h-44 rounded-xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] p-2.5 shrink-0">
                 <Image
                   src={person.qrImage}
                   alt={`${displayName} ${t.contact.wechatQr}`}
-                  width={140}
-                  height={140}
+                  width={160}
+                  height={160}
                   className="w-full h-full object-contain"
                   priority={index === 0}
                 />
               </div>
-              <p className="mt-3 sm:mt-4 text-sm sm:text-[15px] font-medium text-white text-center leading-snug">
+              <p className="mt-3 sm:mt-4 text-sm sm:text-[15px] font-medium text-white text-center leading-snug break-words max-w-full">
                 {displayName}
               </p>
               {displayTitle ? (
-                <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500 text-center leading-snug">
+                <p className="mt-0.5 text-[11px] sm:text-xs text-gray-500 text-center leading-snug break-words max-w-full">
                   {displayTitle}
                 </p>
               ) : null}
               {person.wechatId ? (
-                <p className="mt-1 text-[11px] text-gray-500 text-center">
+                <p className="mt-1 text-[11px] text-gray-500 text-center break-all max-w-full px-1">
                   {t.contact.wechatId}: {person.wechatId}
                 </p>
               ) : null}
-              <div className="mt-1 w-full flex flex-col items-stretch gap-0.5">
+              <div className="mt-1 w-full flex flex-col items-stretch gap-0.5 min-w-0">
                 {person.phones.map((phone) => (
                   <CopyPhone key={phone} phone={phone} />
                 ))}

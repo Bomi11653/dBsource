@@ -49,21 +49,21 @@ export default function ProductSeriesBar({
       <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top,0px))] z-30 -mx-1 px-1 py-3 md:static md:mx-0 md:px-0 md:py-0 bg-black/92 backdrop-blur-xl md:bg-transparent border-b border-white/10 md:border-0 space-y-3 md:space-y-6">
         {search ? <div className="md:hidden w-full">{search}</div> : null}
 
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4 md:border-b md:border-white/10 md:pb-4">
-          <div className="flex items-center justify-between gap-3 md:contents">
-            <div className="filter-scroll md:flex md:flex-wrap md:gap-3 flex-1 min-w-0">
-              {PRODUCT_SERIES_TABS.map((tab) => (
-                <FilterButton
-                  key={tab.id}
-                  active={seriesFilter === tab.id}
-                  onClick={() => onSeriesChange(tab.id)}
-                >
-                  {tab.label}
-                </FilterButton>
-              ))}
-            </div>
-            <span className="shrink-0 text-xs text-gray-500 md:hidden">{resultCount}</span>
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b md:border-white/10 md:pb-4">
+          <div className="filter-scroll md:flex md:flex-wrap md:gap-3 min-w-0 -mx-1 px-1">
+            {PRODUCT_SERIES_TABS.map((tab) => (
+              <FilterButton
+                key={tab.id}
+                active={seriesFilter === tab.id}
+                onClick={() => onSeriesChange(tab.id)}
+              >
+                {tab.label}
+              </FilterButton>
+            ))}
           </div>
+          <span className="text-xs text-gray-500 md:hidden">
+            {t.products.total.replace("{count}", String(resultCount))}
+          </span>
           {search ? (
             <div className="hidden md:block w-full md:w-72 lg:w-80 shrink-0">{search}</div>
           ) : null}

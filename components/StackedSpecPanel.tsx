@@ -52,10 +52,10 @@ export default function StackedSpecPanel({
                   key={`${sheet.model}-${row.label.zh}`}
                   className={i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"}
                 >
-                  <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 border-b border-white/5">
+                  <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 min-w-[7rem] border-b border-white/5 break-words">
                     {row.label[locale]}
                   </th>
-                  <td className="text-white px-5 py-3 border-b border-white/5">
+                  <td className="text-white px-5 py-3 border-b border-white/5 break-words min-w-0">
                     {row.value[locale]}
                   </td>
                 </tr>

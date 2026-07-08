@@ -130,9 +130,9 @@ export default function ContactContent({
         />
       </section>
 
-      <section id="contact-form" className="page-x pb-16 scroll-mt-nav">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-16">
-          <div className="space-y-8">
+      <section id="contact-form" className="page-x pb-12 scroll-mt-nav">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-16">
+          <div className="space-y-6 min-w-0">
             <form onSubmit={handleSubmit} className="space-y-5">
             <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
             {productModel ? (
@@ -181,7 +181,7 @@ export default function ContactContent({
               <button
                 type="submit"
                 disabled={loading}
-                className="min-h-[48px] px-8 rounded-xl bg-brand-gold/90 text-black font-medium hover:bg-brand-gold transition-colors disabled:opacity-60 touch-active"
+                className="w-full sm:w-auto min-h-[48px] px-8 rounded-xl bg-brand-gold/90 text-black font-medium hover:bg-brand-gold transition-colors disabled:opacity-60 touch-active"
               >
                 {loading ? t.contact.sending : t.contact.submit}
               </button>
@@ -189,35 +189,35 @@ export default function ContactContent({
             </form>
           </div>
 
-          <div id="contact-info" className="space-y-8 scroll-mt-nav">
-            <div className="rounded-2xl border border-white/10 p-6 sm:p-8 space-y-4">
-              <h2 className="text-xl font-medium">{contact.company[locale]}</h2>
-              <p className="text-gray-400 text-sm leading-relaxed">{contact.address[locale]}</p>
-              <div className="space-y-2 text-sm">
+          <div id="contact-info" className="space-y-6 scroll-mt-nav min-w-0">
+            <div className="rounded-2xl border border-white/10 p-5 sm:p-8 space-y-4 overflow-hidden">
+              <h2 className="text-xl font-medium break-words">{contact.company[locale]}</h2>
+              <p className="text-gray-400 text-sm leading-relaxed break-words">{contact.address[locale]}</p>
+              <div className="space-y-2 text-sm min-w-0">
                 {contact.phones.map((phone) => (
-                  <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block text-brand-gold hover:underline">
+                  <a key={phone} href={`tel:${phone.replace(/\s/g, "")}`} className="block text-brand-gold hover:underline break-all">
                     {phone}
                   </a>
                 ))}
-                <a href={`mailto:${contact.email}`} className="block text-gray-300 hover:text-white">
+                <a href={`mailto:${contact.email}`} className="block text-gray-300 hover:text-white break-all">
                   {contact.email}
                 </a>
               </div>
             </div>
 
             {showMapEmbed ? (
-              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10] bg-black">
+              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] bg-black">
                 <iframe
                   title={contact.company[locale]}
                   src={mapEmbedUrl}
-                  className="w-full h-full min-h-[240px] border-0 grayscale opacity-80"
+                  className="w-full h-full min-h-[200px] sm:min-h-[240px] border-0 grayscale opacity-80"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   allowFullScreen
                 />
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[16/10] min-h-[240px] bg-gradient-to-b from-white/[0.04] via-black to-black flex flex-col items-center justify-center gap-5 p-6 sm:p-8 text-center">
+              <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] min-h-[200px] sm:min-h-[240px] bg-gradient-to-b from-white/[0.04] via-black to-black flex flex-col items-center justify-center gap-5 p-6 sm:p-8 text-center">
                 <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md">
                   {mapDisplayAddress}
                 </p>
@@ -226,7 +226,7 @@ export default function ContactContent({
                     href={mapNavUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex min-h-[44px] items-center justify-center px-6 rounded-xl border border-brand-gold/40 bg-brand-gold/10 text-brand-gold text-sm font-medium hover:bg-brand-gold/20 transition-colors touch-active"
+                    className="inline-flex w-full sm:w-auto min-h-[44px] items-center justify-center px-6 rounded-xl border border-brand-gold/40 bg-brand-gold/10 text-brand-gold text-sm font-medium hover:bg-brand-gold/20 transition-colors touch-active"
                   >
                     {t.contact.openMapNav}
                   </a>

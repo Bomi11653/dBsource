@@ -129,7 +129,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
       />
 
       {currentProducts.length === 0 ? (
-        <p className="text-center text-gray-500 py-20">{t.products.noResults}</p>
+        <p className="text-center text-gray-500 py-16 px-4 break-words">{t.products.noResults}</p>
       ) : (
         <div
           key={`${seriesFilter}-${searchQuery}-${currentPage}`}

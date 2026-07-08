@@ -56,9 +56,9 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
           className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#030303] to-transparent"
           aria-hidden
         />
-        <div className="relative max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20 lg:py-24">
+        <div className="relative max-w-7xl mx-auto page-x py-12 md:py-20 lg:py-24">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-light text-white mb-2">{copy.title}</h1>
+            <h1 className="text-3xl md:text-5xl font-light text-white mb-2">{copy.title}</h1>
             <p className="text-lg md:text-xl text-white/[0.62] font-light tracking-wide mb-6">
               {copy.eyebrow}
             </p>
@@ -66,7 +66,7 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
               {copy.desc}
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8 md:mt-10">
               {copy.features.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex flex-col gap-2.5">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-black/40 backdrop-blur text-white">
@@ -83,7 +83,7 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
         </div>
       </section>
 
-      <div id="downloads-list" className="max-w-7xl mx-auto px-6 md:px-10 scroll-mt-28">
+      <div id="downloads-list" className="max-w-7xl mx-auto page-x scroll-mt-nav">
         <Suspense fallback={<div className="h-40" />}>
           <DownloadList items={items} />
         </Suspense>

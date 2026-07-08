@@ -258,7 +258,7 @@ export function ImageUploadField({
             ) : null}
           </div>
         ) : null}
-        <div className="min-w-[200px]">
+        <div className="min-w-0 w-full sm:min-w-[200px]">
           <input
             ref={inputRef}
             type="file"

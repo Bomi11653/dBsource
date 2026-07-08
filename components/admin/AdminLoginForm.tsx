@@ -41,7 +41,7 @@ export default function AdminLoginForm({ nextPath }: { nextPath: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+    <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto space-y-4">
       <div className="flex justify-center mb-6">
         <BrandLogo variant="admin" className="h-16" />
       </div>

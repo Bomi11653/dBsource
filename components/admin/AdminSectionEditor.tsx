@@ -1120,14 +1120,14 @@ export default function AdminSectionEditor({
       ) : null}
 
       {section === "contact" && contactDraft ? (
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0 max-w-full overflow-hidden">
           {contactLoadError ? (
             <AdminBanner variant="warn">
               <p>{contactLoadError}</p>
             </AdminBanner>
           ) : null}
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <h3 className="font-medium">联系方式</h3>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="公司名（中文）">
@@ -1193,7 +1193,7 @@ export default function AdminSectionEditor({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <h3 className="font-medium">地图设置</h3>
             <p className="text-xs text-gray-500">
               配置联系页高德地图。填写 iframe URL 时前台嵌入地图；未填写时显示地址与「打开地图导航」按钮。
@@ -1230,7 +1230,7 @@ export default function AdminSectionEditor({
               </Field>
               <Field label="高德 iframe URL mapEmbedUrl" className="sm:col-span-2">
                 <textarea
-                  className={cn(inputClass, "min-h-[88px] font-mono text-xs")}
+                  className={cn(inputClass, "min-h-[88px] font-mono text-xs break-all")}
                   value={getText(contactDraft, "mapEmbedUrl")}
                   onChange={(e) => setContactDraft({ ...contactDraft, mapEmbedUrl: e.target.value })}
                   placeholder="https://..."
@@ -1241,7 +1241,7 @@ export default function AdminSectionEditor({
               </Field>
               <Field label="高德导航链接 mapNavUrl" className="sm:col-span-2">
                 <input
-                  className={inputClass}
+                  className={cn(inputClass, "break-all")}
                   value={getText(contactDraft, "mapNavUrl")}
                   onChange={(e) => setContactDraft({ ...contactDraft, mapNavUrl: e.target.value })}
                   placeholder="https://uri.amap.com/..."
@@ -1255,7 +1255,7 @@ export default function AdminSectionEditor({
 
           <SaveButton saving={savingId === "contact"} onClick={saveContact} label="保存联系与地图设置" />
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="font-medium">销售顾问二维码</h3>
@@ -1463,7 +1463,7 @@ export default function AdminSectionEditor({
                               />
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-2">
                             <SaveButton
                               saving={savingId === `sales-${id}`}
                               onClick={() => saveSalesContactRow(id)}
@@ -1473,7 +1473,7 @@ export default function AdminSectionEditor({
                               type="button"
                               onClick={() => deleteSalesContactRow(id)}
                               disabled={savingId === `sales-delete-${id}`}
-                              className="text-xs px-4 py-2 rounded-lg border border-red-400/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                              className="w-full sm:w-auto min-h-[44px] text-xs px-4 py-2 rounded-lg border border-red-400/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                             >
                               {savingId === `sales-delete-${id}` ? "删除中…" : "删除"}
                             </button>

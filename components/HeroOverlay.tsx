@@ -14,7 +14,7 @@ export default function HeroOverlay() {
     <section className="pointer-events-none absolute inset-0 z-10 grid grid-rows-[minmax(0,1fr)_auto] text-center text-white">
       {/* 上层：标题 / Logo / 推荐 / 搜索与联想下拉 */}
       <div className="hero-center-content relative z-20 flex min-h-0 w-full flex-col items-center justify-center overflow-visible px-5 sm:px-6 pt-16 safe-top md:pt-20 pb-2 sm:pb-3">
-        <h1 className="hero-fade-in type-hero mb-5 max-w-4xl shrink-0 text-3xl sm:mb-10 sm:text-4xl md:mb-14 md:text-5xl lg:text-6xl">
+        <h1 className="hero-fade-in type-hero mb-4 sm:mb-5 max-w-4xl shrink-0 text-2xl sm:text-4xl md:text-5xl lg:text-6xl">
           {t.hero.slogan}
         </h1>
         <div className="hero-fade-in-delay flex w-full max-w-2xl flex-col items-center overflow-visible">

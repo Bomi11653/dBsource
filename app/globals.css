@@ -331,6 +331,7 @@ img[data-nimg="fill"],
 .mobile-nav-scroll {
   max-height: calc(100dvh - 4.25rem - env(safe-area-inset-top, 0px));
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -356,8 +357,8 @@ img[data-nimg="fill"],
 }
 
 .section-y {
-  padding-top: 3rem;
-  padding-bottom: 3rem;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
 }
 
 @media (min-width: 768px) {

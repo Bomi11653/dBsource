@@ -65,7 +65,7 @@ export default function ProductDetailContent({
 
   return (
     <div className="bg-black text-white min-h-screen-safe pt-24 pb-sticky-cta md:pb-0">
-      <section className="px-6 md:px-20 py-16 md:py-24 border-b border-white/10 max-w-6xl mx-auto">
+      <section className="page-x py-12 md:py-24 border-b border-white/10 max-w-6xl mx-auto">
         <Link
           href="/products"
           className="text-sm text-brand-gold hover:underline mb-8 inline-block"
@@ -77,7 +77,7 @@ export default function ProductDetailContent({
             {product.series[locale]}
           </p>
         )}
-        <h1 className={`type-hero text-4xl md:text-5xl ${subtitle ? "mb-2" : "mb-8"}`}>{primary}</h1>
+        <h1 className={`type-hero text-3xl md:text-5xl break-words ${subtitle ? "mb-2" : "mb-8"}`}>{primary}</h1>
         {subtitle ? (
           <p className="text-brand-gold type-label text-lg mb-8">{subtitle}</p>
         ) : null}
@@ -106,7 +106,7 @@ export default function ProductDetailContent({
 
       <section
         id="product-gallery"
-        className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
+        className="page-x py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
       >
         <h2 className="type-page-title text-2xl mb-8">{t.products.detailGallery}</h2>
         <div
@@ -119,7 +119,7 @@ export default function ProductDetailContent({
           {gallery.map((src, i) => (
             <div
               key={src + i}
-              className="group relative aspect-[4/3] min-h-[260px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors"
+              className="group relative aspect-[4/3] min-h-[200px] md:min-h-0 rounded-xl overflow-hidden border border-white/10 bg-white hover:border-brand-gold/40 transition-colors"
             >
               <button
                 type="button"
@@ -167,7 +167,7 @@ export default function ProductDetailContent({
       {(stackedPages || specSheet || product.specs) && (
         <section
           id="product-specs"
-          className="px-6 md:px-20 py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
+          className="page-x py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
         >
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <h2 className="type-page-title text-2xl">{t.products.specsTitle}</h2>
@@ -202,18 +202,18 @@ export default function ProductDetailContent({
               <p className="text-xs text-gray-500 mb-8 type-label">
                 {locale === "zh" ? "参考型号" : "Reference model"}: {specSheet.model}
               </p>
-              <div className="overflow-hidden rounded-xl border border-white/10">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto rounded-xl border border-white/10">
+                <table className="w-full text-sm min-w-[280px]">
                   <tbody>
                     {specSheet.rows.map((row, i) => (
                       <tr
                         key={row.label.zh}
                         className={i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"}
                       >
-                        <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 border-b border-white/5">
+                        <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 min-w-[7rem] border-b border-white/5 break-words">
                           {row.label[locale]}
                         </th>
-                        <td className="text-white px-5 py-3 border-b border-white/5">
+                        <td className="text-white px-5 py-3 border-b border-white/5 break-words min-w-0">
                           {row.value[locale]}
                         </td>
                       </tr>
@@ -229,11 +229,11 @@ export default function ProductDetailContent({
       {recommendedProducts.length > 0 && (
         <section
           id="product-recommendations"
-          className="px-6 md:px-20 py-16 md:py-20 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28 page-x"
+          className="page-x py-12 md:py-20 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
         >
           <h2 className="type-page-title text-2xl mb-2">{t.products.recommendedSystems}</h2>
           <p className="text-sm text-gray-500 mb-8">{t.products.recommendedSystemsDesc}</p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {recommendedProducts.map((p) => {
               const rec = getProductDisplayTitle(p, locale);
               return (
@@ -242,7 +242,7 @@ export default function ProductDetailContent({
                 href={`/products/${p.id}`}
                 className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 hover:border-brand-gold/35 transition-colors"
               >
-                <div className="relative aspect-[4/3] min-h-[200px] md:min-h-0 rounded-lg overflow-hidden bg-zinc-900 mb-3">
+                <div className="relative aspect-[4/3] min-h-[160px] md:min-h-0 rounded-lg overflow-hidden bg-zinc-900 mb-3">
                   {p.image ? (
                     <CmsImage
                       src={p.image}
@@ -253,7 +253,7 @@ export default function ProductDetailContent({
                     />
                   ) : null}
                 </div>
-                <p className="type-card-title text-sm group-hover:text-brand-gold transition-colors">
+                <p className="type-card-title text-sm group-hover:text-brand-gold transition-colors break-words">
                   {rec.primary}
                 </p>
                 {rec.subtitle ? (
@@ -269,7 +269,7 @@ export default function ProductDetailContent({
       {relatedCases.length > 0 && (
       <section
         id="product-cases"
-        className="px-6 md:px-20 py-16 md:py-20 max-w-6xl mx-auto scroll-mt-28 page-x"
+        className="page-x py-12 md:py-20 max-w-6xl mx-auto scroll-mt-28"
       >
         <h2 className="type-page-title text-2xl mb-8">{t.products.detailCases}</h2>
         <div className="grid md:grid-cols-2 gap-8">
@@ -287,11 +287,11 @@ export default function ProductDetailContent({
                   className="object-cover object-center opacity-80 group-hover:opacity-100 transition-opacity"
                 />
               </div>
-              <h3 className="type-card-title text-xl group-hover:text-brand-gold transition-colors">
+              <h3 className="type-card-title text-xl group-hover:text-brand-gold transition-colors break-words">
                 {c.title[locale]}
               </h3>
               <p className="text-gray-400 text-sm mt-2">{c.desc[locale]}</p>
-              <p className="text-xs text-gray-500 mt-3 type-label">{c.products}</p>
+              <p className="text-xs text-gray-500 mt-3 type-label break-words">{c.products}</p>
             </Link>
           ))}
         </div>

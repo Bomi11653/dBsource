@@ -61,7 +61,7 @@ function StickyCaseVisual({
           {caseItem.scene[locale]}
         </p>
         <h2 className="type-hero text-3xl md:text-5xl">{caseItem.title[locale]}</h2>
-        <p className="text-gray-300 mt-4 text-sm type-label">{caseItem.products}</p>
+        <p className="text-gray-300 mt-4 text-sm type-label break-words">{caseItem.products}</p>
         <Link
           href={`/cases/${caseItem.id}`}
           className="pointer-events-auto inline-block mt-8 text-sm border border-brand-gold/50 px-6 py-2.5 text-brand-gold hover:bg-brand-gold/10 transition-colors"
@@ -175,7 +175,7 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             </h2>
           </Link>
           <p className="text-gray-400 leading-relaxed text-lg">{profileCase.desc[locale]}</p>
-          <p className="text-gray-500 text-sm type-label mt-8 border-t border-white/10 pt-6">
+          <p className="text-gray-500 text-sm type-label mt-8 border-t border-white/10 pt-6 break-words">
             {t.cases.deliverables}: {profileCase.products}
           </p>
         </motion.div>

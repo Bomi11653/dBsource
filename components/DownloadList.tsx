@@ -148,7 +148,7 @@ function DownloadCover({
     return (
       <div
         className={`flex items-center justify-center bg-zinc-900/80 border border-white/10 ${
-          compact ? "h-20 w-28 sm:h-14 sm:w-24 shrink-0 rounded-xl" : "absolute inset-0"
+          compact ? "h-16 w-24 shrink-0 rounded-xl" : "absolute inset-0"
         }`}
         aria-label={alt}
       >
@@ -159,7 +159,7 @@ function DownloadCover({
 
   if (compact) {
     return (
-      <div className="relative h-20 w-28 sm:h-14 sm:w-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-white">
+      <div className="relative h-16 w-24 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-white">
         <CmsImage
           src={cover}
           alt={alt}
@@ -418,7 +418,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                 <div className="flex items-start gap-4 mb-4">
                   <DownloadCover cover={file.cover} alt={file.name[locale] || ui.noCover} compact />
                   <div className="min-w-0">
-                    <h3 className="text-base font-medium text-white leading-snug">
+                    <h3 className="text-base font-medium text-white leading-snug break-words">
                       {file.name[locale]}
                       {file.version ? (
                         <span className="ml-2 text-xs font-normal text-white/[0.45] tabular-nums">

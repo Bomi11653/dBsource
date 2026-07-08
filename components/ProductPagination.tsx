@@ -87,7 +87,7 @@ export default function ProductPagination({
           {t.products.next}
         </button>
 
-        <form onSubmit={handleJump} className="flex items-center gap-2 ml-2">
+        <form onSubmit={handleJump} className="hidden sm:flex items-center gap-2 ml-2">
           <input
             type="number"
             name="page"
