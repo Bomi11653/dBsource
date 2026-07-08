@@ -6,7 +6,7 @@ import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
-import { filterDownloads, buildDownloadShareUrl } from "@/lib/downloads";
+import { filterDownloads, buildDownloadShareUrl, shareDownloadResource } from "@/lib/downloads";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { isWeChatWebView } from "@/lib/wechat-webview";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -192,6 +192,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const [category, setCategory] = useState<CategoryKey>("software");
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [sharedId, setSharedId] = useState<number | null>(null);
   const [shareFallback, setShareFallback] = useState<{ url: string; fileId: number } | null>(
     null
   );
@@ -215,9 +216,15 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     }
   }, [searchParams]);
 
-  /* 兼容旧分享/导航链接 ?file=ID：滚动定位并高亮 */
+  /* 分享/导航链接 ?file=ID 或 #download-ID：滚动定位并高亮 */
   useEffect(() => {
-    const fileId = Number(searchParams.get("file"));
+    const hashMatch =
+      typeof window !== "undefined"
+        ? window.location.hash.match(/^#download-(\d+)$/)
+        : null;
+    const fromHash = hashMatch ? Number(hashMatch[1]) : NaN;
+    const fromQuery = Number(searchParams.get("file"));
+    const fileId = Number.isFinite(fromHash) ? fromHash : fromQuery;
     if (!Number.isFinite(fileId)) return;
     const el = rowRefs.current[fileId];
     if (el) {
@@ -284,27 +291,50 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     return false;
   }, [shareLink]);
 
+  const shareButtonLabel = useCallback(
+    (fileId: number) => {
+      if (sharedId === fileId) return t.downloads.shareSuccess;
+      if (copiedId === fileId) return t.downloads.shareCopied;
+      return t.downloads.share;
+    },
+    [copiedId, sharedId, t.downloads.share, t.downloads.shareCopied, t.downloads.shareSuccess]
+  );
+
   const handleShare = useCallback(
     async (file: DownloadItem) => {
-      const url = shareLink(file);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const title = file.name[locale];
-      const canNativeShare =
-        typeof navigator.share === "function" &&
-        window.isSecureContext &&
-        !isWeChatWebView();
+      const text = itemDesc(file, locale) || title;
 
-      if (canNativeShare) {
-        try {
-          await navigator.share({ title, text: title, url });
-          return;
-        } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-        }
+      const result = await shareDownloadResource({
+        file,
+        title,
+        text,
+        origin,
+        skipNativeShare: isWeChatWebView(),
+      });
+
+      if (result === "cancelled") return;
+
+      setSharedId(null);
+      setCopiedId(null);
+      setShareFallback(null);
+
+      if (result === "shared") {
+        setSharedId(file.id);
+        window.setTimeout(() => setSharedId(null), 2000);
+        return;
       }
 
-      await copyShareLink(file);
+      if (result === "copied") {
+        setCopiedId(file.id);
+        window.setTimeout(() => setCopiedId(null), 2000);
+        return;
+      }
+
+      setShareFallback({ url: buildDownloadShareUrl(file, origin), fileId: file.id });
     },
-    [copyShareLink, locale, shareLink]
+    [locale]
   );
 
   return (
@@ -411,6 +441,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             {featured.map((file) => (
               <li
                 key={file.id}
+                id={`download-${file.id}`}
                 ref={(el) => {
                   rowRefs.current[file.id] = el;
                 }}
@@ -449,7 +480,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                     className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 rounded-xl border border-white/10 text-sm text-white/[0.62] hover:text-white hover:border-white/25 transition-colors touch-active"
                   >
                     <Share2 size={14} />
-                    {copiedId === file.id ? t.downloads.shareCopied : t.downloads.share}
+                    {shareButtonLabel(file.id)}
                   </button>
                 </div>
               </li>
@@ -477,6 +508,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             {filtered.map((file) => (
               <li
                 key={file.id}
+                id={`download-${file.id}`}
                 ref={(el) => {
                   rowRefs.current[file.id] = el;
                 }}
@@ -523,8 +555,8 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                       type="button"
                       onClick={() => handleShare(file)}
                       className="inline-flex items-center justify-center min-h-[40px] min-w-[44px] rounded-xl border border-white/10 text-white/[0.62] hover:text-white hover:border-white/25 transition-colors touch-active"
-                      aria-label={copiedId === file.id ? t.downloads.shareCopied : t.downloads.share}
-                      title={copiedId === file.id ? t.downloads.shareCopied : t.downloads.share}
+                      aria-label={shareButtonLabel(file.id)}
+                      title={shareButtonLabel(file.id)}
                     >
                       <Share2 size={15} />
                     </button>

@@ -1,5 +1,6 @@
 import type { DownloadItem, Locale } from "@/data/mock";
 import { downloads as downloadCatalog } from "@/data/mock";
+import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 
 export type DownloadTab = "software" | "catalog";
 
@@ -126,14 +127,53 @@ export function filterDownloads(
   return result;
 }
 
-/** 分享链接：打开即下载对应文件 */
+/** 资源在下载页的分享链接（页面锚点，非文件直链） */
 export function buildDownloadShareUrl(file: DownloadItem, origin: string): string {
   const base = origin.replace(/\/$/, "");
-  return `${base}/api/downloads/${file.id}/file`;
+  const params = new URLSearchParams();
+  params.set("tab", file.type);
+  params.set("file", String(file.id));
+  return `${base}/downloads?${params.toString()}#download-${file.id}`;
 }
 
 /** 下载页定位链接（站内跳转、高亮资源） */
 export function buildDownloadPageUrl(file: DownloadItem, origin: string): string {
-  const base = origin.replace(/\/$/, "");
-  return `${base}/downloads?tab=${file.type}&file=${file.id}`;
+  return buildDownloadShareUrl(file, origin);
+}
+
+export type ShareDownloadResult = "shared" | "copied" | "cancelled" | "failed";
+
+/** 优先 navigator.share，失败或不可用时复制页面分享链接。 */
+export async function shareDownloadResource(options: {
+  file: DownloadItem;
+  title: string;
+  text: string;
+  origin: string;
+  skipNativeShare?: boolean;
+}): Promise<ShareDownloadResult> {
+  const shareUrl = buildDownloadShareUrl(options.file, options.origin);
+  const shareData = {
+    title: options.title,
+    text: options.text || options.title,
+    url: shareUrl,
+  };
+
+  if (
+    !options.skipNativeShare &&
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    window.isSecureContext
+  ) {
+    try {
+      await navigator.share(shareData);
+      return "shared";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return "cancelled";
+      }
+    }
+  }
+
+  const copied = await copyTextToClipboard(shareUrl);
+  return copied ? "copied" : "failed";
 }
