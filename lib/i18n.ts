@@ -314,6 +314,7 @@ export const translations = {
       wechatQr: "微信二维码",
       wechatId: "微信",
       openMapNav: "打开地图导航",
+      mapNotConfigured: "地图暂未配置，可点击导航查看位置",
     },
     footer: {
       rights: "dBsource © 2024 版权所有",
@@ -640,7 +641,8 @@ export const translations = {
       copied: "Copied",
       wechatQr: "WeChat QR code",
       wechatId: "WeChat",
-      openMapNav: "Open in Maps",
+      openMapNav: "Open map navigation",
+      mapNotConfigured: "Map embed is not configured. Use the button below for directions.",
     },
     footer: {
       rights: "dBsource © 2024 All Rights Reserved",

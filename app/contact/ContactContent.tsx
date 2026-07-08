@@ -5,7 +5,7 @@ import type { SalesContactItem } from "@/data/sales-contacts";
 import { useI18n } from "@/components/I18nProvider";
 import BrowseGuide from "@/components/BrowseGuide";
 import SalesContactCards from "@/components/SalesContactCards";
-import { isAllowedAmapEmbedUrl, resolveMapNavUrl } from "@/lib/amap-map";
+import { resolveMapEmbedSrc, resolveMapNavUrl } from "@/lib/amap-map";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail, MapPin, Navigation, Phone } from "lucide-react";
@@ -72,14 +72,18 @@ export default function ContactContent({
     language: locale === "zh" ? "zh-CN" : "en",
   });
 
-  const mapEmbedUrl = contact.mapEmbedUrl?.trim() ?? "";
-  const showMapEmbed = Boolean(mapEmbedUrl && isAllowedAmapEmbedUrl(mapEmbedUrl));
   const mapDisplayAddress =
     contact.mapDisplayAddress[locale] || contact.address[locale];
-  const mapNavUrl = useMemo(
-    () => resolveMapNavUrl(contact.mapNavUrl, contact.mapQuery),
-    [contact.mapNavUrl, contact.mapQuery]
+  const mapEmbedSrc = useMemo(
+    () => resolveMapEmbedSrc(contact.mapEmbedUrl),
+    [contact.mapEmbedUrl]
   );
+  const showMapEmbed = Boolean(mapEmbedSrc);
+  const mapNavUrl = useMemo(
+    () => resolveMapNavUrl(contact.mapNavUrl, contact.mapQuery, mapDisplayAddress),
+    [contact.mapNavUrl, contact.mapQuery, mapDisplayAddress]
+  );
+  const showMapNavButton = Boolean(mapNavUrl);
 
   const defaultMessage = productModel
     ? locale === "zh"
@@ -187,7 +191,7 @@ export default function ContactContent({
                   <p className="text-sm text-gray-400 leading-relaxed break-words">
                     {contact.address[locale]}
                   </p>
-                  {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
+                  {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
                 </div>
               </div>
 
@@ -228,28 +232,35 @@ export default function ContactContent({
               title={t.contact.mapSectionTitle}
               description={mapDisplayAddress}
             />
-            {showMapEmbed ? (
-              <div className="space-y-4">
-                <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] sm:aspect-[16/10] max-h-[240px] sm:max-h-none bg-black">
+            <div className="space-y-4">
+              {showMapEmbed ? (
+                <div className="rounded-2xl overflow-hidden border border-white/10 bg-zinc-950 h-[280px] sm:h-[360px] lg:h-[420px] w-full">
                   <iframe
                     title={contact.company[locale]}
-                    src={mapEmbedUrl}
-                    className="w-full h-full min-h-[200px] border-0 grayscale opacity-80"
+                    src={mapEmbedSrc}
+                    className="h-full w-full border-0"
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     allowFullScreen
                   />
                 </div>
-                {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
-              </div>
-            ) : (
-              <div className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-6 sm:p-8 flex flex-col items-center justify-center gap-5 text-center min-h-[200px]">
-                <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md break-words">
-                  {mapDisplayAddress}
-                </p>
-                {mapNavUrl ? <MapNavButton href={mapNavUrl} /> : null}
-              </div>
-            )}
+              ) : (
+                <div className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent p-6 sm:p-8 flex flex-col items-center justify-center gap-4 text-center h-[280px] sm:h-[360px] lg:h-[420px] w-full">
+                  {mapDisplayAddress ? (
+                    <p className="text-sm sm:text-base text-gray-400 leading-relaxed max-w-md break-words">
+                      {mapDisplayAddress}
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
+                    {t.contact.mapNotConfigured}
+                  </p>
+                  {showMapNavButton ? <MapNavButton href={mapNavUrl} /> : null}
+                </div>
+              )}
+              {showMapEmbed && showMapNavButton ? (
+                <MapNavButton href={mapNavUrl} className="relative z-10" />
+              ) : null}
+            </div>
           </section>
 
           {/* 4. 留言表单 */}

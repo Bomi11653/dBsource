@@ -47,8 +47,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
 
 type StrapiMedia = { id?: number; url?: string; size?: number };
 type StrapiRow = Record<string, unknown> & {
@@ -141,6 +141,33 @@ function leadStatusLabel(value: string): string {
 
 function docId(row: StrapiRow) {
   return String(row.documentId ?? row.id ?? "");
+}
+
+function LeadDeleteButton({
+  deleting,
+  disabled,
+  onClick,
+}: {
+  deleting: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const [en, setEn] = useState(false);
+
+  useEffect(() => {
+    setEn(navigator.language.toLowerCase().startsWith("en"));
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || deleting}
+      className="text-sm w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+    >
+      {deleting ? (en ? "Deleting…" : "删除中…") : en ? "Delete Lead" : "删除线索"}
+    </button>
+  );
 }
 
 function mediaUrl(m?: StrapiMedia | null) {
@@ -259,6 +286,7 @@ export default function AdminSectionEditor({
   tokenReady: boolean;
 }) {
   const collection = sectionToCollection(section);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<StrapiRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, StrapiRow>>({});
@@ -530,6 +558,40 @@ export default function AdminSectionEditor({
       load();
     } else {
       setMessage({ type: "error", text: json.error || "删除失败" });
+    }
+  }
+
+  async function deleteLeadRow(id: string) {
+    if (!window.confirm("确定要删除这条线索吗？删除后不可恢复。")) return;
+    setSavingId(`lead-delete-${id}`);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/leads/${id}`, { method: "DELETE" });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        setRows((prev) => prev.filter((row) => docId(row) !== id));
+        setDrafts((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setDirtyIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setOpenId((current) => (current === id ? null : current));
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text || "线索已删除" });
+        router.push("/admin/leads");
+      } else {
+        setMessage({ type: "error", text: json.error || "删除失败" });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "删除失败";
+      setMessage({ type: "error", text: msg });
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -1236,7 +1298,7 @@ export default function AdminSectionEditor({
                   placeholder="https://..."
                 />
                 <FieldHint>
-                  填写高德地图 iframe/embed URL；不填则前台显示地址和导航按钮。
+                  请填写高德地图可嵌入链接；如果不填写，前台会显示地址和导航按钮。
                 </FieldHint>
               </Field>
               <Field label="高德导航链接 mapNavUrl" className="sm:col-span-2">
@@ -1246,9 +1308,7 @@ export default function AdminSectionEditor({
                   onChange={(e) => setContactDraft({ ...contactDraft, mapNavUrl: e.target.value })}
                   placeholder="https://uri.amap.com/..."
                 />
-                <FieldHint>
-                  填写高德导航或分享链接；不填则使用地图定位关键词生成高德搜索链接。
-                </FieldHint>
+                <FieldHint>用于前台打开地图导航按钮。</FieldHint>
               </Field>
             </div>
           </div>
@@ -1717,7 +1777,18 @@ export default function AdminSectionEditor({
                             中英互转填充（可覆盖）
                           </button>
                         ) : null}
-                        <SaveButton saving={savingId === id} onClick={() => saveRow(id)} label="保存并发布" />
+                        <SaveButton
+                          saving={savingId === id || (section === "leads" && savingId === `lead-delete-${id}`)}
+                          onClick={() => saveRow(id)}
+                          label="保存并发布"
+                        />
+                        {section === "leads" ? (
+                          <LeadDeleteButton
+                            deleting={savingId === `lead-delete-${id}`}
+                            disabled={savingId === id}
+                            onClick={() => deleteLeadRow(id)}
+                          />
+                        ) : null}
                         {CREATABLE_SECTIONS.has(section) ? (
                           <button
                             type="button"
