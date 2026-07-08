@@ -339,12 +339,9 @@ export default function ContactContent({
 
       <div className="page-x pb-8 md:pb-12">
         <div className="mx-auto max-w-6xl min-w-0">
-          <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:items-start">
-            {/* 桌面左栏 / 移动末位：留言表单 */}
-            <section
-              id="contact-form"
-              className="order-4 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1 scroll-mt-nav"
-            >
+          {/* 桌面端：左表单 + 右联系信息与地图 */}
+          <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-8 lg:items-start">
+            <section id="contact-form" className="scroll-mt-nav min-w-0">
               <SectionHeading
                 title={t.contact.formTitle}
                 description={t.contact.formSubtitle}
@@ -353,27 +350,43 @@ export default function ContactContent({
               {contactForm}
             </section>
 
-            {/* 桌面右栏上 / 移动首位：公司联系方式 */}
-            <section
-              id="contact-info"
-              className="order-1 min-w-0 lg:order-none lg:col-start-2 lg:row-start-1 scroll-mt-nav"
-            >
+            <aside className="space-y-6 min-w-0">
+              <section id="contact-info" className="scroll-mt-nav min-w-0">
+                <SectionHeading title={t.contact.companySectionTitle} compact />
+                {companyCard}
+              </section>
+
+              <section id="contact-map" className="scroll-mt-nav min-w-0">
+                <SectionHeading
+                  title={t.contact.mapSectionTitle}
+                  description={mapDisplayAddress}
+                  compact
+                />
+                {mapCard}
+              </section>
+            </aside>
+          </div>
+
+          {salesContacts.length > 0 ? (
+            <section id="contact-sales" className="hidden lg:block mt-8 lg:mt-10 scroll-mt-nav min-w-0">
+              <SalesContactCards contacts={salesContacts} />
+            </section>
+          ) : null}
+
+          {/* 移动端：公司信息 → 销售顾问 → 地图 → 表单 */}
+          <div className="grid gap-6 lg:hidden">
+            <section id="contact-info" className="scroll-mt-nav min-w-0">
               <SectionHeading title={t.contact.companySectionTitle} compact />
               {companyCard}
             </section>
 
-            {/* 移动第二位：销售顾问（仅移动端，桌面端在 grid 下方） */}
             {salesContacts.length > 0 ? (
-              <div className="order-2 min-w-0 lg:hidden">
+              <section id="contact-sales" className="scroll-mt-nav min-w-0">
                 <SalesContactCards contacts={salesContacts} />
-              </div>
+              </section>
             ) : null}
 
-            {/* 桌面右栏下 / 移动第三位：地图导航 */}
-            <section
-              id="contact-map"
-              className="order-3 min-w-0 lg:order-none lg:col-start-2 lg:row-start-2 scroll-mt-nav"
-            >
+            <section id="contact-map" className="scroll-mt-nav min-w-0">
               <SectionHeading
                 title={t.contact.mapSectionTitle}
                 description={mapDisplayAddress}
@@ -381,14 +394,16 @@ export default function ContactContent({
               />
               {mapCard}
             </section>
-          </div>
 
-          {/* 桌面端：销售顾问在双栏下方全宽 */}
-          {salesContacts.length > 0 ? (
-            <div className="mt-8 hidden min-w-0 lg:mt-10 lg:block">
-              <SalesContactCards contacts={salesContacts} />
-            </div>
-          ) : null}
+            <section id="contact-form" className="scroll-mt-nav min-w-0">
+              <SectionHeading
+                title={t.contact.formTitle}
+                description={t.contact.formSubtitle}
+                compact
+              />
+              {contactForm}
+            </section>
+          </div>
         </div>
       </div>
     </div>
