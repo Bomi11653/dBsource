@@ -30,7 +30,12 @@ import { serializeSalesContactPayload } from "@/lib/admin-sales-contact-payload"
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
 import { resolveAdminPreviewUrl } from "@/lib/media-url";
-import { DOWNLOAD_SUB_CATEGORIES } from "@/lib/downloads";
+import {
+  DOWNLOAD_SUB_CATEGORIES,
+  DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET,
+  initDownloadSubCategoryDraftFields,
+  resolveDownloadSubCategoryForSave,
+} from "@/lib/downloads";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { sectionToCollection } from "@/lib/strapi-admin";
 import { cn } from "@/lib/utils";
@@ -451,6 +456,12 @@ export default function AdminSectionEditor({
           if (section === "downloads" && typeof (row.file as StrapiMedia)?.size === "number") {
             row.size = formatStrapiMediaSize((row.file as StrapiMedia).size!);
           }
+          if (section === "downloads") {
+            Object.assign(
+              row,
+              initDownloadSubCategoryDraftFields(String(row.subCategory ?? ""))
+            );
+          }
           init[docId(r)] = row;
         });
         setDrafts(init);
@@ -537,6 +548,19 @@ export default function AdminSectionEditor({
     }
 
     if (collection === "downloads") {
+      const customSub = String(payload.subCategoryCustom ?? "").trim();
+      const presetSub = String(
+        payload.subCategoryPreset ?? payload.subCategory ?? "v225a"
+      ).trim();
+      const existingSub = String(draft.subCategory ?? "").trim();
+      payload.subCategory = resolveDownloadSubCategoryForSave(
+        customSub,
+        presetSub,
+        existingSub
+      );
+      delete payload.subCategoryCustom;
+      delete payload.subCategoryPreset;
+
       const sortOrder = Number(payload.sortOrder);
       if (!Number.isFinite(sortOrder) || sortOrder <= 0) {
         setSavingId(null);
@@ -2330,15 +2354,41 @@ function renderFields(
     );
     fields.push(
       <SelectField
-        key="subCategory"
+        key="subCategoryPreset"
         label="子分类（导航筛选）"
-        value={getText(draft, "subCategory") || "v225a"}
-        onChange={(v) => onChange({ subCategory: v })}
-        options={DOWNLOAD_SUB_CATEGORIES.map((s) => ({
-          value: s.slug,
-          label: `${s.label.zh} · ${s.tab === "software" ? "软件" : "画册"}`,
-        }))}
+        value={getText(draft, "subCategoryPreset") || "v225a"}
+        onChange={(v) =>
+          onChange({
+            subCategoryPreset: v,
+            ...(v !== DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET ? { subCategoryCustom: "" } : {}),
+          })
+        }
+        options={[
+          ...DOWNLOAD_SUB_CATEGORIES.map((s) => ({
+            value: s.slug,
+            label: `${s.label.zh} · ${s.tab === "software" ? "软件" : "画册"}`,
+          })),
+          { value: DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET, label: "自定义（见下方输入框）" },
+        ]}
       />
+    );
+    fields.push(
+      <Field key="subCategoryCustom" label="自定义子分类" className="sm:col-span-2">
+        <input
+          className={inputClass}
+          value={getText(draft, "subCategoryCustom")}
+          onChange={(e) =>
+            onChange({
+              subCategoryCustom: e.target.value,
+              subCategoryPreset: DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET,
+            })
+          }
+          placeholder="例如：SourceLink · 软件"
+        />
+        <p className="text-xs text-white/45 mt-1.5">
+          填写后将优先使用自定义子分类；留空则使用上方选择项。
+        </p>
+      </Field>
     );
     fields.push(
       <SelectField

@@ -93,7 +93,8 @@ export interface DownloadItem {
   fileName?: string;
   url: string;
   type: "software" | "catalog";
-  subCategory: DownloadSubSlug;
+  /** 预设 slug 或后台自定义 slug（存于 Strapi subCategory 字段） */
+  subCategory: string;
   cover?: string;
   /** 以下字段后台可编辑，缺省时前台用内置文案兜底 */
   version?: string;

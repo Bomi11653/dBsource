@@ -108,6 +108,122 @@ export function getDownloadSubCategoryBySlug(slug: string): DownloadSubCategory 
   return DOWNLOAD_SUB_CATEGORIES.find((d) => d.slug === slug);
 }
 
+export const PRESET_DOWNLOAD_SUB_SLUGS = new Set<string>(
+  DOWNLOAD_SUB_CATEGORIES.map((d) => d.slug)
+);
+
+export const DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET = "__custom__";
+
+export function isPresetDownloadSubCategory(
+  slug: string
+): slug is DownloadSubCategorySlug {
+  return PRESET_DOWNLOAD_SUB_SLUGS.has(slug);
+}
+
+/** 将后台自定义输入规范为 slug（小写、连字符） */
+export function normalizeDownloadSubCategorySlug(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[·•|/\\]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** 保存时：自定义优先，否则用下拉预设 */
+export function resolveDownloadSubCategoryForSave(
+  customInput: string,
+  presetSelect: string,
+  existing?: string
+): string {
+  const normalized = normalizeDownloadSubCategorySlug(customInput);
+  if (normalized) return normalized;
+
+  const preset = presetSelect.trim();
+  if (preset && preset !== DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET) {
+    return isPresetDownloadSubCategory(preset) ? preset : normalizeDownloadSubCategorySlug(preset) || preset;
+  }
+
+  const prior = existing?.trim();
+  if (prior) return prior;
+  return "v225a";
+}
+
+/** 从 Strapi 子分类值初始化后台草稿（预设 / 自定义回显） */
+export function initDownloadSubCategoryDraftFields(stored: string): {
+  subCategory: string;
+  subCategoryPreset: string;
+  subCategoryCustom: string;
+} {
+  const value = stored.trim();
+  if (value && !isPresetDownloadSubCategory(value)) {
+    return {
+      subCategory: value,
+      subCategoryPreset: DOWNLOAD_SUB_CATEGORY_CUSTOM_PRESET,
+      subCategoryCustom: value,
+    };
+  }
+  return {
+    subCategory: value || "v225a",
+    subCategoryPreset: value || "v225a",
+    subCategoryCustom: "",
+  };
+}
+
+/** 前台展示未知子分类 slug */
+export function formatDownloadSubCategorySlug(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function getDownloadSubCategoryDisplayLabel(slug: string, locale: Locale): string {
+  const preset = getDownloadSubCategoryBySlug(slug);
+  if (preset) return preset.label[locale];
+  return formatDownloadSubCategorySlug(slug);
+}
+
+/** 当前 Tab 下实际出现的子分类：预设（保持原序）+ 自定义（字母序） */
+export function mergeDownloadSubCategoriesForItems(
+  items: DownloadItem[],
+  tab: DownloadTab
+): Array<{ slug: string; label: { zh: string; en: string } }> {
+  const tabItems = items.filter((d) => d.type === tab);
+  const seen = new Set<string>();
+  const result: Array<{ slug: string; label: { zh: string; en: string } }> = [];
+
+  for (const preset of getDownloadSubCategoriesForTab(tab)) {
+    if (tabItems.some((item) => item.subCategory === preset.slug)) {
+      result.push({ slug: preset.slug, label: preset.label });
+      seen.add(preset.slug);
+    }
+  }
+
+  const customSlugs = Array.from(
+    new Set(
+      tabItems
+        .map((item) => item.subCategory?.trim())
+        .filter((slug): slug is string => Boolean(slug && !seen.has(slug)))
+    )
+  ).sort();
+
+  for (const slug of customSlugs) {
+    result.push({
+      slug,
+      label: {
+        zh: getDownloadSubCategoryDisplayLabel(slug, "zh"),
+        en: getDownloadSubCategoryDisplayLabel(slug, "en"),
+      },
+    });
+  }
+
+  return result;
+}
+
 export function downloadSubCategoryLabel(sub: DownloadSubCategory, locale: Locale): string {
   return sub.label[locale];
 }
@@ -115,7 +231,7 @@ export function downloadSubCategoryLabel(sub: DownloadSubCategory, locale: Local
 export function filterDownloads(
   list: DownloadItem[],
   tab?: DownloadTab | null,
-  subSlug?: DownloadSubCategorySlug | null
+  subSlug?: string | null
 ): DownloadItem[] {
   let result = list;
   if (tab) {

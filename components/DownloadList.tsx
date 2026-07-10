@@ -12,6 +12,9 @@ import {
   shareDownloadResource,
   getDownloadFileApiPath,
   parseDownloadShareTargetId,
+  mergeDownloadSubCategoriesForItems,
+  getDownloadSubCategoryDisplayLabel,
+  isPresetDownloadSubCategory,
 } from "@/lib/downloads";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -42,6 +45,9 @@ const TYPE_TAGS: Record<string, { zh: string; en: string }> = {
 function typeTag(file: DownloadItem, locale: "zh" | "en"): string {
   const tag = TYPE_TAGS[file.subCategory];
   if (tag) return tag[locale];
+  if (!isPresetDownloadSubCategory(file.subCategory)) {
+    return getDownloadSubCategoryDisplayLabel(file.subCategory, locale);
+  }
   return file.type === "software"
     ? { zh: "软件工具", en: "Software" }[locale]
     : { zh: "产品手册", en: "Manual" }[locale];
@@ -229,10 +235,14 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   }, []);
 
   const syncUrl = useCallback(
-    (next: CategoryKey) => {
+    (next: CategoryKey, sub?: string | null) => {
       const params = new URLSearchParams();
       params.set("tab", next);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      if (sub) params.set("sub", sub);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : `${pathname}?tab=${next}`, {
+        scroll: false,
+      });
     },
     [pathname, router]
   );
@@ -295,6 +305,11 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   /* 旧 sub 参数仍然生效（来自旧分享链接） */
   const legacySub = searchParams.get("sub");
+
+  const subCategoryFilters = useMemo(
+    () => mergeDownloadSubCategoriesForItems(items, category),
+    [items, category]
+  );
 
   const filtered = useMemo(() => {
     let result = filterDownloads(items, null, null);
@@ -473,7 +488,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
               type="button"
               onClick={() => {
                 setCategory(cat.key);
-                syncUrl(cat.key);
+                syncUrl(cat.key, null);
               }}
               className={`filter-chip touch-active shrink-0 min-h-[42px] px-5 py-2 text-sm rounded-full border whitespace-nowrap transition-colors ${
                 active
@@ -486,6 +501,39 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
           );
         })}
       </div>
+
+      {subCategoryFilters.length > 1 ? (
+        <div className="filter-scroll flex gap-2 justify-start md:justify-center mb-8 md:mb-10 pb-1">
+          <button
+            type="button"
+            onClick={() => syncUrl(category)}
+            className={`filter-chip touch-active shrink-0 min-h-[38px] px-4 py-1.5 text-xs rounded-full border whitespace-nowrap transition-colors ${
+              !legacySub
+                ? "border-white/30 bg-white/10 text-white"
+                : "border-white/10 bg-white/[0.04] text-white/[0.55] hover:text-white"
+            }`}
+          >
+            {locale === "zh" ? "全部子类" : "All types"}
+          </button>
+          {subCategoryFilters.map((sub) => {
+            const active = legacySub === sub.slug;
+            return (
+              <button
+                key={sub.slug}
+                type="button"
+                onClick={() => syncUrl(category, sub.slug)}
+                className={`filter-chip touch-active shrink-0 min-h-[38px] px-4 py-1.5 text-xs rounded-full border whitespace-nowrap transition-colors ${
+                  active
+                    ? "border-white/30 bg-white/10 text-white"
+                    : "border-white/10 bg-white/[0.04] text-white/[0.55] hover:text-white"
+                }`}
+              >
+                {sub.label[locale]}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {/* 全部资源 */}
       <section>

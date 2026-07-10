@@ -40,11 +40,7 @@
       "required": true
     },
     "subCategory": {
-      "type": "enumeration",
-      "enum": [
-        "v225a", "dbcover-mac", "dbcover-win", "unit48", "soloc",
-        "preset-pack", "sol12sa", "v415a", "catalog-cn", "catalog-en", "case-study"
-      ],
+      "type": "string",
       "required": true
     },
     "cover": {
