@@ -73,5 +73,10 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json(result, { status: 502 });
   }
   const saveMeta = await buildAdminSaveResponse(params.collection, { ok: true }, data);
-  return NextResponse.json({ ...result, saved: saveMeta.saved, revalidation: saveMeta.revalidation, cacheRefresh: saveMeta.cacheRefresh });
+  return NextResponse.json({
+    ...result,
+    saved: saveMeta.saved,
+    revalidation: saveMeta.revalidation,
+    cacheRefresh: saveMeta.cacheRefresh,
+  });
 }

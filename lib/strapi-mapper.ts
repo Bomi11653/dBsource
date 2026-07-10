@@ -142,10 +142,7 @@ type StrapiAboutDoc = {
 };
 
 /** @deprecated 使用 resolveStrapiMediaUrl / resolveMediaUrlFromSource */
-export function resolveMediaUrl(
-  cmsUrl: string,
-  media?: StrapiMedia | null
-): string {
+export function resolveMediaUrl(cmsUrl: string, media?: StrapiMedia | null): string {
   return resolveStrapiMediaUrl(media, cmsUrl);
 }
 
@@ -200,10 +197,7 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
     sceneSlug: doc.sceneSlug as CaseSceneSlug,
     title: { zh: titleZh, en: titleEn },
     desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
-    detail:
-      detailZh || detailEn
-        ? { zh: detailZh ?? "", en: detailEn ?? "" }
-        : undefined,
+    detail: detailZh || detailEn ? { zh: detailZh ?? "", en: detailEn ?? "" } : undefined,
     scene: { zh: doc.sceneZh?.trim() || "", en: doc.sceneEn?.trim() || "" },
     products: doc.products?.trim() || "",
     image: imageUrl,
@@ -217,11 +211,7 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
   };
 }
 
-export function mapStrapiQR(
-  doc: StrapiQRDoc,
-  cmsUrl: string,
-  index: number
-): QRItem {
+export function mapStrapiQR(doc: StrapiQRDoc, cmsUrl: string, index: number): QRItem {
   const image = resolveListMediaUrlFromSource({ image: doc.image }, cmsUrl);
   if (!image) {
     warnStrapiMapping("qr-code", doc.sortOrder ?? index + 1, ["image"]);
@@ -284,11 +274,7 @@ export function mapStrapiSalesContact(
   };
 }
 
-export function mapStrapiScene(
-  doc: StrapiSceneDoc,
-  cmsUrl: string,
-  index: number
-): SceneItem {
+export function mapStrapiScene(doc: StrapiSceneDoc, cmsUrl: string, index: number): SceneItem {
   const image = resolveListMediaUrlFromSource({ image: doc.image }, cmsUrl);
   if (!image) {
     warnStrapiMapping("scene", doc.sortOrder ?? index + 1, ["image"]);
@@ -320,10 +306,7 @@ export function mapStrapiDownload(
     unwrapStrapiMedia(doc.attachment) ||
     unwrapStrapiMedia(doc.downloadFile);
   const fileUrl = resolveDownloadFileUrl(doc, cmsUrl);
-  const fileName =
-    doc.fileName?.trim() ||
-    fileMedia?.name?.trim() ||
-    undefined;
+  const fileName = doc.fileName?.trim() || fileMedia?.name?.trim() || undefined;
 
   const missing: string[] = [];
   if (!doc.titleZh?.trim() && !doc.title?.trim() && !doc.nameZh?.trim() && !doc.name?.trim()) {
@@ -360,11 +343,7 @@ export function mapStrapiDownload(
   };
 }
 
-export function mapStrapiProduct(
-  doc: StrapiProductDoc,
-  cmsUrl: string,
-  index: number
-): Product {
+export function mapStrapiProduct(doc: StrapiProductDoc, cmsUrl: string, index: number): Product {
   const id = doc.sortOrder ?? index + 1;
   const mediaSource = {
     image: doc.image,
@@ -387,20 +366,14 @@ export function mapStrapiProduct(
     model: doc.model?.trim() || "",
     name: { zh: nameZh, en: nameEn },
     desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
-    detail: doc.detailZh || doc.detailEn
-      ? { zh: doc.detailZh ?? "", en: doc.detailEn ?? "" }
-      : undefined,
-    specs: doc.specsZh || doc.specsEn
-      ? { zh: doc.specsZh ?? "", en: doc.specsEn ?? "" }
-      : undefined,
+    detail:
+      doc.detailZh || doc.detailEn ? { zh: doc.detailZh ?? "", en: doc.detailEn ?? "" } : undefined,
+    specs:
+      doc.specsZh || doc.specsEn ? { zh: doc.specsZh ?? "", en: doc.specsEn ?? "" } : undefined,
     image,
-    gallery: (doc.gallery ?? [])
-      .map((item) => resolveStrapiMediaUrl(item, cmsUrl))
-      .filter(Boolean),
+    gallery: (doc.gallery ?? []).map((item) => resolveStrapiMediaUrl(item, cmsUrl)).filter(Boolean),
     series:
-      doc.seriesZh || doc.seriesEn
-        ? { zh: doc.seriesZh ?? "", en: doc.seriesEn ?? "" }
-        : undefined,
+      doc.seriesZh || doc.seriesEn ? { zh: doc.seriesZh ?? "", en: doc.seriesEn ?? "" } : undefined,
     productLine: doc.productLine as ProductLineSlug,
     seriesGroup: doc.seriesGroup as ProductSeriesGroup,
     category: doc.category as ProductCategory,
