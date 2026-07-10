@@ -502,22 +502,7 @@ export interface ApiDownloadDownload extends Struct.CollectionTypeSchema {
     releasedAt: Schema.Attribute.Date;
     size: Schema.Attribute.String;
     sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    subCategory: Schema.Attribute.Enumeration<
-      [
-        "v225a",
-        "dbcover-mac",
-        "dbcover-win",
-        "unit48",
-        "soloc",
-        "preset-pack",
-        "sol12sa",
-        "v415a",
-        "catalog-cn",
-        "catalog-en",
-        "case-study",
-      ]
-    > &
-      Schema.Attribute.Required;
+    subCategory: Schema.Attribute.String & Schema.Attribute.Required;
     type: Schema.Attribute.Enumeration<["software", "catalog"]> & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<"oneToOne", "admin::user"> & Schema.Attribute.Private;
