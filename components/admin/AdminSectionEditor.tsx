@@ -110,7 +110,9 @@ function parseContactLoadError(error: unknown): string {
 function parseSalesContactLoadError(error: unknown): string {
   const raw = typeof error === "string" ? error : "";
   if (!raw) return "无法读取销售顾问列表。请检查 CMS 连接。";
-  if (/sales-contact|salesContact|nameZh|qrImage|Unknown attribute|Invalid key|populate/i.test(raw)) {
+  if (
+    /sales-contact|salesContact|nameZh|qrImage|Unknown attribute|Invalid key|populate/i.test(raw)
+  ) {
     return "Strapi 尚未加载 sales-contact 字段。请重启 CMS 使 schema 生效后刷新本页。";
   }
   return raw.length > 180 ? `${raw.slice(0, 180)}…` : raw;
@@ -141,6 +143,15 @@ function leadStatusLabel(value: string): string {
 
 function docId(row: StrapiRow) {
   return String(row.documentId ?? row.id ?? "");
+}
+
+/** 下载资源前台 id = sortOrder，新建时取当前最大值 +1 避免与已有资源冲突 */
+function nextDownloadSortOrder(rows: StrapiRow[]): number {
+  const max = rows.reduce((acc, row) => {
+    const n = Number(row.sortOrder);
+    return Number.isFinite(n) ? Math.max(acc, n) : acc;
+  }, 0);
+  return max + 1;
 }
 
 function LeadDeleteButton({
@@ -180,11 +191,7 @@ function getText(row: StrapiRow, key: string) {
   return typeof v === "string" ? v : "";
 }
 
-function setDraft(
-  drafts: Record<string, StrapiRow>,
-  id: string,
-  patch: Partial<StrapiRow>
-) {
+function setDraft(drafts: Record<string, StrapiRow>, id: string, patch: Partial<StrapiRow>) {
   return { ...drafts, [id]: { ...drafts[id], ...patch } };
 }
 
@@ -269,14 +276,7 @@ function rowSearchText(section: string, draft: StrapiRow): string {
   return base.filter(Boolean).join(" ").toLowerCase();
 }
 
-const CREATABLE_SECTIONS = new Set([
-  "products",
-  "series",
-  "cases",
-  "downloads",
-  "about",
-  "qr",
-]);
+const CREATABLE_SECTIONS = new Set(["products", "series", "cases", "downloads", "about", "qr"]);
 
 export default function AdminSectionEditor({
   section,
@@ -307,7 +307,9 @@ export default function AdminSectionEditor({
   const [showHint, setShowHint] = useState(true);
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [homeConfigDraft, setHomeConfigDraft] = useState<HomeFeaturedDraft | null>(null);
-  const [homeFeaturedCaseDraft, setHomeFeaturedCaseDraft] = useState<HomeFeaturedCaseDraft | null>(null);
+  const [homeFeaturedCaseDraft, setHomeFeaturedCaseDraft] = useState<HomeFeaturedCaseDraft | null>(
+    null
+  );
   const [leadStatusFilter, setLeadStatusFilter] = useState("all");
   const [leadPriorityOnly, setLeadPriorityOnly] = useState(false);
   const [productSeriesFilter, setProductSeriesFilter] = useState<AdminProductSeriesFilter>("all");
@@ -367,123 +369,134 @@ export default function AdminSectionEditor({
       const matchesPriority = leadPriorityOnly ? (Number(draft.intentScore) || 0) >= 70 : true;
       return matchesStatus && matchesPriority;
     });
-  }, [rows, drafts, debouncedSearch, section, leadStatusFilter, leadPriorityOnly, productSeriesFilter]);
+  }, [
+    rows,
+    drafts,
+    debouncedSearch,
+    section,
+    leadStatusFilter,
+    leadPriorityOnly,
+    productSeriesFilter,
+  ]);
 
-  const load = useCallback(async (preferredOpenId?: string | null) => {
-    if (!tokenReady) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setMessage(null);
-
-    if (section === "contact") {
-      const [cRes, lRes, sRes] = await Promise.all([
-        fetch("/api/admin/contact-info"),
-        fetch("/api/admin/leads"),
-        fetch("/api/admin/sales-contacts"),
-      ]);
-      const cJson = await cRes.json();
-      const lJson = await lRes.json();
-      const sJson = (await sRes.json()) as {
-        ok?: boolean;
-        error?: string;
-        data?: { data?: StrapiRow[] };
-      };
-      if (cJson.ok && cJson.data?.data) {
-        setContactDraft(cJson.data.data as StrapiRow);
-        setContactLoadError(null);
-      } else {
-        setContactDraft(createDefaultContactDraft());
-        setContactLoadError(parseContactLoadError(cJson.error));
+  const load = useCallback(
+    async (preferredOpenId?: string | null) => {
+      if (!tokenReady) {
+        setLoading(false);
+        return;
       }
-      if (lJson.ok && lJson.data?.data) {
-        setLeads(lJson.data.data as StrapiRow[]);
-      }
-      if (sJson.ok && sJson.data?.data) {
-        const list = (sJson.data.data as StrapiRow[])
-          .slice()
-          .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
-        setSalesContactRows(list);
-        const init: Record<string, StrapiRow> = {};
-        list.forEach((row) => {
-          init[docId(row)] = { ...row };
-        });
-        setSalesContactDrafts(init);
-        setSalesContactLoadError(null);
-        setSalesContactOpenId((current) => {
-          if (current && list.some((item) => docId(item) === current)) return current;
-          return list[0] ? docId(list[0]) : null;
-        });
-      } else {
-        setSalesContactRows([]);
-        setSalesContactDrafts({});
-        setSalesContactLoadError(parseSalesContactLoadError(sJson.error));
-      }
-      setLoading(false);
-      return;
-    }
+      setLoading(true);
+      setMessage(null);
 
-    if (!collection || collection === "contact-info") {
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch(`/api/admin/${collection}`);
-    const json = await res.json();
-    if (json.ok && json.data?.data) {
-      const list = json.data.data as StrapiRow[];
-      setRows(list);
-      const init: Record<string, StrapiRow> = {};
-      list.forEach((r) => {
-        const row = { ...r };
-        if (section === "downloads" && typeof (row.file as StrapiMedia)?.size === "number") {
-          row.size = formatStrapiMediaSize((row.file as StrapiMedia).size!);
+      if (section === "contact") {
+        const [cRes, lRes, sRes] = await Promise.all([
+          fetch("/api/admin/contact-info"),
+          fetch("/api/admin/leads"),
+          fetch("/api/admin/sales-contacts"),
+        ]);
+        const cJson = await cRes.json();
+        const lJson = await lRes.json();
+        const sJson = (await sRes.json()) as {
+          ok?: boolean;
+          error?: string;
+          data?: { data?: StrapiRow[] };
+        };
+        if (cJson.ok && cJson.data?.data) {
+          setContactDraft(cJson.data.data as StrapiRow);
+          setContactLoadError(null);
+        } else {
+          setContactDraft(createDefaultContactDraft());
+          setContactLoadError(parseContactLoadError(cJson.error));
         }
-        init[docId(r)] = row;
-      });
-      setDrafts(init);
-      setOpenId((current) => {
-        if (preferredOpenId && list.some((item) => docId(item) === preferredOpenId)) {
-          return preferredOpenId;
+        if (lJson.ok && lJson.data?.data) {
+          setLeads(lJson.data.data as StrapiRow[]);
         }
-        if (current && list.some((item) => docId(item) === current)) {
-          return current;
-        }
-        return list[0] ? docId(list[0]) : null;
-      });
-      if (section === "home") {
-        const seriesRes = await fetch("/api/admin/product-series-configs");
-        const seriesJson = await seriesRes.json();
-        if (seriesJson.ok && seriesJson.data?.data) {
-          const seriesList = (seriesJson.data.data as StrapiRow[])
+        if (sJson.ok && sJson.data?.data) {
+          const list = (sJson.data.data as StrapiRow[])
             .slice()
             .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
-          const first = seriesList[0];
-          const second = seriesList[1];
-          setHomeConfigDraft({
-            firstDocId: first ? docId(first) : null,
-            secondDocId: second ? docId(second) : null,
-            homeFeaturedProductAId: Number(first?.featuredProductId) || null,
-            homeFeaturedProductBId: Number(second?.featuredProductId) || null,
+          setSalesContactRows(list);
+          const init: Record<string, StrapiRow> = {};
+          list.forEach((row) => {
+            init[docId(row)] = { ...row };
           });
-        }
-        const homeCaseRes = await fetch("/api/admin/contact-info");
-        const homeCaseJson = await homeCaseRes.json();
-        if (homeCaseJson.ok && homeCaseJson.data?.data) {
-          setHomeFeaturedCaseDraft(homeCaseJson.data.data as HomeFeaturedCaseDraft);
+          setSalesContactDrafts(init);
+          setSalesContactLoadError(null);
+          setSalesContactOpenId((current) => {
+            if (current && list.some((item) => docId(item) === current)) return current;
+            return list[0] ? docId(list[0]) : null;
+          });
         } else {
+          setSalesContactRows([]);
+          setSalesContactDrafts({});
+          setSalesContactLoadError(parseSalesContactLoadError(sJson.error));
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!collection || collection === "contact-info") {
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`/api/admin/${collection}`);
+      const json = await res.json();
+      if (json.ok && json.data?.data) {
+        const list = json.data.data as StrapiRow[];
+        setRows(list);
+        const init: Record<string, StrapiRow> = {};
+        list.forEach((r) => {
+          const row = { ...r };
+          if (section === "downloads" && typeof (row.file as StrapiMedia)?.size === "number") {
+            row.size = formatStrapiMediaSize((row.file as StrapiMedia).size!);
+          }
+          init[docId(r)] = row;
+        });
+        setDrafts(init);
+        setOpenId((current) => {
+          if (preferredOpenId && list.some((item) => docId(item) === preferredOpenId)) {
+            return preferredOpenId;
+          }
+          if (current && list.some((item) => docId(item) === current)) {
+            return current;
+          }
+          return list[0] ? docId(list[0]) : null;
+        });
+        if (section === "home") {
+          const seriesRes = await fetch("/api/admin/product-series-configs");
+          const seriesJson = await seriesRes.json();
+          if (seriesJson.ok && seriesJson.data?.data) {
+            const seriesList = (seriesJson.data.data as StrapiRow[])
+              .slice()
+              .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
+            const first = seriesList[0];
+            const second = seriesList[1];
+            setHomeConfigDraft({
+              firstDocId: first ? docId(first) : null,
+              secondDocId: second ? docId(second) : null,
+              homeFeaturedProductAId: Number(first?.featuredProductId) || null,
+              homeFeaturedProductBId: Number(second?.featuredProductId) || null,
+            });
+          }
+          const homeCaseRes = await fetch("/api/admin/contact-info");
+          const homeCaseJson = await homeCaseRes.json();
+          if (homeCaseJson.ok && homeCaseJson.data?.data) {
+            setHomeFeaturedCaseDraft(homeCaseJson.data.data as HomeFeaturedCaseDraft);
+          } else {
+            setHomeFeaturedCaseDraft(null);
+          }
+        } else {
+          setHomeConfigDraft(null);
           setHomeFeaturedCaseDraft(null);
         }
       } else {
-        setHomeConfigDraft(null);
-        setHomeFeaturedCaseDraft(null);
+        setMessage({ type: "error", text: json.error || "加载失败" });
       }
-    } else {
-      setMessage({ type: "error", text: json.error || "加载失败" });
-    }
-    setLoading(false);
-  }, [collection, section, tokenReady]);
+      setLoading(false);
+    },
+    [collection, section, tokenReady]
+  );
 
   useEffect(() => {
     load();
@@ -523,6 +536,32 @@ export default function AdminSectionEditor({
       payload.gallery = (payload.gallery as StrapiMedia[]).map((g) => g.id ?? g);
     }
 
+    if (collection === "downloads") {
+      const sortOrder = Number(payload.sortOrder);
+      if (!Number.isFinite(sortOrder) || sortOrder <= 0) {
+        setSavingId(null);
+        setMessage({ type: "error", text: "排序 ID 须为正整数（前台下载链接使用此数字）" });
+        return;
+      }
+      const duplicate = rows.some(
+        (r) => docId(r) !== id && Number(r.sortOrder) === sortOrder
+      );
+      if (duplicate) {
+        setSavingId(null);
+        setMessage({
+          type: "error",
+          text: `排序 ID ${sortOrder} 已被其他资源占用，请改用唯一数字（建议 ${nextDownloadSortOrder(rows)}）`,
+        });
+        return;
+      }
+      if (payload.file === undefined) {
+        delete payload.file;
+      }
+      if (payload.file && payload.fileUrl === "#") {
+        delete payload.fileUrl;
+      }
+    }
+
     const res = await fetch(`/api/admin/${collection}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -534,7 +573,9 @@ export default function AdminSectionEditor({
       const toast = formatSaveToast(json);
       setMessage({ type: toast.type, text: toast.text });
       setRows((prev) =>
-        prev.map((r) => (docId(r) === id ? { ...draft, documentId: r.documentId ?? draft.documentId } : r))
+        prev.map((r) =>
+          docId(r) === id ? { ...draft, documentId: r.documentId ?? draft.documentId } : r
+        )
       );
       setDirtyIds((prev) => {
         const next = new Set(prev);
@@ -644,7 +685,7 @@ export default function AdminSectionEditor({
         type: "software",
         subCategory: "v225a",
         market: "all",
-        sortOrder: rows.length + 1,
+        sortOrder: nextDownloadSortOrder(rows),
       },
       "about-sections": {
         sectionKey: `section-${Date.now()}`,
@@ -863,7 +904,9 @@ export default function AdminSectionEditor({
           fetch(`/api/admin/product-series-configs/${homeConfigDraft.firstDocId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ featuredProductId: homeConfigDraft.homeFeaturedProductAId ?? null }),
+            body: JSON.stringify({
+              featuredProductId: homeConfigDraft.homeFeaturedProductAId ?? null,
+            }),
           })
         );
       }
@@ -872,14 +915,16 @@ export default function AdminSectionEditor({
           fetch(`/api/admin/product-series-configs/${homeConfigDraft.secondDocId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ featuredProductId: homeConfigDraft.homeFeaturedProductBId ?? null }),
+            body: JSON.stringify({
+              featuredProductId: homeConfigDraft.homeFeaturedProductBId ?? null,
+            }),
           })
         );
       }
       const responses = await Promise.all(tasks);
-      const payloads = (await Promise.all(
-        responses.map((res) => res.json())
-      )) as Array<AdminSaveResponse & { ok?: boolean; error?: string }>;
+      const payloads = (await Promise.all(responses.map((res) => res.json()))) as Array<
+        AdminSaveResponse & { ok?: boolean; error?: string }
+      >;
       const failed = payloads.find((item) => !item?.ok);
       if (failed) {
         setMessage({ type: "error", text: failed.error || "首页配置保存失败" });
@@ -907,9 +952,15 @@ export default function AdminSectionEditor({
     setSavingId("home-featured-case");
     setMessage(null);
     const payload: Record<string, unknown> = { ...homeFeaturedCaseDraft };
-    ["documentId", "id", "createdAt", "updatedAt", "publishedAt", "locale", "localizations"].forEach((k) =>
-      delete payload[k]
-    );
+    [
+      "documentId",
+      "id",
+      "createdAt",
+      "updatedAt",
+      "publishedAt",
+      "locale",
+      "localizations",
+    ].forEach((k) => delete payload[k]);
     if (payload.homeFeaturedCaseImage === null) {
       payload.homeFeaturedCaseImage = null;
     } else if (payload.homeFeaturedCaseImage && typeof payload.homeFeaturedCaseImage === "object") {
@@ -1037,9 +1088,13 @@ export default function AdminSectionEditor({
         <p className="font-medium mb-2">需要配置 Strapi API Token 才能在此直接编辑</p>
         <ol className="list-decimal list-inside space-y-1 text-xs text-amber-200/80">
           <li>打开 Strapi → Settings → API Tokens → Create new API Token</li>
-          <li>Token type 选 <strong>Full access</strong></li>
-          <li>复制 Token 到 <code className="text-brand-gold">.env.local</code>：<br />
-            <code>STRAPI_API_TOKEN=你的token</code></li>
+          <li>
+            Token type 选 <strong>Full access</strong>
+          </li>
+          <li>
+            复制 Token 到 <code className="text-brand-gold">.env.local</code>：<br />
+            <code>STRAPI_API_TOKEN=你的token</code>
+          </li>
           <li>重启网站预览（npm run preview:quick）</li>
         </ol>
       </AdminBanner>
@@ -1258,7 +1313,8 @@ export default function AdminSectionEditor({
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <h3 className="font-medium">地图设置</h3>
             <p className="text-xs text-gray-500">
-              配置联系页高德地图。填写 iframe URL 时前台嵌入地图；未填写时显示地址与「打开地图导航」按钮。
+              配置联系页高德地图。填写 iframe URL
+              时前台嵌入地图；未填写时显示地址与「打开地图导航」按钮。
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="地图展示地址（中文） mapDisplayAddressZh">
@@ -1296,7 +1352,9 @@ export default function AdminSectionEditor({
                 <textarea
                   className={cn(inputClass, "min-h-[88px] font-mono text-xs break-all")}
                   value={getText(contactDraft, "mapEmbedUrl")}
-                  onChange={(e) => setContactDraft({ ...contactDraft, mapEmbedUrl: e.target.value })}
+                  onChange={(e) =>
+                    setContactDraft({ ...contactDraft, mapEmbedUrl: e.target.value })
+                  }
                   placeholder="https://..."
                 />
                 <FieldHint>
@@ -1311,13 +1369,18 @@ export default function AdminSectionEditor({
                   placeholder="https://uri.amap.com/..."
                 />
                 <FieldHint>
-                  建议填写高德 URI API 导航链接，例如 https://uri.amap.com/navigation?...；不要直接填写高德网页版地址，否则可能出现登录或验证。
+                  建议填写高德 URI API 导航链接，例如
+                  https://uri.amap.com/navigation?...；不要直接填写高德网页版地址，否则可能出现登录或验证。
                 </FieldHint>
               </Field>
             </div>
           </div>
 
-          <SaveButton saving={savingId === "contact"} onClick={saveContact} label="保存联系与地图设置" />
+          <SaveButton
+            saving={savingId === "contact"}
+            onClick={saveContact}
+            label="保存联系与地图设置"
+          />
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1627,16 +1690,16 @@ export default function AdminSectionEditor({
                 }
               />
             </Field>
-            <ReadOnlyField
-              label="提示"
-              value="可不改原案例，单独配置首页展示文案"
-            />
+            <ReadOnlyField label="提示" value="可不改原案例，单独配置首页展示文案" />
             <Field label="首页标题（中文）">
               <input
                 className={inputClass}
                 value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleZh")}
                 onChange={(e) =>
-                  setHomeFeaturedCaseDraft({ ...homeFeaturedCaseDraft, homeFeaturedCaseTitleZh: e.target.value })
+                  setHomeFeaturedCaseDraft({
+                    ...homeFeaturedCaseDraft,
+                    homeFeaturedCaseTitleZh: e.target.value,
+                  })
                 }
               />
             </Field>
@@ -1645,7 +1708,10 @@ export default function AdminSectionEditor({
                 className={inputClass}
                 value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleEn")}
                 onChange={(e) =>
-                  setHomeFeaturedCaseDraft({ ...homeFeaturedCaseDraft, homeFeaturedCaseTitleEn: e.target.value })
+                  setHomeFeaturedCaseDraft({
+                    ...homeFeaturedCaseDraft,
+                    homeFeaturedCaseTitleEn: e.target.value,
+                  })
                 }
               />
             </Field>
@@ -1654,7 +1720,10 @@ export default function AdminSectionEditor({
                 className={cn(inputClass, "min-h-[72px]")}
                 value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescZh")}
                 onChange={(e) =>
-                  setHomeFeaturedCaseDraft({ ...homeFeaturedCaseDraft, homeFeaturedCaseDescZh: e.target.value })
+                  setHomeFeaturedCaseDraft({
+                    ...homeFeaturedCaseDraft,
+                    homeFeaturedCaseDescZh: e.target.value,
+                  })
                 }
               />
             </Field>
@@ -1663,7 +1732,10 @@ export default function AdminSectionEditor({
                 className={cn(inputClass, "min-h-[72px]")}
                 value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescEn")}
                 onChange={(e) =>
-                  setHomeFeaturedCaseDraft({ ...homeFeaturedCaseDraft, homeFeaturedCaseDescEn: e.target.value })
+                  setHomeFeaturedCaseDraft({
+                    ...homeFeaturedCaseDraft,
+                    homeFeaturedCaseDescEn: e.target.value,
+                  })
                 }
               />
             </Field>
@@ -1678,7 +1750,10 @@ export default function AdminSectionEditor({
                   })
                 }
                 onRemoved={() =>
-                  setHomeFeaturedCaseDraft({ ...homeFeaturedCaseDraft, homeFeaturedCaseImage: null })
+                  setHomeFeaturedCaseDraft({
+                    ...homeFeaturedCaseDraft,
+                    homeFeaturedCaseImage: null,
+                  })
                 }
               />
             </div>
@@ -1753,7 +1828,10 @@ export default function AdminSectionEditor({
                       >
                         <ChevronDown
                           size={18}
-                          className={cn("text-gray-500 shrink-0 transition-transform", isOpen && "rotate-180")}
+                          className={cn(
+                            "text-gray-500 shrink-0 transition-transform",
+                            isOpen && "rotate-180"
+                          )}
                         />
                       </button>
                     </div>
@@ -1782,7 +1860,10 @@ export default function AdminSectionEditor({
                           </button>
                         ) : null}
                         <SaveButton
-                          saving={savingId === id || (section === "leads" && savingId === `lead-delete-${id}`)}
+                          saving={
+                            savingId === id ||
+                            (section === "leads" && savingId === `lead-delete-${id}`)
+                          }
                           onClick={() => saveRow(id)}
                           label="保存并发布"
                         />
@@ -1900,9 +1981,22 @@ function renderFields(
 
   if (section === "products") {
     const PRODUCT_LINE_OPTIONS = [
-      "la", "lw", "mi", "do", "sol", "k", "re", "p",
-      "driver", "electronics", "accessory", "tour",
-      "unit48", "suite", "turnkey", "c",
+      "la",
+      "lw",
+      "mi",
+      "do",
+      "sol",
+      "k",
+      "re",
+      "p",
+      "driver",
+      "electronics",
+      "accessory",
+      "tour",
+      "unit48",
+      "suite",
+      "turnkey",
+      "c",
     ];
 
     const sectionCard = (title: string, children: React.ReactNode) => (
@@ -2115,12 +2209,8 @@ function renderFields(
   }
 
   if (section === "leads") {
-    fields.push(
-      <ReadOnlyField key="name" label="联系人" value={getText(draft, "name")} />
-    );
-    fields.push(
-      <ReadOnlyField key="company" label="公司" value={getText(draft, "company")} />
-    );
+    fields.push(<ReadOnlyField key="name" label="联系人" value={getText(draft, "name")} />);
+    fields.push(<ReadOnlyField key="company" label="公司" value={getText(draft, "company")} />);
     fields.push(
       <ReadOnlyField
         key="contact"

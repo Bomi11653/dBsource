@@ -23,14 +23,12 @@ export async function GET(_request: NextRequest, { params }: Props) {
   try {
     const upstream = await fetch(meta.sourceUrl, { cache: "no-store" });
     if (!upstream.ok || !upstream.body) {
+      console.warn(`[download] id=${id} upstream failed: ${upstream.status} ${meta.fileName}`);
       return NextResponse.json({ error: "无法读取文件" }, { status: 502 });
     }
 
     const headers = new Headers();
-    headers.set(
-      "Content-Type",
-      upstream.headers.get("content-type") || "application/octet-stream"
-    );
+    headers.set("Content-Type", upstream.headers.get("content-type") || "application/octet-stream");
     headers.set("Content-Disposition", contentDispositionAttachment(meta.fileName));
 
     const contentLength = upstream.headers.get("content-length");

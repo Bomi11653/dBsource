@@ -6,7 +6,13 @@ import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
-import { filterDownloads, buildDownloadShareUrl, shareDownloadResource, getDownloadFileApiPath, parseDownloadShareTargetId } from "@/lib/downloads";
+import {
+  filterDownloads,
+  buildDownloadShareUrl,
+  shareDownloadResource,
+  getDownloadFileApiPath,
+  parseDownloadShareTargetId,
+} from "@/lib/downloads";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -102,14 +108,9 @@ const OS_LABELS: Record<NonNullable<DownloadItem["osType"]>, { zh: string; en: s
   "cross-platform": { zh: "全平台", en: "Cross-platform" },
 };
 
-/** 推荐下载兜底（后台未勾选任何「推荐」时使用） */
-const FEATURED_SUBS = ["unit48", "dbcover-mac", "dbcover-win"] as const;
-
 const UI_LABELS = {
   zh: {
     searchPlaceholder: "搜索软件、产品型号、资料名称...",
-    featured: "推荐下载",
-    featuredEn: "Recommended Resources",
     all: "全部资源",
     allEn: "All Resources",
     supportTitle: "需要技术支持？",
@@ -121,8 +122,6 @@ const UI_LABELS = {
   },
   en: {
     searchPlaceholder: "Search software, models, documents...",
-    featured: "Recommended",
-    featuredEn: "Recommended Resources",
     all: "All Resources",
     allEn: "All Resources",
     supportTitle: "Need technical support?",
@@ -193,9 +192,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [sharedId, setSharedId] = useState<number | null>(null);
   const [downloadNotice, setDownloadNotice] = useState<"started" | "notfound" | null>(null);
-  const [shareFallback, setShareFallback] = useState<{ url: string; fileId: number } | null>(
-    null
-  );
+  const [shareFallback, setShareFallback] = useState<{ url: string; fileId: number } | null>(null);
   const rowRefs = useRef<Record<number, HTMLLIElement | null>>({});
   const autoDownloadTriggeredRef = useRef(false);
 
@@ -252,9 +249,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   /* 分享/导航链接 ?download=ID、?file=ID 或 #download-ID：滚动定位并高亮 */
   useEffect(() => {
     const hashMatch =
-      typeof window !== "undefined"
-        ? window.location.hash.match(/^#download-(\d+)$/)
-        : null;
+      typeof window !== "undefined" ? window.location.hash.match(/^#download-(\d+)$/) : null;
     const fromHash = hashMatch ? Number(hashMatch[1]) : NaN;
     const fromQuery = parseDownloadShareTargetId(searchParams);
     const fileId = Number.isFinite(fromHash)
@@ -296,13 +291,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     }, 400);
 
     return () => window.clearTimeout(timer);
-  }, [
-    searchParams,
-    items,
-    scrollToDownloadCard,
-    triggerFileDownload,
-    clearDownloadQueryParam,
-  ]);
+  }, [searchParams, items, scrollToDownloadCard, triggerFileDownload, clearDownloadQueryParam]);
 
   /* 旧 sub 参数仍然生效（来自旧分享链接） */
   const legacySub = searchParams.get("sub");
@@ -326,17 +315,6 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     return result;
   }, [items, category, legacySub, query]);
 
-  const showFeatured = category === "software" && !query.trim() && !legacySub;
-  const featured = useMemo(() => {
-    if (!showFeatured) return [];
-    /* 后台勾选了「推荐」则按勾选展示（最多 3 个），否则用内置兜底 */
-    const flagged = items.filter((f) => f.featured);
-    if (flagged.length > 0) return flagged.slice(0, 3);
-    return FEATURED_SUBS.map((sub) => items.find((f) => f.subCategory === sub)).filter(
-      (f): f is DownloadItem => Boolean(f)
-    );
-  }, [items, showFeatured]);
-
   const shareLink = useCallback((file: DownloadItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     return buildDownloadShareUrl(file, origin);
@@ -344,18 +322,21 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
 
   const downloadHref = useCallback((file: DownloadItem) => getDownloadFileApiPath(file.id), []);
 
-  const copyShareLink = useCallback(async (file: DownloadItem) => {
-    const url = shareLink(file);
-    const copied = await copyTextToClipboard(url);
-    if (copied) {
-      setCopiedId(file.id);
-      setShareFallback(null);
-      window.setTimeout(() => setCopiedId(null), 2000);
-      return true;
-    }
-    setShareFallback({ url, fileId: file.id });
-    return false;
-  }, [shareLink]);
+  const copyShareLink = useCallback(
+    async (file: DownloadItem) => {
+      const url = shareLink(file);
+      const copied = await copyTextToClipboard(url);
+      if (copied) {
+        setCopiedId(file.id);
+        setShareFallback(null);
+        window.setTimeout(() => setCopiedId(null), 2000);
+        return true;
+      }
+      setShareFallback({ url, fileId: file.id });
+      return false;
+    },
+    [shareLink]
+  );
 
   const shareButtonLabel = useCallback(
     (fileId: number) => {
@@ -506,67 +487,6 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
         })}
       </div>
 
-      {/* 推荐下载 */}
-      {featured.length > 0 && (
-        <section className="mb-14 md:mb-20">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-light text-white">{ui.featured}</h2>
-              <p className="text-xs text-white/[0.45] mt-1 tracking-wide">{ui.featuredEn}</p>
-            </div>
-          </div>
-          <ul className="grid md:grid-cols-3 gap-4 md:gap-5">
-            {featured.map((file) => (
-              <li
-                key={file.id}
-                id={`download-${file.id}`}
-                ref={(el) => {
-                  rowRefs.current[file.id] = el;
-                }}
-                className="group relative flex flex-col rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-5 md:p-6 transition-all duration-300 hover:border-white/25 md:hover:-translate-y-1"
-              >
-                <div className="flex items-start gap-4 mb-4">
-                  <DownloadCover cover={file.cover} alt={file.name[locale] || ui.noCover} compact />
-                  <div className="min-w-0">
-                    <h3 className="text-base font-medium text-white leading-snug break-words">
-                      {file.name[locale]}
-                      {file.version ? (
-                        <span className="ml-2 text-xs font-normal text-white/[0.45] tabular-nums">
-                          v{file.version}
-                        </span>
-                      ) : null}
-                    </h3>
-                    <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full border border-[#3b82f6]/30 bg-[#3b82f6]/10 text-[#3b82f6]">
-                      {typeTag(file, locale)}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-white/[0.62] leading-relaxed flex-1">
-                  {itemDesc(file, locale)}
-                </p>
-                <div className="flex items-center gap-2 mt-5">
-                  <a
-                    href={downloadHref(file)}
-                    className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-5 rounded-xl bg-white text-black text-sm font-medium hover:bg-white/90 transition-colors touch-active"
-                  >
-                    {t.downloads.download}
-                    <Download size={14} />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => handleShare(file)}
-                    className="inline-flex items-center justify-center gap-1.5 min-h-[42px] px-4 rounded-xl border border-white/10 text-sm text-white/[0.62] hover:text-white hover:border-white/25 transition-colors touch-active"
-                  >
-                    <Share2 size={14} />
-                    {shareButtonLabel(file.id)}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* 全部资源 */}
       <section>
         <div className="flex items-end justify-between mb-6">
@@ -613,7 +533,11 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
                       {typeTag(file, locale)}
                     </span>
                     <span className="text-xs text-white/[0.45]">
-                      {[file.size, file.osType ? OS_LABELS[file.osType][locale] : null, file.releasedAt]
+                      {[
+                        file.size,
+                        file.osType ? OS_LABELS[file.osType][locale] : null,
+                        file.releasedAt,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
@@ -655,9 +579,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
           />
           <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl md:text-2xl font-medium text-white mb-2">
-                {ui.supportTitle}
-              </h2>
+              <h2 className="text-xl md:text-2xl font-medium text-white mb-2">{ui.supportTitle}</h2>
               <p className="text-sm text-white/[0.62] leading-relaxed max-w-2xl">
                 {ui.supportDesc}
               </p>

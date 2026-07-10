@@ -277,6 +277,20 @@ export function pickCaseMediaPath(doc: CaseMediaSource): string {
 }
 
 /**
+ * 下载 API 专用：仅取当前资源的 file 媒体，或有效 fileUrl（非 #）。
+ * 不使用 attachment/downloadFile，避免误取其他字段；无文件时返回空字符串。
+ */
+export function pickDownloadServePath(doc: DownloadFileSource): string {
+  const file = unwrapStrapiMedia(doc.file);
+  if (typeof file?.url === "string" && file.url.trim()) {
+    return file.url.trim();
+  }
+  const legacy = doc.fileUrl?.trim();
+  if (legacy && legacy !== "#") return legacy;
+  return "";
+}
+
+/**
  * 下载文件相对路径优先级：
  * file.url → attachment.url → downloadFile.url → fileUrl（非 #）
  */
