@@ -318,6 +318,8 @@ export default function AdminSectionEditor({
   const [leadStatusFilter, setLeadStatusFilter] = useState("all");
   const [leadPriorityOnly, setLeadPriorityOnly] = useState(false);
   const [productSeriesFilter, setProductSeriesFilter] = useState<AdminProductSeriesFilter>("all");
+  /** 产品排序输入草稿（与「保存并发布」解耦，由「应用排序」立即写入 CMS） */
+  const [productSortDrafts, setProductSortDrafts] = useState<Record<string, string>>({});
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
 
@@ -326,6 +328,33 @@ export default function AdminSectionEditor({
     const draftsRows = rows.map((row) => drafts[docId(row)] ?? row);
     return countAdminProductsBySeriesFilter(draftsRows);
   }, [section, rows, drafts]);
+
+  /** 全站产品按 sortOrder 升序（上移/下移邻居，不受系列 Tab 筛选影响） */
+  const sortedAllProducts = useMemo(() => {
+    if (section !== "products") return [];
+    return [...rows].sort((a, b) => {
+      const orderA = Number(a.sortOrder);
+      const orderB = Number(b.sortOrder);
+      const safeA = Number.isFinite(orderA) ? orderA : Number.MAX_SAFE_INTEGER;
+      const safeB = Number.isFinite(orderB) ? orderB : Number.MAX_SAFE_INTEGER;
+      if (safeA !== safeB) return safeA - safeB;
+      return String(a.model ?? a.nameZh ?? "").localeCompare(String(b.model ?? b.nameZh ?? ""));
+    });
+  }, [section, rows]);
+
+  const duplicateProductSortOrders = useMemo(() => {
+    if (section !== "products") return [];
+    const map = new Map<number, number>();
+    for (const row of rows) {
+      const sortOrder = Number(row.sortOrder);
+      if (!Number.isInteger(sortOrder) || sortOrder <= 0) continue;
+      map.set(sortOrder, (map.get(sortOrder) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .filter(([, count]) => count > 1)
+      .map(([sortOrder, count]) => ({ sortOrder, count }))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [section, rows]);
 
   useEffect(() => {
     if (localStorage.getItem("dbsource-admin-hint") === "hidden") setShowHint(false);
@@ -1044,45 +1073,97 @@ export default function AdminSectionEditor({
     });
   }
 
-  /** 与界面产品列表一致：在当前系列筛选结果中与相邻项交换 sortOrder */
-  function moveProductRow(id: string, direction: "up" | "down") {
+  /** 全站相邻产品立即交换并保存到 CMS */
+  async function moveProductRow(id: string, direction: "up" | "down") {
     if (section !== "products") return;
-    const current = drafts[id];
-    if (!current) return;
+    const current = rows.find((row) => docId(row) === id);
+    if (!current) {
+      setMessage({ type: "error", text: "未找到当前产品" });
+      return;
+    }
 
-    const visible = filteredRows
-      .map((row) => drafts[docId(row)] ?? row)
-      .sort(compareAdminProductRows);
-    const index = visible.findIndex((item) => docId(item) === id);
-    if (index < 0) return;
+    const index = sortedAllProducts.findIndex((item) => docId(item) === id);
+    if (index < 0) {
+      setMessage({ type: "error", text: "未在产品列表中找到当前产品" });
+      return;
+    }
     const swapIndex = direction === "up" ? index - 1 : index + 1;
-    if (swapIndex < 0 || swapIndex >= visible.length) return;
+    const neighbor = sortedAllProducts[swapIndex];
+    if (!neighbor) return;
 
-    const other = visible[swapIndex];
-    const otherId = docId(other);
-    const currentOrder = Number(current.sortOrder) || 0;
-    const otherOrder = Number(other.sortOrder) || 0;
+    const targetSortOrder = Number(neighbor.sortOrder);
+    if (!Number.isInteger(targetSortOrder) || targetSortOrder <= 0) {
+      setMessage({ type: "error", text: "目标产品排序号无效" });
+      return;
+    }
 
-    setDrafts((prev) => {
-      const next = { ...prev };
-      if (currentOrder === otherOrder) {
-        // 相同排序号时纯交换无效，让移动项 ±1 以立即可排序
-        next[id] = {
-          ...(next[id] ?? current),
-          sortOrder: direction === "up" ? otherOrder - 1 : otherOrder + 1,
-        };
-      } else {
-        next[id] = { ...(next[id] ?? current), sortOrder: otherOrder };
-        next[otherId] = { ...(next[otherId] ?? other), sortOrder: currentOrder };
+    await applyProductSortOrder(id, targetSortOrder);
+  }
+
+  async function applyProductSortOrder(id: string, targetOverride?: number) {
+    if (section !== "products") return;
+    const documentId = id.trim();
+    if (!documentId) {
+      setMessage({ type: "error", text: "当前产品缺少 documentId，无法排序" });
+      return;
+    }
+
+    const draftValue =
+      targetOverride != null
+        ? String(targetOverride)
+        : (productSortDrafts[documentId] ?? String(drafts[documentId]?.sortOrder ?? "")).trim();
+    const targetSortOrder = Number(draftValue);
+    if (!Number.isInteger(targetSortOrder) || targetSortOrder <= 0) {
+      setMessage({ type: "error", text: "排序号必须是正整数" });
+      return;
+    }
+
+    setSavingId(`product-sort-${documentId}`);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/products/swap-sort-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productDocumentId: documentId,
+          targetSortOrder,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        message?: string;
+        changed?: boolean;
+      };
+
+      if (!res.ok || !json.ok) {
+        setMessage({
+          type: "error",
+          text: json.error || json.message || "产品排序更新失败",
+        });
+        return;
       }
-      return next;
-    });
-    setDirtyIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      if (currentOrder !== otherOrder) next.add(otherId);
-      return next;
-    });
+
+      setProductSortDrafts({});
+      setDirtyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(documentId);
+        return next;
+      });
+
+      await load(openId);
+      setMessage({
+        type: "ok",
+        text: json.message || (json.changed === false ? "排序未变化" : "排序已更新"),
+      });
+    } catch (e) {
+      setMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "排序更新失败，请稍后重试",
+      });
+    } finally {
+      setSavingId(null);
+    }
   }
 
   async function translateBilingualRow(id: string) {
@@ -1273,6 +1354,17 @@ export default function AdminSectionEditor({
               </button>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {section === "products" && duplicateProductSortOrders.length > 0 ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200 space-y-1">
+          <p>检测到产品排序号重复，请先修复，否则排序交换可能失败：</p>
+          {duplicateProductSortOrders.map((item) => (
+            <p key={item.sortOrder} className="font-mono text-xs">
+              #{item.sortOrder} 被 {item.count} 个产品使用
+            </p>
+          ))}
         </div>
       ) : null}
 
@@ -1829,23 +1921,35 @@ export default function AdminSectionEditor({
 
       {section !== "contact"
         ? (() => {
-            const renderRow = (row: StrapiRow, rowIndex?: number) => {
+            const renderRow = (row: StrapiRow, _rowIndex?: number) => {
               const id = docId(row);
               const draft = drafts[id] ?? row;
               const isOpen = openId === id;
               const title = rowTitle(draft);
               const subtitle = rowSubtitle(section, draft);
               const isDirty = dirtyIds.has(id);
+              const savedSortOrder = Number(row.sortOrder);
               const productSortLabel =
-                section === "products" && draft.sortOrder != null && String(draft.sortOrder) !== ""
-                  ? `#${String(draft.sortOrder)}`
+                section === "products" && Number.isInteger(savedSortOrder) && savedSortOrder > 0
+                  ? `#${savedSortOrder}`
                   : null;
-              const canMoveUp =
-                section === "products" && typeof rowIndex === "number" ? rowIndex > 0 : true;
+              const globalIndex =
+                section === "products"
+                  ? sortedAllProducts.findIndex((item) => docId(item) === id)
+                  : -1;
+              const canMoveUp = section === "products" ? globalIndex > 0 : true;
               const canMoveDown =
-                section === "products" && typeof rowIndex === "number"
-                  ? rowIndex < filteredRows.length - 1
+                section === "products"
+                  ? globalIndex >= 0 && globalIndex < sortedAllProducts.length - 1
                   : true;
+              const productSortSaving = savingId === `product-sort-${id}`;
+              const sortDraftValue =
+                productSortDrafts[id] ??
+                String(
+                  Number.isInteger(savedSortOrder) && savedSortOrder > 0
+                    ? savedSortOrder
+                    : draft.sortOrder ?? ""
+                );
 
               return (
                 <div
@@ -1878,6 +1982,11 @@ export default function AdminSectionEditor({
                       {subtitle ? (
                         <p className="text-xs text-gray-500 mt-0.5 truncate">{subtitle}</p>
                       ) : null}
+                      {section === "products" && productSortLabel ? (
+                        <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                          前台链接 /products/{savedSortOrder}
+                        </p>
+                      ) : null}
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
                       {section === "cases" ? (
@@ -1906,8 +2015,8 @@ export default function AdminSectionEditor({
                             type="button"
                             className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none"
                             onClick={() => moveProductRow(id, "up")}
-                            disabled={!canMoveUp}
-                            title="上移"
+                            disabled={!canMoveUp || productSortSaving}
+                            title="上移（全站相邻交换并立即保存）"
                           >
                             <ArrowUp size={14} />
                           </button>
@@ -1915,10 +2024,34 @@ export default function AdminSectionEditor({
                             type="button"
                             className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none"
                             onClick={() => moveProductRow(id, "down")}
-                            disabled={!canMoveDown}
-                            title="下移"
+                            disabled={!canMoveDown || productSortSaving}
+                            title="下移（全站相邻交换并立即保存）"
                           >
                             <ArrowDown size={14} />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            className="w-16 h-7 rounded border border-white/10 bg-black/40 px-1.5 text-xs text-white font-mono"
+                            value={sortDraftValue}
+                            disabled={productSortSaving}
+                            onChange={(e) =>
+                              setProductSortDrafts((prev) => ({
+                                ...prev,
+                                [id]: e.target.value,
+                              }))
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            title="目标排序号"
+                          />
+                          <button
+                            type="button"
+                            className="h-7 px-2 inline-flex items-center justify-center rounded border border-white/15 text-[11px] text-white/80 hover:text-white hover:border-white/30 disabled:opacity-40"
+                            onClick={() => applyProductSortOrder(id)}
+                            disabled={productSortSaving}
+                            title="应用排序并立即保存到 CMS"
+                          >
+                            {productSortSaving ? "…" : "应用"}
                           </button>
                         </>
                       ) : null}
@@ -2147,15 +2280,17 @@ function renderFields(
                 { value: "global", label: "仅海外站" },
               ]}
             />
-            <Field key="sortOrder" label="排序（数字越小越靠前）">
-              <input
-                type="number"
-                className={inputClass}
-                value={String(draft.sortOrder ?? "")}
-                onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
-              />
+            <Field key="sortOrder" label="排序（数字越小越靠前，也是前台详情 ID）">
+              <p className="text-sm text-white font-mono">
+                #{String(draft.sortOrder ?? "—")}
+                {draft.sortOrder != null && Number(draft.sortOrder) > 0 ? (
+                  <span className="ml-2 text-xs text-white/45 font-sans">
+                    /products/{String(draft.sortOrder)}
+                  </span>
+                ) : null}
+              </p>
               <p className="text-xs text-white/45 mt-1.5">
-                建议用上移/下移调整位置；改数字会影响前台产品链接 ID，请谨慎。
+                请用卡片右侧「上移 / 下移 / 应用」立即保存并自动交换；勿依赖「保存并发布」改排序号。
               </p>
             </Field>
             <SelectField

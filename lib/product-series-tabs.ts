@@ -19,6 +19,8 @@ export interface ProductSeriesTabRow {
   category?: unknown;
   seriesGroup?: unknown;
   sortOrder?: unknown;
+  /** 前台 Product.id 即 Strapi sortOrder */
+  id?: unknown;
 }
 
 export const PRODUCT_SERIES_TAB_ORDER: ProductSeriesTabFilter[] = [
@@ -220,8 +222,8 @@ export function compareProductsBySeriesTab(
   a: ProductSeriesTabRow,
   b: ProductSeriesTabRow
 ): number {
-  const orderA = Number(a.sortOrder) || 0;
-  const orderB = Number(b.sortOrder) || 0;
+  const orderA = Number(a.sortOrder ?? a.id) || 0;
+  const orderB = Number(b.sortOrder ?? b.id) || 0;
   if (orderA !== orderB) return orderA - orderB;
 
   const tabA = TAB_WEIGHT.get(getProductSeriesTab(a)) ?? 999;
