@@ -1044,6 +1044,47 @@ export default function AdminSectionEditor({
     });
   }
 
+  /** 与界面产品列表一致：在当前系列筛选结果中与相邻项交换 sortOrder */
+  function moveProductRow(id: string, direction: "up" | "down") {
+    if (section !== "products") return;
+    const current = drafts[id];
+    if (!current) return;
+
+    const visible = filteredRows
+      .map((row) => drafts[docId(row)] ?? row)
+      .sort(compareAdminProductRows);
+    const index = visible.findIndex((item) => docId(item) === id);
+    if (index < 0) return;
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= visible.length) return;
+
+    const other = visible[swapIndex];
+    const otherId = docId(other);
+    const currentOrder = Number(current.sortOrder) || 0;
+    const otherOrder = Number(other.sortOrder) || 0;
+
+    setDrafts((prev) => {
+      const next = { ...prev };
+      if (currentOrder === otherOrder) {
+        // 相同排序号时纯交换无效，让移动项 ±1 以立即可排序
+        next[id] = {
+          ...(next[id] ?? current),
+          sortOrder: direction === "up" ? otherOrder - 1 : otherOrder + 1,
+        };
+      } else {
+        next[id] = { ...(next[id] ?? current), sortOrder: otherOrder };
+        next[otherId] = { ...(next[otherId] ?? other), sortOrder: currentOrder };
+      }
+      return next;
+    });
+    setDirtyIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      if (currentOrder !== otherOrder) next.add(otherId);
+      return next;
+    });
+  }
+
   async function translateBilingualRow(id: string) {
     if (section !== "cases" && section !== "products") return;
     const draft = drafts[id];
@@ -1788,13 +1829,23 @@ export default function AdminSectionEditor({
 
       {section !== "contact"
         ? (() => {
-            const renderRow = (row: StrapiRow) => {
+            const renderRow = (row: StrapiRow, rowIndex?: number) => {
               const id = docId(row);
               const draft = drafts[id] ?? row;
               const isOpen = openId === id;
               const title = rowTitle(draft);
               const subtitle = rowSubtitle(section, draft);
               const isDirty = dirtyIds.has(id);
+              const productSortLabel =
+                section === "products" && draft.sortOrder != null && String(draft.sortOrder) !== ""
+                  ? `#${String(draft.sortOrder)}`
+                  : null;
+              const canMoveUp =
+                section === "products" && typeof rowIndex === "number" ? rowIndex > 0 : true;
+              const canMoveDown =
+                section === "products" && typeof rowIndex === "number"
+                  ? rowIndex < filteredRows.length - 1
+                  : true;
 
               return (
                 <div
@@ -1813,6 +1864,11 @@ export default function AdminSectionEditor({
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{title}</span>
+                        {productSortLabel ? (
+                          <span className="shrink-0 text-[10px] text-gray-500 font-mono">
+                            {productSortLabel}
+                          </span>
+                        ) : null}
                         {isDirty ? (
                           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
                             未保存
@@ -1838,6 +1894,28 @@ export default function AdminSectionEditor({
                             type="button"
                             className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30"
                             onClick={() => moveCaseRow(id, "down")}
+                            title="下移"
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                        </>
+                      ) : null}
+                      {section === "products" ? (
+                        <>
+                          <button
+                            type="button"
+                            className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none"
+                            onClick={() => moveProductRow(id, "up")}
+                            disabled={!canMoveUp}
+                            title="上移"
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="h-7 w-7 inline-flex items-center justify-center rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:pointer-events-none"
+                            onClick={() => moveProductRow(id, "down")}
+                            disabled={!canMoveDown}
                             title="下移"
                           >
                             <ArrowDown size={14} />
@@ -2076,6 +2154,9 @@ function renderFields(
                 value={String(draft.sortOrder ?? "")}
                 onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
               />
+              <p className="text-xs text-white/45 mt-1.5">
+                建议用上移/下移调整位置；改数字会影响前台产品链接 ID，请谨慎。
+              </p>
             </Field>
             <SelectField
               key="seriesGroup"
