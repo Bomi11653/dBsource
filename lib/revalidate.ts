@@ -100,10 +100,10 @@ export function modulesForAdminCollection(
     "about-sections": ["about"],
     scenes: ["home"],
     "product-series-configs": ["products", "home"],
-    "contact-info": ["contact", "home"],
+    "contact-info": ["contact", "home", "about"],
     "global-setting": ["home", "footer"],
     "qr-codes": ["footer"],
-    "sales-contacts": ["contact"],
+    "sales-contacts": ["contact", "about"],
     "social-links": ["footer"],
     leads: [],
   };

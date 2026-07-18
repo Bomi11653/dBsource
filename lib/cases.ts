@@ -161,14 +161,6 @@ export function filterCasesBySub(
   return result;
 }
 
-export function getRelatedCases(
-  currentId: number,
-  allCases: CaseItem[],
-  limit = 2
-): CaseItem[] {
-  return allCases.filter((c) => c.id !== currentId).slice(0, limit);
-}
-
 function sortCasesWithinType(list: CaseItem[], type: CaseType): CaseItem[] {
   const preferredOrder = CASE_TYPE_ORDER[type];
   const hasCmsSort = list.some((item) => typeof item.sortOrder === "number");

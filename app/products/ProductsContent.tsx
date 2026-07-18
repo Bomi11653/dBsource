@@ -1,7 +1,7 @@
 "use client";
 
-import BrowseGuide from "@/components/BrowseGuide";
 import PageHeader from "@/components/PageHeader";
+import ProductCategoryGuide from "@/components/products/ProductCategoryGuide";
 import ProductGridCard from "@/components/ProductGridCard";
 import ProductPagination from "@/components/ProductPagination";
 import ProductSearchBar from "@/components/ProductSearchBar";
@@ -11,7 +11,19 @@ import { PRODUCTS_PAGE_SIZE } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import { searchProducts } from "@/lib/products";
 import {
-  filterProductsBySeriesTab,
+  ENGINEERING_SERIES_ORDER,
+  filterEngineeringProducts,
+  filterTouringProducts,
+  getEngineeringSeriesLabel,
+  getTouringProductLabel,
+  getTouringProductNavItems,
+  isTouringProductKey,
+  matchEngineeringProductLine,
+  sortEngineeringProducts,
+  sortTouringNavProducts,
+  type ProductCategoryType,
+} from "@/lib/product-classification";
+import {
   getProductSeriesTabLabel,
   parseProductSeriesTabFromParams,
   type ProductSeriesTabFilter,
@@ -20,20 +32,51 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
+const ENGINEERING_SERIES_KEYS = new Set<ProductSeriesTabFilter>([
+  "all",
+  ...ENGINEERING_SERIES_ORDER.map((entry) => entry.key),
+]);
+
+function parseProductCategory(
+  group: string | null,
+  product: string | null
+): ProductCategoryType {
+  if (group === "touring" || (product && isTouringProductKey(product))) {
+    return "touring";
+  }
+  return "engineering";
+}
+
 export default function ProductsContent({ products }: { products: Product[] }) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [currentPage, setCurrentPage] = useState(1);
+  const [productCategory, setProductCategory] = useState<ProductCategoryType>("engineering");
   const [seriesFilter, setSeriesFilter] = useState<ProductSeriesTabFilter>("all");
+  const [touringFilter, setTouringFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 250);
 
+  const touringNav = useMemo(() => getTouringProductNavItems(products), [products]);
+
   const syncUrl = useCallback(
-    (next: { series: ProductSeriesTabFilter; q: string; page: number }) => {
+    (next: {
+      category: ProductCategoryType;
+      series: ProductSeriesTabFilter;
+      touringProduct: string;
+      q: string;
+      page: number;
+    }) => {
       const params = new URLSearchParams();
-      if (next.series !== "all") params.set("series", next.series);
+      if (next.category === "touring") params.set("group", "touring");
+      if (next.category === "engineering" && next.series !== "all") {
+        params.set("series", next.series);
+      }
+      if (next.category === "touring" && next.touringProduct !== "all") {
+        params.set("product", next.touringProduct);
+      }
       if (next.q.trim()) params.set("q", next.q.trim());
       if (next.page > 1) params.set("page", String(next.page));
       const qs = params.toString();
@@ -43,21 +86,94 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   );
 
   useEffect(() => {
+    const group = searchParams.get("group");
+    const product = searchParams.get("product");
     const series = searchParams.get("series");
     const sub = searchParams.get("sub");
-    const category = searchParams.get("category");
+    const categoryParam = searchParams.get("category");
     const q = searchParams.get("q") ?? "";
     const page = Number(searchParams.get("page") ?? "1");
 
-    setSeriesFilter(parseProductSeriesTabFromParams(series, sub, category));
+    const category = parseProductCategory(group, product);
+    setProductCategory(category);
+
+    if (category === "touring") {
+      setTouringFilter(product && isTouringProductKey(product) ? product : "all");
+      setSeriesFilter("all");
+    } else {
+      const parsed = parseProductSeriesTabFromParams(series, sub, categoryParam);
+      setSeriesFilter(ENGINEERING_SERIES_KEYS.has(parsed) ? parsed : "all");
+      setTouringFilter("all");
+    }
+
     setSearchQuery(q);
     setCurrentPage(Number.isFinite(page) && page > 0 ? page : 1);
   }, [searchParams]);
 
+  const categoryLabels = useMemo(
+    () => ({
+      engineering: t.products.categoryEngineering,
+      touring: t.products.categoryTouring,
+    }),
+    [t.products.categoryEngineering, t.products.categoryTouring]
+  );
+
+  const filterTabs = useMemo(() => {
+    const allTab = { id: "all", label: getProductSeriesTabLabel("all") };
+    if (productCategory === "engineering") {
+      return [
+        allTab,
+        ...ENGINEERING_SERIES_ORDER.map((entry) => ({
+          id: entry.key,
+          label: getEngineeringSeriesLabel(entry, locale),
+        })),
+      ];
+    }
+    return [
+      allTab,
+      ...touringNav.items.map((item) => ({
+        id: item.key,
+        label: getTouringProductLabel(item, locale),
+      })),
+    ];
+  }, [locale, productCategory, touringNav.items]);
+
+  const activeFilterId =
+    productCategory === "engineering" ? seriesFilter : touringFilter;
+
+  const categoryProducts = useMemo(() => {
+    if (productCategory === "engineering") {
+      return filterEngineeringProducts(products);
+    }
+    return filterTouringProducts(products);
+  }, [productCategory, products]);
+
   const filtered = useMemo(() => {
-    const bySeries = filterProductsBySeriesTab(products, seriesFilter);
-    return searchProducts(bySeries, debouncedSearchQuery, locale);
-  }, [products, seriesFilter, debouncedSearchQuery, locale]);
+    let list = categoryProducts;
+    if (productCategory === "engineering") {
+      list =
+        seriesFilter === "all"
+          ? sortEngineeringProducts(list)
+          : list.filter((product) => matchEngineeringProductLine(product, seriesFilter));
+    } else {
+      if (touringFilter !== "all") {
+        const selected = touringNav.items.find((item) => item.key === touringFilter);
+        if (selected) {
+          list = list.filter((product) => product.id === selected.sortOrder);
+        }
+      }
+      list = sortTouringNavProducts(list, touringNav.items);
+    }
+    return searchProducts(list, debouncedSearchQuery, locale);
+  }, [
+    categoryProducts,
+    debouncedSearchQuery,
+    locale,
+    productCategory,
+    seriesFilter,
+    touringFilter,
+    touringNav.items,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PAGE_SIZE));
 
@@ -65,26 +181,73 @@ export default function ProductsContent({ products }: { products: Product[] }) {
     (value: string) => {
       setSearchQuery(value);
       setCurrentPage(1);
-      syncUrl({ series: seriesFilter, q: value, page: 1 });
+      syncUrl({
+        category: productCategory,
+        series: seriesFilter,
+        touringProduct: touringFilter,
+        q: value,
+        page: 1,
+      });
     },
-    [seriesFilter, syncUrl]
+    [productCategory, seriesFilter, touringFilter, syncUrl]
   );
 
   const handlePageChange = useCallback(
     (page: number) => {
       const next = Math.min(Math.max(1, page), totalPages);
       setCurrentPage(next);
-      syncUrl({ series: seriesFilter, q: searchQuery, page: next });
+      syncUrl({
+        category: productCategory,
+        series: seriesFilter,
+        touringProduct: touringFilter,
+        q: searchQuery,
+        page: next,
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [searchQuery, seriesFilter, syncUrl, totalPages]
+    [searchQuery, productCategory, seriesFilter, touringFilter, syncUrl, totalPages]
   );
 
-  const handleSeriesChange = useCallback(
-    (tab: ProductSeriesTabFilter) => {
-      setSeriesFilter(tab);
+  const handleFilterChange = useCallback(
+    (id: string) => {
       setCurrentPage(1);
-      syncUrl({ series: tab, q: searchQuery, page: 1 });
+      if (productCategory === "engineering") {
+        const nextSeries = id as ProductSeriesTabFilter;
+        setSeriesFilter(nextSeries);
+        syncUrl({
+          category: productCategory,
+          series: nextSeries,
+          touringProduct: "all",
+          q: searchQuery,
+          page: 1,
+        });
+        return;
+      }
+      setTouringFilter(id);
+      syncUrl({
+        category: productCategory,
+        series: "all",
+        touringProduct: id,
+        q: searchQuery,
+        page: 1,
+      });
+    },
+    [productCategory, searchQuery, syncUrl]
+  );
+
+  const handleCategoryChange = useCallback(
+    (category: ProductCategoryType) => {
+      setProductCategory(category);
+      setSeriesFilter("all");
+      setTouringFilter("all");
+      setCurrentPage(1);
+      syncUrl({
+        category,
+        series: "all",
+        touringProduct: "all",
+        q: searchQuery,
+        page: 1,
+      });
     },
     [searchQuery, syncUrl]
   );
@@ -102,22 +265,20 @@ export default function ProductsContent({ products }: { products: Product[] }) {
         title={t.products.title}
         subtitle={t.products.subtitle}
         guide={
-          <BrowseGuide
+          <ProductCategoryGuide
             title={t.guide.exploreTitle}
-            layout="scroll"
-            items={[
-              { label: getProductSeriesTabLabel("la"), href: "/products?series=la" },
-              { label: getProductSeriesTabLabel("sol"), href: "/products?series=sol" },
-              { label: getProductSeriesTabLabel("mi"), href: "/products?series=mi" },
-            ]}
+            active={productCategory}
+            labels={categoryLabels}
+            onChange={handleCategoryChange}
             className="mt-6"
           />
         }
       />
 
       <ProductSeriesBar
-        seriesFilter={seriesFilter}
-        onSeriesChange={handleSeriesChange}
+        tabs={filterTabs}
+        activeId={activeFilterId}
+        onChange={handleFilterChange}
         resultCount={filtered.length}
         search={
           <ProductSearchBar
@@ -132,7 +293,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
         <p className="text-center text-gray-500 py-16 px-4 break-words">{t.products.noResults}</p>
       ) : (
         <div
-          key={`${seriesFilter}-${searchQuery}-${currentPage}`}
+          key={`${productCategory}-${activeFilterId}-${searchQuery}-${currentPage}`}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 animate-page-in"
         >
           {currentProducts.map((p, i) => (

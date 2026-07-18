@@ -338,6 +338,38 @@ export async function getGlobalSetting() {
         return { ...fallback };
       }
 
+      type HomeFeaturedCaseSource = Pick<
+        GlobalSettingDoc,
+        | "homeFeaturedCaseId"
+        | "homeFeaturedCaseTitleZh"
+        | "homeFeaturedCaseTitleEn"
+        | "homeFeaturedCaseDescZh"
+        | "homeFeaturedCaseDescEn"
+        | "homeFeaturedCaseImage"
+      >;
+
+      let caseSource: HomeFeaturedCaseSource = doc;
+      const hasGlobalCase =
+        doc.homeFeaturedCaseId != null ||
+        doc.homeFeaturedCaseTitleZh ||
+        doc.homeFeaturedCaseTitleEn ||
+        doc.homeFeaturedCaseImage;
+
+      if (!hasGlobalCase) {
+        const contactDoc = await fetchStrapiSingle<HomeFeaturedCaseSource>(
+          "/contact-info?populate[homeFeaturedCaseImage]=true"
+        );
+        if (
+          contactDoc &&
+          (contactDoc.homeFeaturedCaseId != null ||
+            contactDoc.homeFeaturedCaseTitleZh ||
+            contactDoc.homeFeaturedCaseTitleEn ||
+            contactDoc.homeFeaturedCaseImage)
+        ) {
+          caseSource = contactDoc;
+        }
+      }
+
       return {
         logo: resolveBrowserMediaUrl(doc.logo?.url ?? "") || fallback.logo,
         footerCopyright: {
@@ -347,23 +379,23 @@ export async function getGlobalSetting() {
         homeFeaturedProductIds: [
           doc.homeFeaturedProductAId ?? fallback.homeFeaturedProductIds[0],
           doc.homeFeaturedProductBId ?? fallback.homeFeaturedProductIds[1],
-        ].filter((id): id is number => typeof id === "number"),
+        ].filter((id): id is number => typeof id === "number" && id > 0),
         homeFeaturedCase:
-          doc.homeFeaturedCaseId != null ||
-          doc.homeFeaturedCaseTitleZh ||
-          doc.homeFeaturedCaseTitleEn ||
-          doc.homeFeaturedCaseImage
+          caseSource.homeFeaturedCaseId != null ||
+          caseSource.homeFeaturedCaseTitleZh ||
+          caseSource.homeFeaturedCaseTitleEn ||
+          caseSource.homeFeaturedCaseImage
             ? {
-                caseId: doc.homeFeaturedCaseId ?? 0,
+                caseId: caseSource.homeFeaturedCaseId ?? 0,
                 title: {
-                  zh: doc.homeFeaturedCaseTitleZh ?? "",
-                  en: doc.homeFeaturedCaseTitleEn ?? "",
+                  zh: caseSource.homeFeaturedCaseTitleZh ?? "",
+                  en: caseSource.homeFeaturedCaseTitleEn ?? "",
                 },
                 desc: {
-                  zh: doc.homeFeaturedCaseDescZh ?? "",
-                  en: doc.homeFeaturedCaseDescEn ?? "",
+                  zh: caseSource.homeFeaturedCaseDescZh ?? "",
+                  en: caseSource.homeFeaturedCaseDescEn ?? "",
                 },
-                image: resolveBrowserMediaUrl(doc.homeFeaturedCaseImage?.url ?? ""),
+                image: resolveBrowserMediaUrl(caseSource.homeFeaturedCaseImage?.url ?? ""),
               }
             : fallback.homeFeaturedCase,
       };

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CaseItem, Product } from "@/data/mock";
+import type { Product } from "@/data/mock";
 import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import ProductStickyCta, { ProductDetailActions } from "@/components/ProductStickyCta";
@@ -17,12 +17,8 @@ import { useCallback, useState } from "react";
 
 export default function ProductDetailContent({
   product,
-  relatedCases,
-  recommendedProducts = [],
 }: {
   product: Product;
-  relatedCases: CaseItem[];
-  recommendedProducts?: Product[];
 }) {
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -90,12 +86,6 @@ export default function ProductDetailContent({
               { label: t.guide.productGallery, targetId: "product-gallery" },
               ...(stackedPages || specSheet || product.specs
                 ? [{ label: t.guide.productSpecs, targetId: "product-specs" }]
-                : []),
-              ...(relatedCases.length
-                ? [{ label: t.guide.productCases, targetId: "product-cases" }]
-                : []),
-              ...(recommendedProducts.length
-                ? [{ label: t.products.recommendedSystems, targetId: "product-recommendations" }]
                 : []),
               { label: t.guide.productsSpeaker, href: "/products" },
             ]}
@@ -225,77 +215,6 @@ export default function ProductDetailContent({
         </section>
       )}
 
-      {recommendedProducts.length > 0 && (
-        <section
-          id="product-recommendations"
-          className="page-x py-12 md:py-20 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
-        >
-          <h2 className="type-page-title text-2xl mb-2">{t.products.recommendedSystems}</h2>
-          <p className="text-sm text-gray-500 mb-8">{t.products.recommendedSystemsDesc}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recommendedProducts.map((p) => {
-              const rec = getProductDisplayTitle(p, locale);
-              return (
-              <Link
-                key={p.id}
-                href={`/products/${p.id}`}
-                className="group rounded-xl border border-white/10 bg-white/[0.03] p-4 hover:border-brand-gold/35 transition-colors"
-              >
-                <div className="relative aspect-[4/3] min-h-[160px] md:min-h-0 rounded-lg overflow-hidden bg-zinc-900 mb-3">
-                  {p.image ? (
-                    <CmsImage
-                      src={p.image}
-                      alt={rec.label}
-                      fill
-                      className="object-contain object-center p-2 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform"
-                      sizes="240px"
-                    />
-                  ) : null}
-                </div>
-                <p className="type-card-title text-sm group-hover:text-brand-gold transition-colors break-words">
-                  {rec.primary}
-                </p>
-                {rec.subtitle ? (
-                  <p className="text-xs text-brand-gold/90 type-label mt-1">{rec.subtitle}</p>
-                ) : null}
-              </Link>
-            );
-            })}
-          </div>
-        </section>
-      )}
-
-      {relatedCases.length > 0 && (
-      <section
-        id="product-cases"
-        className="page-x py-12 md:py-20 max-w-6xl mx-auto scroll-mt-28"
-      >
-        <h2 className="type-page-title text-2xl mb-8">{t.products.detailCases}</h2>
-        <div className="grid md:grid-cols-2 gap-8">
-          {relatedCases.map((c) => (
-            <Link
-              key={c.id}
-              href={`/cases/${c.id}`}
-              className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
-            >
-              <div className="relative aspect-[16/10] min-h-[180px] md:h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
-                <CmsImage
-                  src={c.image}
-                  alt={c.title[locale]}
-                  fill
-                  className="object-cover object-center opacity-80 group-hover:opacity-100 transition-opacity"
-                />
-              </div>
-              <h3 className="type-card-title text-xl group-hover:text-brand-gold transition-colors break-words">
-                {c.title[locale]}
-              </h3>
-              <p className="text-gray-400 text-sm mt-2">{c.desc[locale]}</p>
-              <p className="text-xs text-gray-500 mt-3 type-label break-words">{c.products}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-      )}
       <ProductStickyCta product={product} />
     </div>
   );

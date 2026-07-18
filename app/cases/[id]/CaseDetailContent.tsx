@@ -4,22 +4,19 @@ import type { CaseItem } from "@/data/mock";
 import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
-import { getCaseCoverUrl, getCaseGalleryUrls, getCaseHeroUrl } from "@/lib/case-media";
+import { getCaseGalleryUrls, getCaseHeroUrl } from "@/lib/case-media";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function CaseDetailContent({
   caseItem,
-  relatedCases,
 }: {
   caseItem: CaseItem;
-  relatedCases: CaseItem[];
 }) {
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const body = caseItem.detail?.[locale] ?? caseItem.desc[locale];
-  const cover = getCaseCoverUrl(caseItem);
   const heroSrc = getCaseHeroUrl(caseItem);
   const heroImages = getCaseGalleryUrls(caseItem);
   const highlights = caseItem.highlights?.[locale] ?? [];
@@ -58,9 +55,6 @@ export default function CaseDetailContent({
             items={[
               { label: t.guide.caseOverview, targetId: "case-overview" },
               { label: t.guide.caseGallery, targetId: "case-gallery" },
-              ...(relatedCases.length
-                ? [{ label: t.guide.caseRelated, targetId: "case-related" }]
-                : []),
               { label: t.guide.productsSpeaker, href: "/products" },
             ]}
             className="mt-6"
@@ -147,45 +141,6 @@ export default function CaseDetailContent({
           next: t.cases.galleryNext,
         }}
       />
-      )}
-
-      {relatedCases.length > 0 && (
-        <section
-          id="case-related"
-          className="page-x py-12 md:py-20 max-w-6xl mx-auto scroll-mt-28"
-        >
-          <h2 className="text-2xl font-medium mb-8">{t.cases.related}</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            {relatedCases.map((c) => {
-              const relatedCover = getCaseCoverUrl(c);
-              return (
-              <Link
-                key={c.id}
-                href={`/cases/${c.id}`}
-                className="group bg-white/5 border border-white/10 p-6 rounded-xl hover:border-brand-gold/30 transition-colors"
-              >
-                <div className="relative aspect-[16/10] min-h-[180px] md:h-40 rounded-lg overflow-hidden mb-4 bg-zinc-900">
-                  {relatedCover ? (
-                  <CmsImage
-                    src={relatedCover}
-                    alt={c.title[locale]}
-                    fill
-                    className="object-cover object-center opacity-80 group-hover:opacity-100 transition-opacity"
-                  />
-                  ) : null}
-                </div>
-                <span className="text-xs text-brand-gold uppercase tracking-wider">
-                  {c.scene[locale]}
-                </span>
-                <h3 className="text-xl font-medium mt-2 group-hover:text-brand-gold transition-colors break-words">
-                  {c.title[locale]}
-                </h3>
-                <p className="text-gray-400 text-sm mt-2 line-clamp-2">{c.desc[locale]}</p>
-              </Link>
-              );
-            })}
-          </div>
-        </section>
       )}
     </div>
   );

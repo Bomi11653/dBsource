@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  PRODUCT_SERIES_TABS,
-  type ProductSeriesTabFilter,
-} from "@/lib/product-series-tabs";
 import { useI18n } from "./I18nProvider";
+
+export type ProductFilterTab = {
+  id: string;
+  label: string;
+};
 
 function FilterButton({
   active,
@@ -32,13 +33,15 @@ function FilterButton({
 }
 
 export default function ProductSeriesBar({
-  seriesFilter,
-  onSeriesChange,
+  tabs,
+  activeId,
+  onChange,
   resultCount,
   search,
 }: {
-  seriesFilter: ProductSeriesTabFilter;
-  onSeriesChange: (tab: ProductSeriesTabFilter) => void;
+  tabs: ProductFilterTab[];
+  activeId: string;
+  onChange: (id: string) => void;
   resultCount: number;
   search?: ReactNode;
 }) {
@@ -51,11 +54,11 @@ export default function ProductSeriesBar({
 
         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b md:border-white/10 md:pb-4">
           <div className="filter-scroll md:flex md:flex-wrap md:gap-3 min-w-0 -mx-1 px-1">
-            {PRODUCT_SERIES_TABS.map((tab) => (
+            {tabs.map((tab) => (
               <FilterButton
                 key={tab.id}
-                active={seriesFilter === tab.id}
-                onClick={() => onSeriesChange(tab.id)}
+                active={activeId === tab.id}
+                onClick={() => onChange(tab.id)}
               >
                 {tab.label}
               </FilterButton>

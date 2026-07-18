@@ -6,7 +6,6 @@ import JsonLd from "@/components/JsonLd";
 import MaintenanceGate from "@/components/MaintenanceGate";
 import PageTransitionProvider from "@/components/PageTransitionProvider";
 import { PerformanceModeProvider } from "@/components/PerformanceModeProvider";
-import { SeriesConfigProvider } from "@/components/SeriesConfigProvider";
 import { SiteDataProvider } from "@/components/SiteDataProvider";
 import SmoothScroll from "@/components/SmoothScroll";
 import WeChatCompat from "@/components/WeChatCompat";
@@ -18,8 +17,6 @@ import {
   isMaintenanceMode,
 } from "@/lib/maintenance";
 import { organizationJsonLd, siteConfig } from "@/lib/seo";
-import { getSeriesConfig } from "@/lib/series-config";
-import { fetchSeriesConfigFromCMS } from "@/lib/fetch-series-config";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -71,9 +68,6 @@ export default async function RootLayout({
     ]);
   }
 
-  const cmsSeries = await fetchSeriesConfigFromCMS();
-  const seriesConfig = getSeriesConfig(products, cmsSeries);
-
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
@@ -107,14 +101,12 @@ export default async function RootLayout({
             contact={maintenanceContact}
           >
             <PerformanceModeProvider>
-              <SeriesConfigProvider config={seriesConfig}>
-                <SiteDataProvider products={products} cases={cases} downloads={downloads}>
-                  <PageTransitionProvider>
-                    <SmoothScroll />
-                    <AdminAwareChrome>{children}</AdminAwareChrome>
-                  </PageTransitionProvider>
-                </SiteDataProvider>
-              </SeriesConfigProvider>
+              <SiteDataProvider products={products} cases={cases} downloads={downloads}>
+                <PageTransitionProvider>
+                  <SmoothScroll />
+                  <AdminAwareChrome>{children}</AdminAwareChrome>
+                </PageTransitionProvider>
+              </SiteDataProvider>
             </PerformanceModeProvider>
           </MaintenanceGate>
         </I18nProvider>

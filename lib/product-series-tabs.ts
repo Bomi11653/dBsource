@@ -8,9 +8,7 @@ export type ProductSeriesTabFilter =
   | "do"
   | "k"
   | "re"
-  | "c"
   | "electronics"
-  | "software"
   | "other";
 
 export interface ProductSeriesTabRow {
@@ -32,9 +30,7 @@ export const PRODUCT_SERIES_TAB_ORDER: ProductSeriesTabFilter[] = [
   "do",
   "k",
   "re",
-  "c",
   "electronics",
-  "software",
   "other",
 ];
 
@@ -47,9 +43,7 @@ const TAB_LABELS: Record<ProductSeriesTabFilter, string> = {
   do: "DO系列",
   k: "K系列",
   re: "RE系列",
-  c: "C端系列",
   electronics: "电子周边",
-  software: "软件",
   other: "其他",
 };
 
@@ -61,7 +55,6 @@ const LINE_TO_TAB: Record<string, ProductSeriesTabFilter> = {
   do: "do",
   k: "k",
   re: "re",
-  c: "c",
 };
 
 const MODEL_PREFIX_RULES: { prefix: string; tab: ProductSeriesTabFilter }[] = [
@@ -72,7 +65,6 @@ const MODEL_PREFIX_RULES: { prefix: string; tab: ProductSeriesTabFilter }[] = [
   { prefix: "DO", tab: "do" },
   { prefix: "K", tab: "k" },
   { prefix: "RE", tab: "re" },
-  { prefix: "C", tab: "c" },
 ];
 
 const TAB_WEIGHT = new Map(PRODUCT_SERIES_TAB_ORDER.map((id, index) => [id, index]));
@@ -117,7 +109,8 @@ export function getProductSeriesTab(row: ProductSeriesTabRow): ProductSeriesTabF
   const model = strField(row, "model");
 
   if (line && LINE_TO_TAB[line]) return LINE_TO_TAB[line];
-  if (isSoftware(row)) return "software";
+  if (line === "c") return "other";
+  if (isSoftware(row)) return "other";
   if (isElectronics(row)) return "electronics";
 
   const byPrefix = matchModelPrefix(model);
@@ -143,7 +136,6 @@ const CANONICAL_SERIES_QUERY: Record<string, ProductSeriesTabFilter | "all"> = {
   speaker: "all",
   engineering: "all",
   dsp: "electronics",
-  software: "software",
   la: "la",
   lw: "lw",
   mi: "mi",
@@ -151,12 +143,11 @@ const CANONICAL_SERIES_QUERY: Record<string, ProductSeriesTabFilter | "all"> = {
   sol: "sol",
   k: "k",
   re: "re",
-  c: "c",
   electronics: "electronics",
   accessory: "electronics",
   unit48: "electronics",
   driver: "electronics",
-  suite: "software",
+  suite: "all",
   tour: "other",
   p: "other",
   turnkey: "other",
@@ -184,10 +175,11 @@ export function parseProductSeriesTabFromParams(
     const subLine = sub.toLowerCase();
     if (LINE_TO_TAB[subLine]) return LINE_TO_TAB[subLine];
     if (["electronics", "accessory", "driver", "unit48"].includes(subLine)) return "electronics";
-    if (subLine === "suite") return "software";
+    if (subLine === "suite") return "all";
   }
 
-  if (series === "software" || category === "software") return "software";
+  if (series === "software" || category === "software") return "all";
+  if (series === "c") return "all";
   if (series === "dsp" || category === "dsp") return "electronics";
 
   return "all";

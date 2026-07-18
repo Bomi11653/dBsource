@@ -24,7 +24,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   {
     id: "home",
     title: { zh: "首页", en: "Home" },
-    description: { zh: "应用场景、核心产品、精选案例", en: "Scenes, featured products & cases" },
+    description: { zh: "应用场景条目（当前首页仅 Hero，以下配置暂不在前台展示）", en: "Scene entries (homepage shows Hero only; blocks below not live yet)" },
     href: "/admin/home",
     previewHref: "/",
     strapiPath: "/content-manager/collection-types/api::scene.scene",
@@ -34,7 +34,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   {
     id: "series",
     title: { zh: "产品系列", en: "Series" },
-    description: { zh: "导航系列增删、排序与显示", en: "Manage nav series visibility & order" },
+    description: { zh: "CMS 系列数据（导航由产品 productLine 控制，此处暂不影响前台）", en: "CMS series records (nav uses product productLine; not wired to frontend nav)" },
     href: "/admin/series",
     previewHref: "/products",
     strapiPath: "/content-manager/collection-types/api::product-series.product-series",

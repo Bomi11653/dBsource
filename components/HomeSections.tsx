@@ -1,6 +1,6 @@
 "use client";
 
-import { buildHomeFeaturedProducts, getHomeFeaturedCaseWithImage } from "@/data/home-featured";
+import { buildHomeFeaturedProductsByIds, getHomeFeaturedCaseWithImage } from "@/data/home-featured";
 import type { CaseItem, Product, SceneItem } from "@/data/mock";
 import { getHomeSceneHref } from "@/lib/case-scene-filters";
 import Link from "next/link";
@@ -43,9 +43,15 @@ export function HomeScenes({ scenes }: { scenes: SceneItem[] }) {
   );
 }
 
-export function HomeProductsPreview({ products }: { products: Product[] }) {
-  const { locale, t } = useI18n();
-  const featured = buildHomeFeaturedProducts(products);
+export function HomeProductsPreview({
+  products,
+  featuredProductIds,
+}: {
+  products: Product[];
+  featuredProductIds?: number[];
+}) {
+  const { t } = useI18n();
+  const featured = buildHomeFeaturedProductsByIds(products, featuredProductIds);
 
   return (
     <section

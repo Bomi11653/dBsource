@@ -1,5 +1,5 @@
-import type { CaseItem, Locale, Product, ProductCategory, ProductSeriesGroup } from "@/data/mock";
-import { cases, products } from "@/data/mock";
+import type { Locale, Product, ProductCategory, ProductSeriesGroup } from "@/data/mock";
+import { products } from "@/data/mock";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
 import { rankProductsForList } from "@/lib/search/rank-search";
 
@@ -202,29 +202,4 @@ export function getProductGallery(product: Product): string[] {
 
 export function getProductById(id: number): Product | undefined {
   return products.find((p) => p.id === id);
-}
-
-export function getRelatedCases(product: Product, allCases: CaseItem[] = cases): CaseItem[] {
-  const prefix = product.model.split("-")[0];
-  const matched = allCases.filter(
-    (c) => c.products.includes(prefix) || c.products.includes(product.model)
-  );
-  return (matched.length ? matched : allCases).slice(0, 2);
-}
-
-/** 同系列 / 同产品线推荐，用于详情页「系统搭配」 */
-export function getRecommendedProducts(
-  product: Product,
-  allProducts: Product[],
-  limit = 4
-): Product[] {
-  const others = allProducts.filter((p) => p.id !== product.id);
-  const sameLine = others.filter(
-    (p) =>
-      p.productLine === product.productLine ||
-      p.seriesGroup === product.seriesGroup ||
-      p.model.split("-")[0] === product.model.split("-")[0]
-  );
-  const pool = sameLine.length >= 2 ? sameLine : others;
-  return pool.slice(0, limit);
 }

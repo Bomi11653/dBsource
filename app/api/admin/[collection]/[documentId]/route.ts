@@ -57,6 +57,14 @@ export async function PUT(request: NextRequest, { params }: Props) {
   });
 }
 
+function unwrapDocData(payload: unknown): Record<string, unknown> | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const root = payload as { data?: unknown };
+  const data = root.data ?? payload;
+  if (!data || typeof data !== "object") return undefined;
+  return data as Record<string, unknown>;
+}
+
 export async function DELETE(request: NextRequest, { params }: Props) {
   const denied = assertAdminRequest(request);
   if (denied) return denied;
@@ -65,11 +73,17 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     return NextResponse.json({ ok: false, error: "未知内容类型" }, { status: 404 });
   }
 
+  const existing = await adminStrapiRequest(
+    "GET",
+    `/${params.collection}/${params.documentId}`
+  );
+  const deletedData = existing.ok ? unwrapDocData(existing.data) : undefined;
+
   const result = await adminStrapiRequest("DELETE", `/${params.collection}/${params.documentId}`);
   if (!result.ok) {
     return NextResponse.json(result, { status: 502 });
   }
-  const saveMeta = await buildAdminSaveResponse(params.collection, { ok: true });
+  const saveMeta = await buildAdminSaveResponse(params.collection, { ok: true }, deletedData);
   return NextResponse.json({
     ...result,
     saved: saveMeta.saved,

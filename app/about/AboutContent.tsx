@@ -1,9 +1,12 @@
 "use client";
 
-import BrowseGuide from "@/components/BrowseGuide";
 import { aboutImages, type AboutImages } from "@/data/about";
+import type { ContactInfo } from "@/data/mock";
+import type { SalesContactItem } from "@/data/sales-contacts";
 import { useI18n } from "@/components/I18nProvider";
+import ContactInfoSection from "@/components/contact/ContactInfoSection";
 import CmsImage from "@/components/CmsImage";
+import SalesContactCards from "@/components/SalesContactCards";
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -16,7 +19,15 @@ function SectionLabel({ children }: { children: string }) {
 const systemAspects = ["aspect-[1024/612]", "aspect-[988/749]", "aspect-[598/643]"] as const;
 const systemAlts = ["dBcover", "dBcover EQ", "dBcover SPL"] as const;
 
-export default function AboutContent({ images = aboutImages }: { images?: AboutImages }) {
+export default function AboutContent({
+  images = aboutImages,
+  contact,
+  salesContacts = [],
+}: {
+  images?: AboutImages;
+  contact: ContactInfo;
+  salesContacts?: SalesContactItem[];
+}) {
   const { locale, t } = useI18n();
 
   return (
@@ -25,17 +36,6 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
       <section className="page-x pt-24 sm:pt-28 pb-16 md:pb-40">
         <div className="max-w-5xl mx-auto">
           <SectionLabel>{t.about.label}</SectionLabel>
-          <BrowseGuide
-            title={t.guide.exploreTitle}
-            layout="stack"
-            items={[
-              { label: t.guide.aboutStory, targetId: "about-story" },
-              { label: t.guide.aboutSystem, targetId: "about-system" },
-              { label: t.guide.aboutDsp, targetId: "about-dsp" },
-              { label: t.guide.productsSpeaker, href: "/products" },
-            ]}
-            className="mb-10"
-          />
           <div id="about-story" className="space-y-8 hero-fade-in scroll-mt-28">
             {t.about.origin.body.map((paragraph, i) => (
               <p
@@ -186,19 +186,54 @@ export default function AboutContent({ images = aboutImages }: { images?: AboutI
         </div>
       </section>
 
-      {/* 信任背书条 */}
-      <section className="page-x pb-page-safe">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 border-t border-white/10 pt-16">
-          {t.about.stats.map((stat) => (
-            <div
-              key={stat}
-              className="text-center py-8 border border-white/5 rounded-xl reveal-on-scroll"
-            >
-              <p className="text-sm tracking-[0.2em] text-brand-gold uppercase">
-                {stat}
-              </p>
-            </div>
-          ))}
+      {/* 联系信息 */}
+      <section className="page-x pb-page-safe border-t border-white/10">
+        <div className="max-w-6xl mx-auto py-16 md:py-24 space-y-8 md:space-y-10">
+          <div className="max-w-2xl reveal-on-scroll">
+            <SectionLabel>{t.nav.contact}</SectionLabel>
+            <h2 className="text-3xl md:text-4xl font-light tracking-tight">
+              {t.contact.title}
+            </h2>
+            <p className="text-gray-400 text-lg leading-relaxed mt-6">
+              {t.contact.subtitle}
+            </p>
+          </div>
+
+          <div className="hidden lg:block space-y-8 reveal-on-scroll">
+            <ContactInfoSection
+              contact={contact}
+              layout="split"
+              mapEmbedWhen="lg"
+              infoId="about-contact-info"
+              mapId="about-contact-map"
+            />
+            {salesContacts.length > 0 ? (
+              <div className="contact-sales-shell">
+                <SalesContactCards contacts={salesContacts} />
+              </div>
+            ) : null}
+          </div>
+
+          <div className="grid gap-6 lg:hidden reveal-on-scroll">
+            <ContactInfoSection
+              contact={contact}
+              showMap={false}
+              infoId="about-contact-info"
+              mapId="about-contact-map"
+            />
+            {salesContacts.length > 0 ? (
+              <div className="contact-sales-shell">
+                <SalesContactCards contacts={salesContacts} />
+              </div>
+            ) : null}
+            <ContactInfoSection
+              contact={contact}
+              showCompany={false}
+              mapEmbedWhen="below-lg"
+              infoId="about-contact-info"
+              mapId="about-contact-map"
+            />
+          </div>
         </div>
       </section>
     </div>

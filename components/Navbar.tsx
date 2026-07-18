@@ -2,7 +2,7 @@
 
 import { usePageTransition } from "@/components/PageTransitionProvider";
 import { usePerformanceMode } from "@/components/PerformanceModeProvider";
-import type { CaseItem, CaseType, DownloadItem, ProductSeriesGroup } from "@/data/mock";
+import type { CaseItem, CaseType, DownloadItem } from "@/data/mock";
 import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
 import {
   DOWNLOAD_TABS,
@@ -10,13 +10,14 @@ import {
   type DownloadTab,
 } from "@/lib/downloads";
 import { useSiteData } from "@/components/SiteDataProvider";
-import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import {
-  getSubSeriesForGroupFromConfig,
-  getVisibleSeriesGroups,
-  seriesEntryLabel,
-} from "@/lib/series-config";
-import { useSeriesConfig } from "@/components/SeriesConfigProvider";
+  getEngineeringSeriesLabel,
+  getEngineeringSeriesNavItems,
+  getProductCategoryLabel,
+  getTouringProductLabel,
+  getTouringProductNavItems,
+  type ProductCategoryType,
+} from "@/lib/product-classification";
 import BrandLogo from "@/components/BrandLogo";
 import GlobalSearch from "@/components/GlobalSearch";
 import LanguageSwitch from "./LanguageSwitch";
@@ -24,7 +25,7 @@ import { useI18n } from "./I18nProvider";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type MegaMenu = "products" | "cases" | "downloads" | null;
 
@@ -125,31 +126,37 @@ function MegaSubColumns({
 }
 
 function ProductsMegaPanel({
-  activeSeries,
-  onSeriesHover,
+  activeCategory,
+  onCategoryHover,
   onNavigate,
-  seriesLabels,
   locale,
   t,
-  seriesConfig,
-  visibleGroups,
+  engineeringItems,
+  touringItems,
 }: {
-  activeSeries: ProductSeriesGroup;
-  onSeriesHover: (series: ProductSeriesGroup) => void;
+  activeCategory: ProductCategoryType;
+  onCategoryHover: (category: ProductCategoryType) => void;
   onNavigate: (e: React.MouseEvent, href: string) => void;
-  seriesLabels: Record<ProductSeriesGroup, string>;
   locale: "zh" | "en";
   t: ReturnType<typeof useI18n>["t"];
-  seriesConfig: ReturnType<typeof useSeriesConfig>;
-  visibleGroups: ProductSeriesGroup[];
+  engineeringItems: ReturnType<typeof getEngineeringSeriesNavItems>;
+  touringItems: ReturnType<typeof getTouringProductNavItems>["items"];
 }) {
-  const subItems = getSubSeriesForGroupFromConfig(activeSeries, seriesConfig);
-  const subLinks: MegaLinkItem[] = subItems.map((sub) => ({
-    key: sub.slug,
-    href: getProductSeriesHref(sub.slug),
-    label: seriesEntryLabel(sub, locale),
-  }));
-  const firstColumnCount = activeSeries === "speaker" ? 5 : subLinks.length;
+  const subLinks: MegaLinkItem[] =
+    activeCategory === "engineering"
+      ? engineeringItems.map((item) => ({
+          key: item.key,
+          href: item.href,
+          label: getEngineeringSeriesLabel(item, locale),
+        }))
+      : touringItems.map((item) => ({
+          key: item.key,
+          href: item.href,
+          label: getTouringProductLabel(item, locale),
+        }));
+
+  const subTitle = getProductCategoryLabel(activeCategory, locale);
+  const firstColumnCount = activeCategory === "engineering" ? 5 : subLinks.length;
 
   return (
     <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
@@ -160,28 +167,27 @@ function ProductsMegaPanel({
         onNavigate={onNavigate}
       >
         <ul className="space-y-1">
-          {visibleGroups.map((series) => (
-            <li key={series}>
-              <Link
-                href={getProductSeriesHref(series)}
-                onMouseEnter={() => onSeriesHover(series)}
-                onFocus={() => onSeriesHover(series)}
-                onClick={(e) => onNavigate(e, getProductSeriesHref(series))}
-                className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
-                  activeSeries === series
+          {(["engineering", "touring"] as const).map((category) => (
+            <li key={category}>
+              <button
+                type="button"
+                onMouseEnter={() => onCategoryHover(category)}
+                onFocus={() => onCategoryHover(category)}
+                className={`block w-full text-left py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
+                  activeCategory === category
                     ? "text-white"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                {seriesLabels[series]}
-              </Link>
+                {getProductCategoryLabel(category, locale)}
+              </button>
             </li>
           ))}
         </ul>
       </MegaMainColumn>
 
       <MegaSubColumns
-        title={seriesLabels[activeSeries]}
+        title={subTitle}
         links={subLinks}
         firstColumnCount={firstColumnCount}
         restColumnSize={3}
@@ -335,25 +341,26 @@ function DownloadsMegaPanel({
 export default function Navbar() {
   const { locale, t } = useI18n();
   const { resolvedMode } = usePerformanceMode();
-  const { downloads, cases } = useSiteData();
-  const seriesConfig = useSeriesConfig();
-  const visibleGroups = getVisibleSeriesGroups(seriesConfig);
+  const { products, downloads, cases } = useSiteData();
   const pathname = usePathname();
   const { navigateWithTransition } = usePageTransition();
   const [megaOpen, setMegaOpen] = useState<MegaMenu>(null);
-  const [activeProductSeries, setActiveProductSeries] = useState<ProductSeriesGroup>("speaker");
+  const [activeProductCategory, setActiveProductCategory] =
+    useState<ProductCategoryType>("engineering");
   const [activeCaseType, setActiveCaseType] = useState<CaseType>("engineering");
   const [activeDownloadTab, setActiveDownloadTab] = useState<DownloadTab>("software");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState<MegaMenu>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const seriesLabels: Record<ProductSeriesGroup, string> = {
-    speaker: t.products.seriesSpeaker,
-    dsp: t.products.seriesDsp,
-    software: t.products.seriesSoftware,
-    engineering: t.products.seriesEngineering,
-  };
+  const engineeringNavItems = useMemo(
+    () => getEngineeringSeriesNavItems(products),
+    [products]
+  );
+  const touringNavItems = useMemo(
+    () => getTouringProductNavItems(products).items,
+    [products]
+  );
 
   const caseLabels: Record<CaseType, string> = {
     engineering: t.nav.casesEngineering,
@@ -363,7 +370,7 @@ export default function Navbar() {
   const openMega = useCallback((menu: MegaMenu) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setMegaOpen(menu);
-    if (menu === "products") setActiveProductSeries("speaker");
+    if (menu === "products") setActiveProductCategory("engineering");
     if (menu === "cases") setActiveCaseType("engineering");
     if (menu === "downloads") setActiveDownloadTab("software");
   }, []);
@@ -449,7 +456,6 @@ export default function Navbar() {
   const simpleLinks = [
     { href: "/", key: "home" as const },
     { href: "/about", key: "about" as const },
-    { href: "/contact", key: "contact" as const },
   ];
   const shouldAnimate = resolvedMode === "high";
 
@@ -458,16 +464,16 @@ export default function Navbar() {
       className="fixed top-0 w-full z-50 bg-black/45 backdrop-blur-xl border-b border-white/10 safe-top safe-x"
       onMouseLeave={scheduleCloseMega}
     >
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 md:px-10 h-[4.25rem]">
+      <div className="max-w-7xl mx-auto grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 md:px-10 h-[4.25rem]">
         <Link
           href="/"
           onClick={(e) => handleNavClick(e, "/")}
-          className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
+          className="flex items-center shrink-0 justify-self-start hover:opacity-90 transition-opacity"
         >
           <BrandLogo variant="nav" priority />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center justify-center gap-1 justify-self-center">
           <Link
             href="/"
             onClick={(e) => handleNavClick(e, "/")}
@@ -493,30 +499,21 @@ export default function Navbar() {
             </div>
           ))}
 
-          {simpleLinks.slice(1, 2).map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={(e) => handleNavClick(e, link.href)}
-              className={navLinkClass(link.href)}
-            >
-              {t.nav[link.key]}
-            </Link>
-          ))}
-
-          {simpleLinks.slice(2).map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={(e) => handleNavClick(e, link.href)}
-              className={navLinkClass(link.href)}
-            >
-              {t.nav[link.key]}
-            </Link>
-          ))}
+          {simpleLinks
+            .filter((link) => link.href !== "/")
+            .map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
+                className={navLinkClass(link.href)}
+              >
+                {t.nav[link.key]}
+              </Link>
+            ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink justify-self-end">
           <GlobalSearch />
           <LanguageSwitch />
           <button
@@ -563,14 +560,13 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-6 md:px-10 py-8">
               {megaOpen === "products" && (
                 <ProductsMegaPanel
-                  activeSeries={activeProductSeries}
-                  onSeriesHover={setActiveProductSeries}
+                  activeCategory={activeProductCategory}
+                  onCategoryHover={setActiveProductCategory}
                   onNavigate={handleNavClick}
-                  seriesLabels={seriesLabels}
                   locale={locale}
                   t={t}
-                  seriesConfig={seriesConfig}
-                  visibleGroups={visibleGroups}
+                  engineeringItems={engineeringNavItems}
+                  touringItems={touringNavItems}
                 />
               )}
 
@@ -631,13 +627,6 @@ export default function Navbar() {
               >
                 {t.nav.home}
               </Link>
-              <Link
-                href="/about"
-                onClick={(e) => handleNavClick(e, "/about")}
-                className="flex items-center min-h-[44px] py-2 text-base touch-active"
-              >
-                {t.nav.about}
-              </Link>
 
               {(
                 [
@@ -688,30 +677,36 @@ export default function Navbar() {
                   </div>
                   {mobileSection === section.key && (
                     <div className="pb-3 pl-3 space-y-0.5">
-                      {section.key === "products" &&
-                        visibleGroups.map((s) => (
-                          <div key={s}>
+                      {section.key === "products" && (
+                        <>
+                          <p className="pt-1 pb-1 text-[11px] uppercase tracking-wide text-gray-500">
+                            {getProductCategoryLabel("engineering", locale)}
+                          </p>
+                          {engineeringNavItems.map((item) => (
                             <Link
-                              href={getProductSeriesHref(s)}
-                              onClick={(e) => handleNavClick(e, getProductSeriesHref(s))}
-                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
+                              key={item.key}
+                              href={item.href}
+                              onClick={(e) => handleNavClick(e, item.href)}
+                              className="flex items-center min-h-[44px] py-2 pl-2 text-gray-400 text-sm touch-active"
                             >
-                              {seriesLabels[s]}
+                              {getEngineeringSeriesLabel(item, locale)}
                             </Link>
-                            {getSubSeriesForGroupFromConfig(s, seriesConfig).map((sub) => (
-                              <Link
-                                key={sub.slug}
-                                href={getProductSeriesHref(sub.slug)}
-                                onClick={(e) =>
-                                  handleNavClick(e, getProductSeriesHref(sub.slug))
-                                }
-                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
-                              >
-                                {seriesEntryLabel(sub, locale)}
-                              </Link>
-                            ))}
-                          </div>
-                        ))}
+                          ))}
+                          <p className="pt-3 pb-1 text-[11px] uppercase tracking-wide text-gray-500">
+                            {getProductCategoryLabel("touring", locale)}
+                          </p>
+                          {touringNavItems.map((item) => (
+                            <Link
+                              key={item.key}
+                              href={item.href}
+                              onClick={(e) => handleNavClick(e, item.href)}
+                              className="flex items-center min-h-[44px] py-2 pl-2 text-gray-400 text-sm touch-active"
+                            >
+                              {getTouringProductLabel(item, locale)}
+                            </Link>
+                          ))}
+                        </>
+                      )}
                       {section.key === "cases" &&
                         CASE_TYPES.map((c) => (
                           <div key={c}>
@@ -762,11 +757,11 @@ export default function Navbar() {
               ))}
 
               <Link
-                href="/contact"
-                onClick={(e) => handleNavClick(e, "/contact")}
+                href="/about"
+                onClick={(e) => handleNavClick(e, "/about")}
                 className="flex items-center min-h-[44px] py-2 text-base border-t border-white/10 touch-active"
               >
-                {t.nav.contact}
+                {t.nav.about}
               </Link>
             </div>
           </motion.nav>

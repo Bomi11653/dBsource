@@ -12,6 +12,7 @@ export {
   getSalesContacts,
   getAboutImages,
   getContactInfo,
+  getGlobalSetting,
 } from "./fetchCMS";
 
 export { PRODUCTS_PAGE_SIZE } from "@/data/mock";
@@ -25,6 +26,7 @@ export type {
   DownloadItem,
   SceneItem,
   QRItem,
+  GlobalSettingData,
 } from "@/data/mock";
 
 import { postStrapiDocument } from "./strapi-client";

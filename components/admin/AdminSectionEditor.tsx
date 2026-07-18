@@ -14,12 +14,21 @@ import {
   inputClass,
 } from "@/components/admin/AdminFields";
 import {
-  ADMIN_PRODUCT_SERIES_TABS,
+  ADMIN_CATALOG_CATEGORY_LABELS,
+  ADMIN_PRODUCT_CATALOG_TABS,
+  ADMIN_PRODUCT_LINE_LABELS,
   compareAdminProductRows,
-  countAdminProductsBySeriesFilter,
+  countAdminProductsByCatalogFilter,
+  getAdminCatalogCategory,
+  getAdminCatalogCategoryPatch,
+  getAdminEngineeringSeriesSelectOptions,
+  getAdminProductLineLabel,
+  getAdminProductMajorCategory,
   getAdminProductRowMeta,
-  matchAdminProductSeriesFilter,
-  type AdminProductSeriesFilter,
+  getAdminSeriesGroupLabel,
+  matchAdminProductCatalogFilter,
+  type AdminCatalogCategory,
+  type AdminProductCatalogFilter,
 } from "@/lib/admin-product-categories";
 import {
   ADMIN_CASE_SCENE_OPTIONS,
@@ -66,8 +75,6 @@ type StrapiRow = Record<string, unknown> & {
 };
 
 type HomeFeaturedDraft = {
-  firstDocId: string | null;
-  secondDocId: string | null;
   homeFeaturedProductAId: number | null;
   homeFeaturedProductBId: number | null;
 };
@@ -274,7 +281,7 @@ function rowSearchText(section: string, draft: StrapiRow): string {
       getText(draft, "descEn"),
       getText(draft, "category"),
       getText(draft, "seriesGroup"),
-      getAdminProductRowMeta(draft).seriesLabel
+      getAdminProductRowMeta(draft).majorCategory.label
     );
   }
 
@@ -317,16 +324,17 @@ export default function AdminSectionEditor({
   );
   const [leadStatusFilter, setLeadStatusFilter] = useState("all");
   const [leadPriorityOnly, setLeadPriorityOnly] = useState(false);
-  const [productSeriesFilter, setProductSeriesFilter] = useState<AdminProductSeriesFilter>("all");
+  const [productCatalogFilter, setProductCatalogFilter] =
+    useState<AdminProductCatalogFilter>("all");
   /** 产品排序输入草稿（与「保存并发布」解耦，由「应用排序」立即写入 CMS） */
   const [productSortDrafts, setProductSortDrafts] = useState<Record<string, string>>({});
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
 
-  const productSeriesTabCounts = useMemo(() => {
+  const productCatalogTabCounts = useMemo(() => {
     if (section !== "products") return null;
     const draftsRows = rows.map((row) => drafts[docId(row)] ?? row);
-    return countAdminProductsBySeriesFilter(draftsRows);
+    return countAdminProductsByCatalogFilter(draftsRows);
   }, [section, rows, drafts]);
 
   /** 全站产品按 sortOrder 升序（上移/下移邻居，不受系列 Tab 筛选影响） */
@@ -386,7 +394,7 @@ export default function AdminSectionEditor({
     if (section === "products") {
       const seriesFiltered = searched.filter((row) => {
         const draft = drafts[docId(row)] ?? row;
-        return matchAdminProductSeriesFilter(draft, productSeriesFilter);
+        return matchAdminProductCatalogFilter(draft, productCatalogFilter);
       });
       return [...seriesFiltered].sort((a, b) => {
         const draftA = drafts[docId(a)] ?? a;
@@ -410,7 +418,7 @@ export default function AdminSectionEditor({
     section,
     leadStatusFilter,
     leadPriorityOnly,
-    productSeriesFilter,
+    productCatalogFilter,
   ]);
 
   const load = useCallback(
@@ -504,27 +512,54 @@ export default function AdminSectionEditor({
           return list[0] ? docId(list[0]) : null;
         });
         if (section === "home") {
-          const seriesRes = await fetch("/api/admin/product-series-configs");
-          const seriesJson = await seriesRes.json();
-          if (seriesJson.ok && seriesJson.data?.data) {
-            const seriesList = (seriesJson.data.data as StrapiRow[])
-              .slice()
-              .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0));
-            const first = seriesList[0];
-            const second = seriesList[1];
-            setHomeConfigDraft({
-              firstDocId: first ? docId(first) : null,
-              secondDocId: second ? docId(second) : null,
-              homeFeaturedProductAId: Number(first?.featuredProductId) || null,
-              homeFeaturedProductBId: Number(second?.featuredProductId) || null,
-            });
+          const gsRes = await fetch("/api/admin/global-setting");
+          const gsJson = await gsRes.json();
+          let gs = (gsJson.ok ? gsJson.data?.data : null) as StrapiRow | null;
+          const hasGlobalCase =
+            gs &&
+            (gs.homeFeaturedCaseId != null ||
+              getText(gs, "homeFeaturedCaseTitleZh") ||
+              getText(gs, "homeFeaturedCaseTitleEn") ||
+              gs.homeFeaturedCaseImage);
+          if (!hasGlobalCase) {
+            const contactRes = await fetch("/api/admin/contact-info");
+            const contactJson = await contactRes.json();
+            const contact = contactJson.ok
+              ? (contactJson.data?.data as StrapiRow | undefined)
+              : undefined;
+            if (
+              contact &&
+              (contact.homeFeaturedCaseId != null ||
+                getText(contact, "homeFeaturedCaseTitleZh") ||
+                getText(contact, "homeFeaturedCaseTitleEn") ||
+                contact.homeFeaturedCaseImage)
+            ) {
+              gs = { ...(gs ?? {}), ...contact };
+            }
           }
-          const homeCaseRes = await fetch("/api/admin/contact-info");
-          const homeCaseJson = await homeCaseRes.json();
-          if (homeCaseJson.ok && homeCaseJson.data?.data) {
-            setHomeFeaturedCaseDraft(homeCaseJson.data.data as HomeFeaturedCaseDraft);
+          if (gs) {
+            setHomeConfigDraft({
+              homeFeaturedProductAId: Number(gs.homeFeaturedProductAId) || null,
+              homeFeaturedProductBId: Number(gs.homeFeaturedProductBId) || null,
+            });
+            setHomeFeaturedCaseDraft({
+              homeFeaturedCaseId: Number(gs.homeFeaturedCaseId) || null,
+              homeFeaturedCaseTitleZh: getText(gs, "homeFeaturedCaseTitleZh"),
+              homeFeaturedCaseTitleEn: getText(gs, "homeFeaturedCaseTitleEn"),
+              homeFeaturedCaseDescZh: getText(gs, "homeFeaturedCaseDescZh"),
+              homeFeaturedCaseDescEn: getText(gs, "homeFeaturedCaseDescEn"),
+              homeFeaturedCaseImage: (gs.homeFeaturedCaseImage as StrapiMedia | null) ?? null,
+            });
           } else {
-            setHomeFeaturedCaseDraft(null);
+            setHomeConfigDraft({ homeFeaturedProductAId: null, homeFeaturedProductBId: null });
+            setHomeFeaturedCaseDraft({
+              homeFeaturedCaseId: null,
+              homeFeaturedCaseTitleZh: "",
+              homeFeaturedCaseTitleEn: "",
+              homeFeaturedCaseDescZh: "",
+              homeFeaturedCaseDescEn: "",
+              homeFeaturedCaseImage: null,
+            });
           }
         } else {
           setHomeConfigDraft(null);
@@ -951,45 +986,19 @@ export default function AdminSectionEditor({
     setSavingId("home-config");
     setMessage(null);
     try {
-      const tasks: Promise<Response>[] = [];
-      if (homeConfigDraft.firstDocId) {
-        tasks.push(
-          fetch(`/api/admin/product-series-configs/${homeConfigDraft.firstDocId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              featuredProductId: homeConfigDraft.homeFeaturedProductAId ?? null,
-            }),
-          })
-        );
-      }
-      if (homeConfigDraft.secondDocId) {
-        tasks.push(
-          fetch(`/api/admin/product-series-configs/${homeConfigDraft.secondDocId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              featuredProductId: homeConfigDraft.homeFeaturedProductBId ?? null,
-            }),
-          })
-        );
-      }
-      const responses = await Promise.all(tasks);
-      const payloads = (await Promise.all(responses.map((res) => res.json()))) as Array<
-        AdminSaveResponse & { ok?: boolean; error?: string }
-      >;
-      const failed = payloads.find((item) => !item?.ok);
-      if (failed) {
-        setMessage({ type: "error", text: failed.error || "首页配置保存失败" });
+      const res = await fetch("/api/admin/global-setting", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeFeaturedProductAId: homeConfigDraft.homeFeaturedProductAId ?? null,
+          homeFeaturedProductBId: homeConfigDraft.homeFeaturedProductBId ?? null,
+        }),
+      });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (!json.ok) {
+        setMessage({ type: "error", text: json.error || "首页配置保存失败" });
       } else {
-        const revalFailed = payloads.find((p) => p.revalidation && !p.revalidation.ok);
-        const cacheFailed = payloads.find((p) => p.cacheRefresh && !p.cacheRefresh.ok);
-        const toast = formatSaveToast({
-          ok: true,
-          saved: true,
-          revalidation: revalFailed?.revalidation ?? payloads[0]?.revalidation,
-          cacheRefresh: cacheFailed?.cacheRefresh ?? payloads[0]?.cacheRefresh,
-        });
+        const toast = formatSaveToast(json);
         setMessage({ type: toast.type, text: toast.text });
       }
     } catch (e) {
@@ -1004,25 +1013,26 @@ export default function AdminSectionEditor({
     if (section !== "home" || !homeFeaturedCaseDraft) return;
     setSavingId("home-featured-case");
     setMessage(null);
-    const payload: Record<string, unknown> = { ...homeFeaturedCaseDraft };
-    [
-      "documentId",
-      "id",
-      "createdAt",
-      "updatedAt",
-      "publishedAt",
-      "locale",
-      "localizations",
-    ].forEach((k) => delete payload[k]);
-    if (payload.homeFeaturedCaseImage === null) {
+    const payload: Record<string, unknown> = {
+      homeFeaturedCaseId: homeFeaturedCaseDraft.homeFeaturedCaseId ?? null,
+      homeFeaturedCaseTitleZh: getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleZh"),
+      homeFeaturedCaseTitleEn: getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleEn"),
+      homeFeaturedCaseDescZh: getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescZh"),
+      homeFeaturedCaseDescEn: getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescEn"),
+    };
+    if (homeFeaturedCaseDraft.homeFeaturedCaseImage === null) {
       payload.homeFeaturedCaseImage = null;
-    } else if (payload.homeFeaturedCaseImage && typeof payload.homeFeaturedCaseImage === "object") {
+    } else if (
+      homeFeaturedCaseDraft.homeFeaturedCaseImage &&
+      typeof homeFeaturedCaseDraft.homeFeaturedCaseImage === "object"
+    ) {
       payload.homeFeaturedCaseImage =
-        (payload.homeFeaturedCaseImage as StrapiMedia).id ?? payload.homeFeaturedCaseImage;
+        (homeFeaturedCaseDraft.homeFeaturedCaseImage as StrapiMedia).id ??
+        homeFeaturedCaseDraft.homeFeaturedCaseImage;
     }
 
     try {
-      const res = await fetch("/api/admin/contact-info", {
+      const res = await fetch("/api/admin/global-setting", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1357,6 +1367,16 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
+      {section === "series" ? (
+        <AdminBanner variant="warn">
+          <p>
+            导航栏与产品中心由各产品的 <code className="text-amber-100">productLine</code>{" "}
+            控制（工程系列 / 流动演出）。本页「在导航显示」「推荐产品 ID」等字段
+            <strong className="text-amber-100">暂不影响前台</strong>，仅作 CMS 数据保留。
+          </p>
+        </AdminBanner>
+      ) : null}
+
       {section === "products" && duplicateProductSortOrders.length > 0 ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200 space-y-1">
           <p>检测到产品排序号重复，请先修复，否则排序交换可能失败：</p>
@@ -1368,28 +1388,33 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
-      {section === "products" && productSeriesTabCounts ? (
-        <div className="flex flex-wrap gap-2">
-          {ADMIN_PRODUCT_SERIES_TABS.map((tab) => {
-            const active = productSeriesFilter === tab.id;
-            const count = productSeriesTabCounts[tab.id];
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setProductSeriesFilter(tab.id)}
-                className={cn(
-                  "text-xs px-3 py-2 rounded-lg border transition-colors",
-                  active
-                    ? "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
-                    : "border-white/15 text-gray-400 hover:text-white hover:border-white/30"
-                )}
-              >
-                {tab.label}
-                <span className="ml-1.5 font-mono text-[10px] opacity-80">{count}</span>
-              </button>
-            );
-          })}
+      {section === "products" && productCatalogTabCounts ? (
+        <div className="space-y-2">
+          <p className="text-[11px] text-gray-500">
+            筛选与前台一致：工程系列 / 流动演出由 productLine 决定；下方为工程子系列。
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {ADMIN_PRODUCT_CATALOG_TABS.map((tab) => {
+              const active = productCatalogFilter === tab.id;
+              const count = productCatalogTabCounts[tab.id];
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setProductCatalogFilter(tab.id)}
+                  className={cn(
+                    "text-xs px-3 py-2 rounded-lg border transition-colors",
+                    active
+                      ? "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
+                      : "border-white/15 text-gray-400 hover:text-white hover:border-white/30"
+                  )}
+                >
+                  {tab.label}
+                  <span className="ml-1.5 font-mono text-[10px] opacity-80">{count}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : null}
 
@@ -1470,8 +1495,7 @@ export default function AdminSectionEditor({
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-4 min-w-0">
             <h3 className="font-medium">地图设置</h3>
             <p className="text-xs text-gray-500">
-              配置联系页高德地图。填写 iframe URL
-              时前台嵌入地图；未填写时显示地址与「打开地图导航」按钮。
+              配置联系页右侧地图区域。填写 iframe URL 时嵌入地图；未填写时在地图区显示地址与「打开地图导航」按钮（左侧公司卡片仅显示地址）。
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="地图展示地址（中文） mapDisplayAddressZh">
@@ -1789,11 +1813,20 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
+      {section === "home" ? (
+        <AdminBanner variant="warn">
+          <p>
+            当前官网首页仅展示 Hero 动画区，不包含场景卡片、核心产品与精选案例。
+            本页配置<strong className="text-amber-100">暂不会出现在前台</strong>。
+          </p>
+        </AdminBanner>
+      ) : null}
+
       {section === "home" && homeConfigDraft ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
-          <h3 className="font-medium">首页核心产品</h3>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4 opacity-80">
+          <h3 className="font-medium">首页核心产品（暂未启用）</h3>
           <p className="text-xs text-gray-500">
-            填写两个产品 ID（来自「产品中心」条目 ID），首页核心产品卡片将按这里的顺序展示。
+            以下 ID 配置保留供日后使用；当前前台首页不展示此区块。
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="核心产品 1（ID）">
@@ -1828,10 +1861,10 @@ export default function AdminSectionEditor({
       ) : null}
 
       {section === "home" && homeFeaturedCaseDraft ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4">
-          <h3 className="font-medium">首页精选案例（可新增列）</h3>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4 opacity-80">
+          <h3 className="font-medium">首页精选案例（暂未启用）</h3>
           <p className="text-xs text-gray-500">
-            可设置首页精选案例 ID，并覆盖展示标题/摘要/图片；若文字留空则使用案例原文。
+            以下配置保留供日后使用；当前前台首页不展示此区块。
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="精选案例 ID（来自工程案例）">
@@ -1968,6 +2001,11 @@ export default function AdminSectionEditor({
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{title}</span>
+                        {section === "products" ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
+                            {getAdminProductMajorCategory(draft).label}
+                          </span>
+                        ) : null}
                         {productSortLabel ? (
                           <span className="shrink-0 text-[10px] text-gray-500 font-mono">
                             {productSortLabel}
@@ -2215,24 +2253,18 @@ function renderFields(
   }
 
   if (section === "products") {
-    const PRODUCT_LINE_OPTIONS = [
-      "la",
-      "lw",
-      "mi",
-      "do",
-      "sol",
-      "k",
-      "re",
-      "p",
-      "driver",
-      "electronics",
-      "accessory",
-      "tour",
-      "unit48",
-      "suite",
-      "turnkey",
-      "c",
-    ];
+    const catalogCategory = getAdminCatalogCategory(draft);
+    const isTouringCatalog = catalogCategory === "touring";
+    const engineeringSeriesOptions = getAdminEngineeringSeriesSelectOptions();
+    const seriesGroupRaw = getText(draft, "seriesGroup");
+    const productLineRaw = getText(draft, "productLine");
+    const seriesZhRaw = getText(draft, "seriesZh");
+    const seriesEnRaw = getText(draft, "seriesEn");
+    const sortOrderNum = Number(draft.sortOrder);
+    const detailPath =
+      Number.isInteger(sortOrderNum) && sortOrderNum > 0
+        ? `/products/${sortOrderNum}`
+        : null;
 
     const sectionCard = (title: string, children: React.ReactNode) => (
       <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
@@ -2246,21 +2278,151 @@ function renderFields(
         {sectionCard(
           "一、基础信息",
           <>
+            <div className="sm:col-span-2 rounded-xl border border-white/10 bg-black/20 p-3 space-y-2">
+              <p className="text-xs font-medium text-gray-300">分类预览（保存后同步前台）</p>
+              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-400">
+                <p>
+                  前台大类：
+                  <span className="ml-1 text-white">
+                    {ADMIN_CATALOG_CATEGORY_LABELS[catalogCategory]}
+                  </span>
+                </p>
+                <p>
+                  seriesGroup：
+                  <span className="ml-1 font-mono text-white/80">
+                    {seriesGroupRaw || "未设置"}
+                  </span>
+                  {seriesGroupRaw ? (
+                    <span className="ml-1 text-white/45">
+                      （{getAdminSeriesGroupLabel(seriesGroupRaw)}）
+                    </span>
+                  ) : null}
+                </p>
+                <p>
+                  productLine：
+                  <span className="ml-1 font-mono text-white/80">
+                    {productLineRaw || "未设置"}
+                  </span>
+                  {productLineRaw ? (
+                    <span className="ml-1 text-white/45">
+                      （{getAdminProductLineLabel(productLineRaw)}）
+                    </span>
+                  ) : null}
+                </p>
+                <p>
+                  系列中文名：
+                  <span className="ml-1 text-white/80">{seriesZhRaw || "未设置"}</span>
+                </p>
+                <p>
+                  系列英文名：
+                  <span className="ml-1 text-white/80">{seriesEnRaw || "未设置"}</span>
+                </p>
+                <p>
+                  sortOrder：
+                  <span className="ml-1 font-mono text-white/80">
+                    {draft.sortOrder != null ? String(draft.sortOrder) : "未设置"}
+                  </span>
+                </p>
+                <p className="sm:col-span-2">
+                  详情页链接：
+                  {detailPath ? (
+                    <a
+                      href={detailPath}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-1 font-mono text-brand-gold hover:underline"
+                    >
+                      {detailPath}
+                    </a>
+                  ) : (
+                    <span className="ml-1 text-white/45">未设置</span>
+                  )}
+                </p>
+              </div>
+              <p className="text-[11px] text-white/40 leading-relaxed">
+                请在下方选择「前台大类」与「产品系列」。保存后写入 productLine，并同步到导航栏与产品中心。
+                流动演出固定 productLine = tour；工程系列请选择 LA / MI / DO 等具体系列。
+              </p>
+            </div>
+            <SelectField
+              key="catalogCategory"
+              label="前台大类"
+              value={catalogCategory === "touring" ? "touring" : "engineering"}
+              onChange={(v) => {
+                const next = v as AdminCatalogCategory;
+                if (next === "other") return;
+                onChange(getAdminCatalogCategoryPatch(next, draft));
+              }}
+              options={[
+                { value: "engineering", label: ADMIN_CATALOG_CATEGORY_LABELS.engineering },
+                { value: "touring", label: ADMIN_CATALOG_CATEGORY_LABELS.touring },
+              ]}
+            />
+            {isTouringCatalog ? (
+              <ReadOnlyField
+                key="productLineTour"
+                label="产品系列（productLine）"
+                value="流动演出（tour）"
+                hint="流动演出产品固定为 tour，请在系列中英文名填写具体型号展示名。"
+              />
+            ) : (
+              <SelectField
+                key="engineeringSeries"
+                label="产品系列（productLine）"
+                value={
+                  engineeringSeriesOptions.some((o) => o.value === productLineRaw)
+                    ? productLineRaw
+                    : "la"
+                }
+                onChange={(v) => onChange({ productLine: v })}
+                options={engineeringSeriesOptions}
+              />
+            )}
+            {catalogCategory === "other" ? (
+              <p className="sm:col-span-2 text-[11px] text-amber-200/80 leading-relaxed">
+                当前 productLine 未归入工程 / 流动演出标准值。请选择「前台大类」与「产品系列」后保存并发布。
+              </p>
+            ) : null}
             {textField("model", "型号")}
             {textField("nameZh", "名称（中文）")}
             {textField("nameEn", "名称（英文）")}
-            {textField("seriesZh", "系列（中文）")}
-            {textField("seriesEn", "系列（英文）")}
+            {textField("seriesZh", "系列中文名")}
+            {textField("seriesEn", "系列英文名")}
+            <Field key="sortOrder" label="排序号 / 详情页 ID（sortOrder）">
+              <p className="text-sm text-white font-mono">
+                #{String(draft.sortOrder ?? "—")}
+                {detailPath ? (
+                  <span className="ml-2 text-xs text-white/45 font-sans">{detailPath}</span>
+                ) : null}
+              </p>
+              <p className="text-xs text-white/45 mt-1.5">
+                请用卡片右侧「上移 / 下移 / 应用」立即保存并自动交换；勿依赖「保存并发布」改排序号。
+              </p>
+            </Field>
+          </>
+        )}
+
+        {sectionCard(
+          "二、内部字段（前台不展示）",
+          <>
+            <p className="sm:col-span-2 text-[11px] text-gray-500 leading-relaxed">
+              以下字段保留在 CMS 中供数据统计或日后扩展；当前产品中心与导航栏不读取这些值。
+            </p>
             <SelectField
-              key="productLine"
-              label="系列标识 productLine"
-              value={getText(draft, "productLine") || "la"}
-              onChange={(v) => onChange({ productLine: v })}
-              options={PRODUCT_LINE_OPTIONS.map((value) => ({ value, label: value }))}
+              key="seriesGroup"
+              label="大类 / 分组（seriesGroup）"
+              value={getText(draft, "seriesGroup") || "speaker"}
+              onChange={(v) => onChange({ seriesGroup: v })}
+              options={[
+                { value: "speaker", label: "音箱（speaker）" },
+                { value: "dsp", label: "处理器（dsp）" },
+                { value: "software", label: "软件（software）" },
+                { value: "engineering", label: "工程（engineering）" },
+              ]}
             />
             <SelectField
               key="category"
-              label="前台分类"
+              label="数据分类（category）"
               value={getText(draft, "category") || "speaker"}
               onChange={(v) => onChange({ category: v })}
               options={[
@@ -2271,7 +2433,7 @@ function renderFields(
             />
             <SelectField
               key="market"
-              label="市场标签"
+              label="市场标签（market）"
               value={getText(draft, "market") || "all"}
               onChange={(v) => onChange({ market: v })}
               options={[
@@ -2280,36 +2442,11 @@ function renderFields(
                 { value: "global", label: "仅海外站" },
               ]}
             />
-            <Field key="sortOrder" label="排序（数字越小越靠前，也是前台详情 ID）">
-              <p className="text-sm text-white font-mono">
-                #{String(draft.sortOrder ?? "—")}
-                {draft.sortOrder != null && Number(draft.sortOrder) > 0 ? (
-                  <span className="ml-2 text-xs text-white/45 font-sans">
-                    /products/{String(draft.sortOrder)}
-                  </span>
-                ) : null}
-              </p>
-              <p className="text-xs text-white/45 mt-1.5">
-                请用卡片右侧「上移 / 下移 / 应用」立即保存并自动交换；勿依赖「保存并发布」改排序号。
-              </p>
-            </Field>
-            <SelectField
-              key="seriesGroup"
-              label="产品大类"
-              value={getText(draft, "seriesGroup") || "speaker"}
-              onChange={(v) => onChange({ seriesGroup: v })}
-              options={[
-                { value: "speaker", label: "音箱" },
-                { value: "dsp", label: "处理器" },
-                { value: "software", label: "软件" },
-                { value: "engineering", label: "工程" },
-              ]}
-            />
           </>
         )}
 
         {sectionCard(
-          "二、产品介绍",
+          "三、产品介绍",
           <>
             {textField("descZh", "简介（中文）", true)}
             {textField("descEn", "简介（英文）", true)}
@@ -2322,7 +2459,7 @@ function renderFields(
         )}
 
         <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
-          <h4 className="text-sm font-medium text-gray-200">三、技术规格</h4>
+          <h4 className="text-sm font-medium text-gray-200">四、技术规格</h4>
           <ProductSpecsEditor
             specsZh={getText(draft, "specsZh")}
             specsEn={getText(draft, "specsEn")}
@@ -2342,7 +2479,7 @@ function renderFields(
         </div>
 
         {sectionCard(
-          "四、产品图片",
+          "五、产品图片",
           <>
             <ImageUploadField
               key="image"
@@ -2757,26 +2894,20 @@ function renderFields(
       </Field>
     );
     fields.push(
-      <Field key="visible" label="在导航显示">
-        <select
-          className={inputClass}
-          value={draft.visible === false ? "false" : "true"}
-          onChange={(e) => onChange({ visible: e.target.value === "true" })}
-        >
-          <option value="true">显示</option>
-          <option value="false">隐藏</option>
-        </select>
-      </Field>
+      <ReadOnlyField
+        key="visibleLegacy"
+        label="在导航显示（遗留，暂不影响前台）"
+        value={draft.visible === false ? "隐藏" : "显示"}
+        hint="前台导航由产品 productLine 决定，此开关暂不生效。"
+      />
     );
     fields.push(
-      <Field key="featuredProductId" label="推荐产品 ID">
-        <input
-          type="number"
-          className={inputClass}
-          value={String(draft.featuredProductId ?? "")}
-          onChange={(e) => onChange({ featuredProductId: Number(e.target.value) || null })}
-        />
-      </Field>
+      <ReadOnlyField
+        key="featuredProductIdLegacy"
+        label="推荐产品 ID（遗留，暂不影响前台）"
+        value={draft.featuredProductId != null ? String(draft.featuredProductId) : "未设置"}
+        hint="首页核心产品配置亦未启用；此字段暂不生效。"
+      />
     );
   }
 

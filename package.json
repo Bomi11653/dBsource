@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3003 -H 127.0.0.1",
+    "dev:clean": "npm run clean && npm run dev",
     "dev:safe": "node scripts/kill-port.mjs 3003 && npm run clean && npm run dev",
     "dev:mobile": "next dev -p 3003 -H 0.0.0.0",
     "build": "next build",
@@ -11,7 +12,9 @@
     "preview": "npm run rebuild && npm run start",
     "preview:safe": "node scripts/kill-port.mjs 3003 && npm run rebuild && npm run start",
     "preview:quick": "next start -p 3003 -H 127.0.0.1",
-    "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "clean": "node scripts/clean-cache.mjs",
+    "check:clean": "npm run clean && npx tsc --noEmit && npm run build",
+    "deploy:web": "bash scripts/deploy-web.sh",
     "rebuild": "npm run clean && npm run build",
     "lint": "next lint",
     "doctor": "npm run rebuild && npm run lint",

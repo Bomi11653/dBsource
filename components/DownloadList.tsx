@@ -12,7 +12,6 @@ import {
   shareDownloadResource,
   getDownloadFileApiPath,
   parseDownloadShareTargetId,
-  mergeDownloadSubCategoriesForItems,
   getDownloadSubCategoryDisplayLabel,
   isPresetDownloadSubCategory,
 } from "@/lib/downloads";
@@ -235,10 +234,9 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
   }, []);
 
   const syncUrl = useCallback(
-    (next: CategoryKey, sub?: string | null) => {
+    (next: CategoryKey) => {
       const params = new URLSearchParams();
       params.set("tab", next);
-      if (sub) params.set("sub", sub);
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : `${pathname}?tab=${next}`, {
         scroll: false,
@@ -303,20 +301,10 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
     return () => window.clearTimeout(timer);
   }, [searchParams, items, scrollToDownloadCard, triggerFileDownload, clearDownloadQueryParam]);
 
-  /* 旧 sub 参数仍然生效（来自旧分享链接） */
-  const legacySub = searchParams.get("sub");
-
-  const subCategoryFilters = useMemo(
-    () => mergeDownloadSubCategoriesForItems(items, category),
-    [items, category]
-  );
-
+  /* 旧 sub 参数不再用于筛选；子类 chips 已移除，当前大类下显示全部资源 */
   const filtered = useMemo(() => {
     let result = filterDownloads(items, null, null);
     result = result.filter((f) => matchCategory(f, category));
-    if (legacySub) {
-      result = result.filter((f) => f.subCategory === legacySub);
-    }
     const q = query.trim().toLowerCase();
     if (q) {
       result = result.filter((f) =>
@@ -328,7 +316,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
       );
     }
     return result;
-  }, [items, category, legacySub, query]);
+  }, [items, category, query]);
 
   const shareLink = useCallback((file: DownloadItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -488,7 +476,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
               type="button"
               onClick={() => {
                 setCategory(cat.key);
-                syncUrl(cat.key, null);
+                syncUrl(cat.key);
               }}
               className={`filter-chip touch-active shrink-0 min-h-[42px] px-5 py-2 text-sm rounded-full border whitespace-nowrap transition-colors ${
                 active
@@ -501,39 +489,6 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
           );
         })}
       </div>
-
-      {subCategoryFilters.length > 1 ? (
-        <div className="filter-scroll flex gap-2 justify-start md:justify-center mb-8 md:mb-10 pb-1">
-          <button
-            type="button"
-            onClick={() => syncUrl(category)}
-            className={`filter-chip touch-active shrink-0 min-h-[38px] px-4 py-1.5 text-xs rounded-full border whitespace-nowrap transition-colors ${
-              !legacySub
-                ? "border-white/30 bg-white/10 text-white"
-                : "border-white/10 bg-white/[0.04] text-white/[0.55] hover:text-white"
-            }`}
-          >
-            {locale === "zh" ? "全部子类" : "All types"}
-          </button>
-          {subCategoryFilters.map((sub) => {
-            const active = legacySub === sub.slug;
-            return (
-              <button
-                key={sub.slug}
-                type="button"
-                onClick={() => syncUrl(category, sub.slug)}
-                className={`filter-chip touch-active shrink-0 min-h-[38px] px-4 py-1.5 text-xs rounded-full border whitespace-nowrap transition-colors ${
-                  active
-                    ? "border-white/30 bg-white/10 text-white"
-                    : "border-white/10 bg-white/[0.04] text-white/[0.55] hover:text-white"
-                }`}
-              >
-                {sub.label[locale]}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
 
       {/* 全部资源 */}
       <section>
