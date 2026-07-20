@@ -2,22 +2,21 @@
 
 import { usePageTransition } from "@/components/PageTransitionProvider";
 import { usePerformanceMode } from "@/components/PerformanceModeProvider";
-import type { CaseItem, CaseType, DownloadItem } from "@/data/mock";
-import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
+import type { CaseType } from "@/data/mock";
 import {
-  DOWNLOAD_TABS,
-  getDownloadMegaLinks,
-  type DownloadTab,
-} from "@/lib/downloads";
+  CasesMegaPanel,
+  DownloadsMegaPanel,
+  MobileMegaSectionLinks,
+  ProductsMegaPanel,
+} from "@/components/nav/MegaMenuPanels";
 import { useSiteData } from "@/components/SiteDataProvider";
+import type { ProductCategoryType } from "@/lib/product-classification";
 import {
-  getEngineeringSeriesLabel,
-  getEngineeringSeriesNavItems,
-  getProductCategoryLabel,
-  getTouringProductLabel,
-  getTouringProductNavItems,
-  type ProductCategoryType,
-} from "@/lib/product-classification";
+  buildNavMegaSections,
+  getNavMegaCatalogLabels,
+  NAV_MEGA_STYLES,
+  type NavMegaMenuKey,
+} from "@/lib/nav-mega";
 import BrandLogo from "@/components/BrandLogo";
 import GlobalSearch from "@/components/GlobalSearch";
 import LanguageSwitch from "./LanguageSwitch";
@@ -26,317 +25,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-type MegaMenu = "products" | "cases" | "downloads" | null;
-
-type MegaLinkItem = { key: string; href: string; label: string };
-
-function splitIntoMegaColumns(
-  items: MegaLinkItem[],
-  firstColumnCount: number,
-  restColumnSize = 3
-): MegaLinkItem[][] {
-  if (items.length <= firstColumnCount) return [items];
-  const columns: MegaLinkItem[][] = [items.slice(0, firstColumnCount)];
-  const rest = items.slice(firstColumnCount);
-  for (let i = 0; i < rest.length; i += restColumnSize) {
-    columns.push(rest.slice(i, i + restColumnSize));
-  }
-  return columns;
-}
-
-function MegaMainColumn({
-  exploreLabel,
-  viewAllHref,
-  viewAllLabel,
-  onNavigate,
-  children,
-}: {
-  exploreLabel: string;
-  viewAllHref?: string;
-  viewAllLabel?: string;
-  onNavigate: (e: React.MouseEvent, href: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="min-w-[200px] flex flex-col self-stretch shrink-0">
-      <div>
-        <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{exploreLabel}</p>
-        {children}
-      </div>
-      {viewAllHref && viewAllLabel ? (
-        <Link
-          href={viewAllHref}
-          onClick={(e) => onNavigate(e, viewAllHref)}
-          className="mt-auto pt-10 text-sm text-gray-500 hover:text-white transition-colors"
-        >
-          {viewAllLabel}
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
-function MegaSubColumns({
-  title,
-  links,
-  firstColumnCount,
-  restColumnSize = 3,
-  onNavigate,
-}: {
-  title: string;
-  links: MegaLinkItem[];
-  firstColumnCount: number;
-  restColumnSize?: number;
-  onNavigate: (e: React.MouseEvent, href: string) => void;
-}) {
-  const columns =
-    links.length > firstColumnCount
-      ? splitIntoMegaColumns(links, firstColumnCount, restColumnSize)
-      : [links];
-
-  return (
-    <div className="flex gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-start flex-1 min-w-0">
-      {columns.map((column, columnIndex) => (
-        <div key={columnIndex} className="min-w-[160px] shrink-0">
-          {columnIndex === 0 ? (
-            <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{title}</p>
-          ) : (
-            <p className="text-[11px] mb-4 tracking-wide opacity-0 select-none" aria-hidden="true">
-              {title}
-            </p>
-          )}
-          <ul className="space-y-1">
-            {column.map((link) => (
-              <li key={link.key}>
-                <Link
-                  href={link.href}
-                  onClick={(e) => onNavigate(e, link.href)}
-                  className="block py-1.5 text-base md:text-lg text-gray-300 hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ProductsMegaPanel({
-  activeCategory,
-  onCategoryHover,
-  onNavigate,
-  locale,
-  t,
-  engineeringItems,
-  touringItems,
-}: {
-  activeCategory: ProductCategoryType;
-  onCategoryHover: (category: ProductCategoryType) => void;
-  onNavigate: (e: React.MouseEvent, href: string) => void;
-  locale: "zh" | "en";
-  t: ReturnType<typeof useI18n>["t"];
-  engineeringItems: ReturnType<typeof getEngineeringSeriesNavItems>;
-  touringItems: ReturnType<typeof getTouringProductNavItems>["items"];
-}) {
-  const subLinks: MegaLinkItem[] =
-    activeCategory === "engineering"
-      ? engineeringItems.map((item) => ({
-          key: item.key,
-          href: item.href,
-          label: getEngineeringSeriesLabel(item, locale),
-        }))
-      : touringItems.map((item) => ({
-          key: item.key,
-          href: item.href,
-          label: getTouringProductLabel(item, locale),
-        }));
-
-  const subTitle = getProductCategoryLabel(activeCategory, locale);
-  const firstColumnCount = activeCategory === "engineering" ? 5 : subLinks.length;
-
-  return (
-    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
-      <MegaMainColumn
-        exploreLabel={t.nav.megaExplore}
-        viewAllHref="/products"
-        viewAllLabel={t.nav.megaViewAll}
-        onNavigate={onNavigate}
-      >
-        <ul className="space-y-1">
-          {(["engineering", "touring"] as const).map((category) => (
-            <li key={category}>
-              <button
-                type="button"
-                onMouseEnter={() => onCategoryHover(category)}
-                onFocus={() => onCategoryHover(category)}
-                className={`block w-full text-left py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
-                  activeCategory === category
-                    ? "text-white"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {getProductCategoryLabel(category, locale)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </MegaMainColumn>
-
-      <MegaSubColumns
-        title={subTitle}
-        links={subLinks}
-        firstColumnCount={firstColumnCount}
-        restColumnSize={3}
-        onNavigate={onNavigate}
-      />
-    </div>
-  );
-}
-
-function CasesMegaPanel({
-  activeType,
-  onTypeHover,
-  onNavigate,
-  caseLabels,
-  locale,
-  t,
-  cases,
-}: {
-  activeType: CaseType;
-  onTypeHover: (type: CaseType) => void;
-  onNavigate: (e: React.MouseEvent, href: string) => void;
-  caseLabels: Record<CaseType, string>;
-  locale: "zh" | "en";
-  t: ReturnType<typeof useI18n>["t"];
-  cases: CaseItem[];
-}) {
-  const subLinks: MegaLinkItem[] = getCaseMegaLinks(activeType, locale, cases);
-  const firstColumnCount = 3;
-  const columns =
-    subLinks.length > firstColumnCount
-      ? splitIntoMegaColumns(subLinks, firstColumnCount, 2)
-      : [subLinks];
-
-  return (
-    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
-      <MegaMainColumn
-        exploreLabel={t.nav.megaExplore}
-        viewAllHref="/cases"
-        viewAllLabel={t.nav.megaViewAllCases}
-        onNavigate={onNavigate}
-      >
-        <ul className="space-y-1">
-          {CASE_TYPES.map((type) => (
-            <li key={type}>
-              <Link
-                href={`/cases?type=${type}`}
-                onMouseEnter={() => onTypeHover(type)}
-                onFocus={() => onTypeHover(type)}
-                onClick={(e) => onNavigate(e, `/cases?type=${type}`)}
-                className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
-                  activeType === type ? "text-white" : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {caseLabels[type]}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </MegaMainColumn>
-
-      <div className="flex gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-start flex-1 min-w-0">
-        {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="min-w-[180px] max-w-[240px]">
-            {columnIndex === 0 ? (
-              <p className="text-[11px] text-gray-500 mb-4 tracking-wide">{caseLabels[activeType]}</p>
-            ) : (
-              <p className="text-[11px] mb-4 tracking-wide opacity-0 select-none" aria-hidden="true">
-                {caseLabels[activeType]}
-              </p>
-            )}
-            <ul className="space-y-1">
-              {column.map((link) => (
-                <li key={link.key}>
-                  <Link
-                    href={link.href}
-                    onClick={(e) => onNavigate(e, link.href)}
-                    className="block py-1.5 text-base md:text-lg text-gray-300 hover:text-white transition-colors whitespace-normal break-words leading-snug"
-                    title={link.label}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DownloadsMegaPanel({
-  activeTab,
-  onTabHover,
-  onNavigate,
-  locale,
-  t,
-  downloads,
-}: {
-  activeTab: DownloadTab;
-  onTabHover: (tab: DownloadTab) => void;
-  onNavigate: (e: React.MouseEvent, href: string) => void;
-  locale: "zh" | "en";
-  t: ReturnType<typeof useI18n>["t"];
-  downloads: DownloadItem[];
-}) {
-  const tabLabels: Record<DownloadTab, string> = {
-    software: t.downloads.software,
-    catalog: t.downloads.catalog,
-  };
-  const subLinks: MegaLinkItem[] = getDownloadMegaLinks(activeTab, locale, downloads);
-
-  return (
-    <div className="flex gap-12 md:gap-16 lg:gap-20 items-stretch w-full">
-      <MegaMainColumn
-        exploreLabel={t.nav.megaExplore}
-        viewAllHref="/downloads"
-        viewAllLabel={t.nav.megaViewAllDownloads}
-        onNavigate={onNavigate}
-      >
-        <ul className="space-y-1">
-          {DOWNLOAD_TABS.map((tab) => (
-            <li key={tab}>
-              <Link
-                href={`/downloads?tab=${tab}`}
-                onMouseEnter={() => onTabHover(tab)}
-                onFocus={() => onTabHover(tab)}
-                onClick={(e) => onNavigate(e, `/downloads?tab=${tab}`)}
-                className={`block py-1 text-xl md:text-2xl font-semibold tracking-tight transition-colors ${
-                  activeTab === tab ? "text-white" : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {tabLabels[tab]}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </MegaMainColumn>
-
-      <MegaSubColumns
-        title={tabLabels[activeTab]}
-        links={subLinks}
-        firstColumnCount={subLinks.length || 1}
-        restColumnSize={3}
-        onNavigate={onNavigate}
-      />
-    </div>
-  );
-}
+import type { DownloadTab } from "@/lib/downloads";
 
 export default function Navbar() {
   const { locale, t } = useI18n();
@@ -344,30 +33,40 @@ export default function Navbar() {
   const { products, downloads, cases } = useSiteData();
   const pathname = usePathname();
   const { navigateWithTransition } = usePageTransition();
-  const [megaOpen, setMegaOpen] = useState<MegaMenu>(null);
+  const [megaOpen, setMegaOpen] = useState<NavMegaMenuKey | null>(null);
   const [activeProductCategory, setActiveProductCategory] =
     useState<ProductCategoryType>("engineering");
   const [activeCaseType, setActiveCaseType] = useState<CaseType>("engineering");
   const [activeDownloadTab, setActiveDownloadTab] = useState<DownloadTab>("software");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileSection, setMobileSection] = useState<MegaMenu>(null);
+  const [mobileSection, setMobileSection] = useState<NavMegaMenuKey | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const engineeringNavItems = useMemo(
-    () => getEngineeringSeriesNavItems(products),
-    [products]
-  );
-  const touringNavItems = useMemo(
-    () => getTouringProductNavItems(products).items,
-    [products]
+  const catalogLabels = useMemo(() => getNavMegaCatalogLabels(t), [t]);
+
+  const megaSections = useMemo(
+    () =>
+      buildNavMegaSections({
+        locale,
+        labels: catalogLabels,
+        products,
+        cases,
+        downloads,
+      }),
+    [locale, catalogLabels, products, cases, downloads]
   );
 
-  const caseLabels: Record<CaseType, string> = {
-    engineering: t.nav.casesEngineering,
-    performance: t.nav.casesPerformance,
-  };
+  const megaItems = useMemo(
+    () =>
+      (["products", "cases", "downloads"] as const).map((key) => ({
+        key,
+        href: megaSections[key].href,
+        label: megaSections[key].label,
+      })),
+    [megaSections]
+  );
 
-  const openMega = useCallback((menu: MegaMenu) => {
+  const openMega = useCallback((menu: NavMegaMenuKey) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setMegaOpen(menu);
     if (menu === "products") setActiveProductCategory("engineering");
@@ -447,16 +146,6 @@ export default function Navbar() {
         : "text-gray-300 hover:text-white hover:bg-white/5"
     }`;
 
-  const megaItems: { key: MegaMenu; href: string; label: string }[] = [
-    { key: "products", href: "/products", label: t.nav.products },
-    { key: "cases", href: "/cases", label: t.nav.cases },
-    { key: "downloads", href: "/downloads", label: t.nav.downloads },
-  ];
-
-  const simpleLinks = [
-    { href: "/", key: "home" as const },
-    { href: "/about", key: "about" as const },
-  ];
   const shouldAnimate = resolvedMode === "high";
 
   return (
@@ -479,7 +168,7 @@ export default function Navbar() {
             onClick={(e) => handleNavClick(e, "/")}
             className={navLinkClass("/")}
           >
-            {t.nav.home}
+            {catalogLabels.home}
           </Link>
 
           {megaItems.map((item) => (
@@ -499,22 +188,22 @@ export default function Navbar() {
             </div>
           ))}
 
-          {simpleLinks
-            .filter((link) => link.href !== "/")
-            .map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
-                className={navLinkClass(link.href)}
-              >
-                {t.nav[link.key]}
-              </Link>
-            ))}
+          <Link
+            href="/about"
+            onClick={(e) => handleNavClick(e, "/about")}
+            className={navLinkClass("/about")}
+          >
+            {catalogLabels.about}
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink justify-self-end">
-          <GlobalSearch />
+          <GlobalSearch
+            onOpen={() => {
+              setMobileOpen(false);
+              setMobileSection(null);
+            }}
+          />
           <LanguageSwitch />
           <button
             type="button"
@@ -554,42 +243,37 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={shouldAnimate ? { opacity: 0, y: -6 } : { opacity: 1, y: 0 }}
             transition={{ duration: shouldAnimate ? 0.2 : 0 }}
-            className="hidden lg:block absolute left-0 right-0 top-full border-t border-white/10 bg-[#1d1d1f]/95 backdrop-blur-2xl"
+            className={NAV_MEGA_STYLES.panelShell}
             onMouseEnter={() => openMega(megaOpen)}
           >
             <div className="max-w-7xl mx-auto px-6 md:px-10 py-8">
               {megaOpen === "products" && (
                 <ProductsMegaPanel
+                  section={megaSections.products}
                   activeCategory={activeProductCategory}
                   onCategoryHover={setActiveProductCategory}
                   onNavigate={handleNavClick}
                   locale={locale}
-                  t={t}
-                  engineeringItems={engineeringNavItems}
-                  touringItems={touringNavItems}
                 />
               )}
 
               {megaOpen === "cases" && (
                 <CasesMegaPanel
+                  section={megaSections.cases}
                   activeType={activeCaseType}
                   onTypeHover={setActiveCaseType}
                   onNavigate={handleNavClick}
-                  caseLabels={caseLabels}
-                  locale={locale}
-                  t={t}
-                  cases={cases}
+                  labels={catalogLabels}
                 />
               )}
 
               {megaOpen === "downloads" && (
                 <DownloadsMegaPanel
+                  section={megaSections.downloads}
                   activeTab={activeDownloadTab}
                   onTabHover={setActiveDownloadTab}
                   onNavigate={handleNavClick}
-                  locale={locale}
-                  t={t}
-                  downloads={downloads}
+                  labels={catalogLabels}
                 />
               )}
             </div>
@@ -612,159 +296,88 @@ export default function Navbar() {
                 setMobileSection(null);
               }}
             />
-          <motion.nav
-            initial={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
-            transition={{ duration: shouldAnimate ? 0.22 : 0, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:hidden relative z-50 overflow-hidden border-t border-white/10 bg-black/95"
-          >
-            <div className="mobile-nav-scroll px-4 sm:px-6 py-3 safe-bottom text-sm">
-              <Link
-                href="/"
-                onClick={(e) => handleNavClick(e, "/")}
-                className="flex items-center min-h-[44px] py-2 text-base touch-active"
-              >
-                {t.nav.home}
-              </Link>
+            <motion.nav
+              initial={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={shouldAnimate ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
+              transition={{ duration: shouldAnimate ? 0.22 : 0, ease: [0.22, 1, 0.36, 1] }}
+              className={NAV_MEGA_STYLES.mobileDrawer}
+            >
+              <div className="mobile-nav-scroll px-4 sm:px-6 py-3 safe-bottom">
+                <Link
+                  href="/"
+                  onClick={(e) => handleNavClick(e, "/")}
+                  className={NAV_MEGA_STYLES.mobileNavTopLink}
+                >
+                  {catalogLabels.home}
+                </Link>
 
-              {(
-                [
-                  { key: "products" as const, href: "/products", label: t.nav.products },
-                  { key: "cases" as const, href: "/cases", label: t.nav.cases },
-                  { key: "downloads" as const, href: "/downloads", label: t.nav.downloads },
-                ] as const
-              ).map((section) => (
-                <div key={section.key} className="border-t border-white/10">
-                  <div className="flex items-center">
-                    <Link
-                      href={section.href}
-                      onClick={(e) => handleNavClick(e, section.href)}
-                      className="flex-1 flex items-center min-h-[44px] py-2 text-base font-medium touch-active"
-                    >
-                      {section.label}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMobileSection((prev) =>
-                          prev === section.key ? null : section.key
-                        )
-                      }
-                      aria-expanded={mobileSection === section.key}
-                      aria-label={`${section.label} submenu`}
-                      className="touch-target touch-active flex items-center justify-center text-gray-400"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        aria-hidden
-                        className={`transition-transform duration-200 ${
-                          mobileSection === section.key ? "rotate-180" : ""
-                        }`}
-                      >
-                        <path
-                          d="M4 6l4 4 4-4"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                {megaItems.map((item) => {
+                  const isExpanded = mobileSection === item.key;
+                  return (
+                    <div key={item.key} className="border-t border-white/10">
+                      <div className="flex items-center gap-1">
+                        <Link
+                          href={item.href}
+                          onClick={(e) => handleNavClick(e, item.href)}
+                          className={`${NAV_MEGA_STYLES.mobileNavSectionTrigger} flex-1 ${
+                            isExpanded ? "text-brand-gold" : ""
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMobileSection((prev) => (prev === item.key ? null : item.key))
+                          }
+                          aria-expanded={isExpanded}
+                          aria-label={`${item.label} submenu`}
+                          className={`touch-target touch-active flex items-center justify-center rounded-lg border transition-colors ${
+                            isExpanded
+                              ? "border-brand-gold/40 text-brand-gold bg-brand-gold/10"
+                              : "border-white/15 text-gray-400"
+                          }`}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            aria-hidden
+                            className={`transition-transform duration-200 ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          >
+                            <path
+                              d="M4 6l4 4 4-4"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      {isExpanded ? (
+                        <MobileMegaSectionLinks
+                          section={megaSections[item.key]}
+                          onNavigate={handleNavClick}
                         />
-                      </svg>
-                    </button>
-                  </div>
-                  {mobileSection === section.key && (
-                    <div className="pb-3 pl-3 space-y-0.5">
-                      {section.key === "products" && (
-                        <>
-                          <p className="pt-1 pb-1 text-[11px] uppercase tracking-wide text-gray-500">
-                            {getProductCategoryLabel("engineering", locale)}
-                          </p>
-                          {engineeringNavItems.map((item) => (
-                            <Link
-                              key={item.key}
-                              href={item.href}
-                              onClick={(e) => handleNavClick(e, item.href)}
-                              className="flex items-center min-h-[44px] py-2 pl-2 text-gray-400 text-sm touch-active"
-                            >
-                              {getEngineeringSeriesLabel(item, locale)}
-                            </Link>
-                          ))}
-                          <p className="pt-3 pb-1 text-[11px] uppercase tracking-wide text-gray-500">
-                            {getProductCategoryLabel("touring", locale)}
-                          </p>
-                          {touringNavItems.map((item) => (
-                            <Link
-                              key={item.key}
-                              href={item.href}
-                              onClick={(e) => handleNavClick(e, item.href)}
-                              className="flex items-center min-h-[44px] py-2 pl-2 text-gray-400 text-sm touch-active"
-                            >
-                              {getTouringProductLabel(item, locale)}
-                            </Link>
-                          ))}
-                        </>
-                      )}
-                      {section.key === "cases" &&
-                        CASE_TYPES.map((c) => (
-                          <div key={c}>
-                            <Link
-                              href={`/cases?type=${c}`}
-                              onClick={(e) => handleNavClick(e, `/cases?type=${c}`)}
-                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
-                            >
-                              {caseLabels[c]}
-                            </Link>
-                            {getCaseMegaLinks(c, locale, cases).map((sub) => (
-                              <Link
-                                key={sub.key}
-                                href={sub.href}
-                                onClick={(e) => handleNavClick(e, sub.href)}
-                                className="flex min-h-[44px] py-2 pl-4 pr-2 text-gray-400 text-sm touch-active leading-snug break-words"
-                              >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
-                        ))}
-                      {section.key === "downloads" &&
-                        DOWNLOAD_TABS.map((tab) => (
-                          <div key={tab}>
-                            <Link
-                              href={`/downloads?tab=${tab}`}
-                              onClick={(e) => handleNavClick(e, `/downloads?tab=${tab}`)}
-                              className="flex items-center min-h-[40px] py-2 text-gray-300 font-medium touch-active"
-                            >
-                              {tab === "software" ? t.downloads.software : t.downloads.catalog}
-                            </Link>
-                            {getDownloadMegaLinks(tab, locale, downloads).map((sub) => (
-                              <Link
-                                key={sub.key}
-                                href={sub.href}
-                                onClick={(e) => handleNavClick(e, sub.href)}
-                                className="flex items-center min-h-[44px] py-2 pl-4 text-gray-400 text-sm touch-active"
-                              >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
-                        ))}
+                      ) : null}
                     </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
 
-              <Link
-                href="/about"
-                onClick={(e) => handleNavClick(e, "/about")}
-                className="flex items-center min-h-[44px] py-2 text-base border-t border-white/10 touch-active"
-              >
-                {t.nav.about}
-              </Link>
-            </div>
-          </motion.nav>
+                <Link
+                  href="/about"
+                  onClick={(e) => handleNavClick(e, "/about")}
+                  className={`${NAV_MEGA_STYLES.mobileNavTopLink} border-t border-white/10`}
+                >
+                  {catalogLabels.about}
+                </Link>
+              </div>
+            </motion.nav>
           </>
         )}
       </AnimatePresence>

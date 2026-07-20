@@ -74,32 +74,16 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
         title={title}
         subtitle={subtitle}
         guide={
-          <>
-            <BrowseGuide
-              layout="stack"
-              title={t.guide.exploreTitle}
-              items={[
-                { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
-                { label: t.guide.casesPerformance, href: "/cases?type=performance" },
-                { label: t.guide.casesAll, href: "/cases" },
-                { label: t.guide.productsSpeaker, href: "/products" },
-              ]}
-              className="mt-6 md:hidden"
-            />
-            <div className="hidden md:block">
-              <BrowseGuide
-                layout="scroll"
-                title={t.guide.exploreTitle}
-                items={[
-                  { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
-                  { label: t.guide.casesPerformance, href: "/cases?type=performance" },
-                  { label: t.guide.casesAll, href: "/cases" },
-                  { label: t.guide.productsSpeaker, href: "/products" },
-                ]}
-                className="mt-6"
-              />
-            </div>
-          </>
+          <BrowseGuide
+            title={t.guide.exploreTitle}
+            items={[
+              { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
+              { label: t.guide.casesPerformance, href: "/cases?type=performance" },
+              { label: t.guide.casesAll, href: "/cases" },
+              { label: t.guide.productsSpeaker, href: "/products" },
+            ]}
+            className="mt-6"
+          />
         }
       />
 

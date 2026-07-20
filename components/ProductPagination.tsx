@@ -69,7 +69,7 @@ export default function ProductPagination({
               onClick={() => onPageChange(page)}
               className={`min-w-[2.25rem] px-3 py-2 text-xs rounded transition-colors ${
                 page === currentPage
-                  ? "bg-brand-gold/20 text-brand-gold border border-brand-gold/40"
+                  ? "filter-chip-active border border-white"
                   : "border border-white/10 hover:bg-white/5 text-gray-400"
               }`}
             >

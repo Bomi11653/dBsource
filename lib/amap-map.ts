@@ -14,7 +14,7 @@ const AMAP_URI_HOSTS = new Set(["uri.amap.com", "www.uri.amap.com"]);
 
 const AMAP_SRC = "dbsource";
 
-type AmapCoords = {
+export type AmapCoords = {
   lng: number;
   lat: number;
   name?: string;
@@ -53,7 +53,7 @@ function isUriAmapUrl(url: string): boolean {
   }
 }
 
-function looksLikeCoordPair(lng: number, lat: number): boolean {
+export function looksLikeCoordPair(lng: number, lat: number): boolean {
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) return false;
   if (lng < -180 || lng > 180 || lat < -90 || lat > 90) return false;
   // Prefer China bounds to avoid treating arbitrary "a,b" text as coordinates.
@@ -185,11 +185,6 @@ export function buildAmapMarkerUrl(lng: number, lat: number, name?: string): str
   return `https://uri.amap.com/marker?${params.toString()}`;
 }
 
-/**
- * Resolve a lightweight Amap URI link for the nav button.
- * Priority: uri.amap.com mapNavUrl → coords → address search.
- * Web map pages (www/ditu/m.amap.com) are never used directly.
- */
 export function resolveMapNavUrl(
   mapNavUrl?: string,
   mapQuery?: string,
@@ -229,4 +224,56 @@ export function resolveMapNavUrl(
   }
 
   return "";
+}
+
+/** 已知公司地址 → 坐标（无 CMS 经纬度时的预览缩略图兜底） */
+const KNOWN_MAP_PREVIEW_COORDS: { match: RegExp; coords: AmapCoords }[] = [
+  {
+    match: /莫屋新丰西三路|万江街道|Xinfeng West 3rd|Wanjiang/i,
+    coords: { lng: 113.715894, lat: 23.053456 },
+  },
+];
+
+/** 解析地图预览缩略图用的坐标（mapQuery / mapNavUrl / 已知地址） */
+export function resolveMapPreviewCoords(
+  mapNavUrl?: string,
+  mapQuery?: string,
+  addressFallback?: string
+): AmapCoords | null {
+  const query = mapQuery?.trim();
+  if (query) {
+    const fromQuery = parseCoordsFromMapQuery(query);
+    if (fromQuery) return fromQuery;
+  }
+
+  const nav = mapNavUrl?.trim();
+  if (nav && isSafeHttpUrl(nav)) {
+    const fromNav = parseCoordsFromMapNavUrl(nav);
+    if (fromNav) return fromNav;
+  }
+
+  const address = (addressFallback?.trim() || query || "").trim();
+  if (address) {
+    for (const item of KNOWN_MAP_PREVIEW_COORDS) {
+      if (item.match.test(address)) {
+        return { ...item.coords, name: address };
+      }
+    }
+  }
+
+  return null;
+}
+
+export function resolveMapPreviewImageUrl(
+  mapNavUrl?: string,
+  mapQuery?: string,
+  addressFallback?: string
+): string {
+  const coords = resolveMapPreviewCoords(mapNavUrl, mapQuery, addressFallback);
+  if (!coords) return "";
+  const params = new URLSearchParams({
+    lng: String(coords.lng),
+    lat: String(coords.lat),
+  });
+  return `/api/map-preview?${params.toString()}`;
 }

@@ -4,8 +4,7 @@ import type { ContactInfo } from "@/data/mock";
 import type { SalesContactItem } from "@/data/sales-contacts";
 import { useI18n } from "@/components/I18nProvider";
 import BrowseGuide from "@/components/BrowseGuide";
-import ContactInfoSection from "@/components/contact/ContactInfoSection";
-import SalesContactCards from "@/components/SalesContactCards";
+import ContactDetailsLayout from "@/components/contact/ContactDetailsLayout";
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -26,20 +25,6 @@ function SectionHeading({
       ) : null}
     </div>
   );
-}
-
-function useIsLgViewport(): boolean | null {
-  const [isLg, setIsLg] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const sync = () => setIsLg(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
-  return isLg;
 }
 
 export default function ContactContent({
@@ -65,7 +50,6 @@ export default function ContactContent({
     referrer: "",
     language: locale === "zh" ? "zh-CN" : "en",
   });
-  const isLg = useIsLgViewport();
 
   const defaultMessage = productModel
     ? locale === "zh"
@@ -234,51 +218,28 @@ export default function ContactContent({
         <BrowseGuide
           title={t.guide.exploreTitle}
           items={guideItems}
-          layout="stack"
-          className="mt-6 sm:mt-8 items-center"
+          align="center"
+          className="mt-6 sm:mt-8"
         />
       </section>
 
-      <div className="page-x pb-8 md:pb-12">
+      <div className="page-x pb-page-safe md:pb-12">
         <div className="mx-auto max-w-6xl min-w-0">
-          <div className="hidden lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-8 lg:items-start">
-            <section id="contact-form" className="scroll-mt-nav min-w-0">
-              <SectionHeading
-                title={t.contact.formTitle}
-                description={t.contact.formSubtitle}
-                compact
-              />
-              {contactForm}
-            </section>
-
-            <aside className="min-w-0">
-              <ContactInfoSection contact={contact} mapEmbedWhen="lg" />
-            </aside>
-          </div>
-
-          {salesContacts.length > 0 && isLg === true ? (
-            <section className="contact-sales-shell hidden lg:block mt-8 lg:mt-10 scroll-mt-nav min-w-0">
-              <SalesContactCards contacts={salesContacts} />
-            </section>
-          ) : null}
-
-          <div className="grid gap-6 lg:hidden">
-            <ContactInfoSection contact={contact} showMap={false} />
-            {salesContacts.length > 0 && isLg === false ? (
-              <section className="contact-sales-shell scroll-mt-nav min-w-0">
-                <SalesContactCards contacts={salesContacts} />
+          <ContactDetailsLayout
+            contact={contact}
+            salesContacts={salesContacts}
+            variant="contact"
+            formSlot={
+              <section id="contact-form" className="scroll-mt-nav min-w-0">
+                <SectionHeading
+                  title={t.contact.formTitle}
+                  description={t.contact.formSubtitle}
+                  compact
+                />
+                {contactForm}
               </section>
-            ) : null}
-            <ContactInfoSection contact={contact} showCompany={false} mapEmbedWhen="below-lg" />
-            <section id="contact-form" className="scroll-mt-nav min-w-0">
-              <SectionHeading
-                title={t.contact.formTitle}
-                description={t.contact.formSubtitle}
-                compact
-              />
-              {contactForm}
-            </section>
-          </div>
+            }
+          />
         </div>
       </div>
     </div>

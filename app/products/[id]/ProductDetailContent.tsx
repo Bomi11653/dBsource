@@ -102,7 +102,7 @@ export default function ProductDetailContent({
         <div
           className={`grid gap-4 md:gap-6 ${
             gallery.length > 9
-              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           }`}
         >
@@ -121,7 +121,7 @@ export default function ProductDetailContent({
                   src={src}
                   alt={`${label} ${i + 1}`}
                   fill
-                  className="object-contain object-center p-3 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
+                  className="object-contain object-center p-4 md:p-5 md:group-hover:scale-[1.02] transition-transform duration-300"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
                 <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />

@@ -1,6 +1,7 @@
 "use client";
 
 import type { DownloadItem } from "@/data/mock";
+import ProductFilterChip from "@/components/products/ProductFilterChip";
 import { ArrowRight, Download, FileImage, Search, Share2 } from "lucide-react";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
@@ -116,6 +117,7 @@ const OS_LABELS: Record<NonNullable<DownloadItem["osType"]>, { zh: string; en: s
 const UI_LABELS = {
   zh: {
     searchPlaceholder: "搜索软件、产品型号、资料名称...",
+    categories: "资源分类",
     all: "全部资源",
     allEn: "All Resources",
     supportTitle: "需要技术支持？",
@@ -127,6 +129,7 @@ const UI_LABELS = {
   },
   en: {
     searchPlaceholder: "Search software, models, documents...",
+    categories: "Categories",
     all: "All Resources",
     allEn: "All Resources",
     supportTitle: "Need technical support?",
@@ -466,28 +469,25 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
         </div>
       </div>
 
-      {/* 分类标签 */}
-      <div className="filter-scroll flex gap-2 justify-start md:justify-center mb-12 md:mb-16 pb-1">
-        {CATEGORIES.map((cat) => {
-          const active = category === cat.key;
-          return (
-            <button
+      {/* 分类筛选 — 手机 sticky 横滑 Chip，与产品中心一致 */}
+      <div className="sticky-filter-bar mb-8 md:mb-16">
+        <p className="type-section-label text-center md:text-left mb-3 px-1">
+          {ui.categories}
+        </p>
+        <div className="filter-scroll md:justify-center pb-1 px-1 md:px-0">
+          {CATEGORIES.map((cat) => (
+            <ProductFilterChip
               key={cat.key}
-              type="button"
+              active={category === cat.key}
               onClick={() => {
                 setCategory(cat.key);
                 syncUrl(cat.key);
               }}
-              className={`filter-chip touch-active shrink-0 min-h-[42px] px-5 py-2 text-sm rounded-full border whitespace-nowrap transition-colors ${
-                active
-                  ? "border-white bg-white text-black font-medium"
-                  : "border-white/10 bg-white/[0.04] text-white/[0.62] hover:text-white hover:border-white/25"
-              }`}
             >
               {cat.label[locale]}
-            </button>
-          );
-        })}
+            </ProductFilterChip>
+          ))}
+        </div>
       </div>
 
       {/* 全部资源 */}
@@ -589,7 +589,7 @@ export default function DownloadList({ items }: { items: DownloadItem[] }) {
             </div>
             <Link
               href="/contact"
-              className="inline-flex shrink-0 items-center justify-center gap-2 min-h-[50px] px-7 rounded-2xl bg-[#2563eb] text-white text-sm font-medium hover:bg-[#3b82f6] transition-colors touch-active"
+              className="inline-flex shrink-0 items-center justify-center gap-2 min-h-[50px] px-7 rounded-2xl bg-brand-gold/90 text-black text-sm font-medium hover:bg-brand-gold transition-colors touch-active"
             >
               {ui.contactSupport}
               <ArrowRight size={16} />

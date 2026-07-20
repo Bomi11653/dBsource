@@ -56,10 +56,10 @@ function resolveSocialUrl(
 
 const HINTS = {
   zh: { visit: "点击访问", empty: "暂未配置链接" },
-  en: { visit: "Visit", empty: "Link not configured" },
+  en: { visit: "Tap to visit", empty: "Link not configured" },
 } as const;
 
-/** 页脚「关注我们」平台卡片（横向卡片：二维码 + 文案 + 箭头） */
+/** 页脚「关注我们」— 手机横滑卡片，电脑三列网格 */
 export default function QRCarousel({
   items,
   socialLinks,
@@ -71,12 +71,12 @@ export default function QRCarousel({
   const hints = HINTS[locale];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 safe-x">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.02] px-4 sm:px-8 py-8 sm:py-10">
-        <p className="text-center text-sm text-white mb-6 sm:mb-8 tracking-widest">
+    <div className="max-w-6xl mx-auto page-x pb-8 md:pb-10">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 sm:px-8 py-8 sm:py-10">
+        <p className="type-section-label text-center mb-6 sm:mb-8">
           {t.footer.scan}
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5">
+        <div className="filter-scroll sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible gap-3 pb-1 -mx-1 px-1 sm:mx-0 sm:px-0">
           {items.map((qr) => {
             const platform = resolveSocialUrl(qr, socialLinks);
             const url = platform?.url ?? "";
@@ -106,10 +106,8 @@ export default function QRCarousel({
                     </p>
                   ) : null}
                   <p
-                    className={`text-[10px] mt-1.5 leading-none transition-opacity duration-300 ${
-                      url
-                        ? "text-white/70 opacity-70 sm:opacity-0 sm:group-hover:opacity-100"
-                        : "text-gray-600 opacity-70"
+                    className={`text-[11px] mt-2 leading-none ${
+                      url ? "text-brand-gold/80" : "text-gray-600"
                     }`}
                   >
                     {url ? hints.visit : hints.empty}
@@ -118,7 +116,7 @@ export default function QRCarousel({
                 <span
                   className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors duration-300 ${
                     url
-                      ? "border-white/20 text-gray-400 group-hover:border-white/60 group-hover:text-white"
+                      ? "border-white/20 text-gray-400 group-hover:border-brand-gold/40 group-hover:text-brand-gold"
                       : "border-white/10 text-gray-700"
                   }`}
                   aria-hidden
@@ -129,7 +127,7 @@ export default function QRCarousel({
             );
 
             const cardClass =
-              "group flex items-center gap-3 sm:gap-4 rounded-2xl border bg-white/[0.03] p-3.5 sm:p-4 transition-all duration-300";
+              "group flex items-center gap-3 sm:gap-4 rounded-2xl border bg-white/[0.03] p-3.5 sm:p-4 transition-all duration-300 shrink-0 w-[min(100%,288px)] sm:w-auto sm:shrink";
 
             if (!url) {
               return (
@@ -150,7 +148,7 @@ export default function QRCarousel({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${qr.label[locale]} - ${hints.visit}`}
-                className={`${cardClass} border-white/10 hover:border-white/35 hover:bg-white/[0.06] hover:-translate-y-1 touch-active cursor-pointer`}
+                className={`${cardClass} border-white/10 hover:border-white/35 hover:bg-white/[0.06] md:hover:-translate-y-1 touch-active cursor-pointer`}
               >
                 {inner}
               </a>

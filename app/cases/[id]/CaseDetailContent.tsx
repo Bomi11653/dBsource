@@ -51,7 +51,6 @@ export default function CaseDetailContent({
           <p className="text-gray-400 text-sm type-label mt-4 break-words">{caseItem.products}</p>
           <BrowseGuide
             title={t.guide.exploreTitle}
-            layout="stack"
             items={[
               { label: t.guide.caseOverview, targetId: "case-overview" },
               { label: t.guide.caseGallery, targetId: "case-gallery" },
@@ -101,7 +100,7 @@ export default function CaseDetailContent({
         <div
           className={`grid gap-4 md:gap-6 ${
             heroImages.length > 9
-              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           }`}
         >
@@ -117,7 +116,7 @@ export default function CaseDetailContent({
                 src={src}
                 alt={`${caseItem.title[locale]} ${i + 1}`}
                 fill
-                className="object-contain object-center p-2 md:object-cover md:p-0 md:group-hover:scale-105 transition-transform duration-300"
+                className="object-contain object-center p-2 md:p-0 md:object-cover md:group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
               <span className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />

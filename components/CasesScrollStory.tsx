@@ -128,8 +128,8 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
             className="mt-8"
           >
             <BrowseGuide
-              layout="stack"
               title={t.guide.exploreTitle}
+              align="center"
               items={[
                 { label: t.guide.casesEngineering, href: "/cases?type=engineering" },
                 { label: t.guide.casesPerformance, href: "/cases?type=performance" },

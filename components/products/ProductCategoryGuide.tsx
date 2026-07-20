@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProductCategoryType } from "@/lib/product-classification";
+import ProductFilterChip from "@/components/products/ProductFilterChip";
 
 type ProductCategoryGuideProps = {
   title: string;
@@ -19,32 +20,28 @@ export default function ProductCategoryGuide({
   onChange,
   className = "",
 }: ProductCategoryGuideProps) {
+  const chips = CATEGORIES.map((category) => (
+    <ProductFilterChip
+      key={category}
+      active={active === category}
+      onClick={() => onChange(category)}
+    >
+      {labels[category]}
+    </ProductFilterChip>
+  ));
+
   return (
-    <nav aria-label={title} className={`flex flex-col gap-3 ${className}`}>
-      <p className="text-xs uppercase tracking-[0.28em] text-gray-500 text-center md:text-inherit">
-        {title}
-      </p>
-      <div className="flex flex-col items-stretch gap-2 w-full max-w-[260px] mx-auto md:max-w-none md:flex-row md:flex-wrap md:justify-center md:items-center md:gap-2.5">
-        {CATEGORIES.map((category) => {
-          const isActive = active === category;
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => onChange(category)}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-4 py-2.5 min-h-[44px] text-sm transition-colors touch-active w-full md:w-auto ${
-                isActive
-                  ? "border-brand-gold/50 bg-brand-gold/15 text-brand-gold"
-                  : "border-white/15 bg-white/5 text-gray-300 hover:border-white/30 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <span>{labels[category]}</span>
-              <span aria-hidden className="text-white/50">
-                →
-              </span>
-            </button>
-          );
-        })}
+    <nav aria-label={title} className={className}>
+      {/* 手机：横滑 Chip，与系列筛选条一致 */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <p className="type-section-label text-center">{title}</p>
+        <div className="filter-scroll -mx-1 px-1 pb-1">{chips}</div>
+      </div>
+
+      {/* 电脑 / 平板：横向胶囊 */}
+      <div className="hidden md:flex md:flex-col md:gap-3 md:items-center">
+        <p className="type-section-label">{title}</p>
+        <div className="flex flex-row flex-wrap justify-center gap-2.5">{chips}</div>
       </div>
     </nav>
   );

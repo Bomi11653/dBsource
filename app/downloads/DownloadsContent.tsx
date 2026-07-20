@@ -37,9 +37,9 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
   const copy = HERO_COPY[locale];
 
   return (
-    <div className="bg-[#030303] pb-20">
+    <div className="bg-black pb-page-safe">
       {/* Hero：整幅背景图 + 左侧文案 */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-[#080808] min-h-[220px] sm:min-h-[280px]">
+      <section className="relative overflow-hidden border-b border-white/10 bg-zinc-950 min-h-[220px] sm:min-h-[280px]">
         <Image
           src="/images/downloads/banner-unit48.png"
           alt=""
@@ -49,11 +49,11 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
           loading="lazy"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-r from-[#030303]/95 via-[#030303]/75 to-[#030303]/20"
+          className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-black/20"
           aria-hidden
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#030303] to-transparent"
+          className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black to-transparent"
           aria-hidden
         />
         <div className="relative max-w-7xl mx-auto page-x py-12 md:py-20 lg:py-24">
@@ -66,7 +66,7 @@ export default function DownloadsContent({ items }: { items: DownloadItem[] }) {
               {copy.desc}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8 md:mt-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 md:mt-10">
               {copy.features.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex flex-col gap-2.5">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-black/40 backdrop-blur text-white">

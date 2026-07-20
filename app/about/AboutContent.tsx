@@ -4,9 +4,10 @@ import { aboutImages, type AboutImages } from "@/data/about";
 import type { ContactInfo } from "@/data/mock";
 import type { SalesContactItem } from "@/data/sales-contacts";
 import { useI18n } from "@/components/I18nProvider";
-import ContactInfoSection from "@/components/contact/ContactInfoSection";
-import CmsImage from "@/components/CmsImage";
-import SalesContactCards from "@/components/SalesContactCards";
+import AboutZoomableImage from "@/components/about/AboutZoomableImage";
+import ContactDetailsLayout from "@/components/contact/ContactDetailsLayout";
+import ImageLightbox from "@/components/ImageLightbox";
+import { useMemo, useState } from "react";
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -19,6 +20,31 @@ function SectionLabel({ children }: { children: string }) {
 const systemAspects = ["aspect-[1024/612]", "aspect-[988/749]", "aspect-[598/643]"] as const;
 const systemAlts = ["dBcover", "dBcover EQ", "dBcover SPL"] as const;
 
+function buildAboutGallery(images: AboutImages, locale: "zh" | "en") {
+  return [
+    {
+      src: images.brandIntro,
+      alt: locale === "zh" ? "dBsource 东莞工厂" : "dBsource Dongguan factory",
+    },
+    {
+      src: images.origin,
+      alt: locale === "zh" ? "消声室" : "Anechoic chamber",
+    },
+    ...images.system.map((src, i) => ({
+      src,
+      alt: systemAlts[i],
+    })),
+    {
+      src: images.focus,
+      alt: "dBsource Focus",
+    },
+    ...images.dsp.map((src, i) => ({
+      src,
+      alt: `Unit48 ${i + 1}`,
+    })),
+  ];
+}
+
 export default function AboutContent({
   images = aboutImages,
   contact,
@@ -29,6 +55,16 @@ export default function AboutContent({
   salesContacts?: SalesContactItem[];
 }) {
   const { locale, t } = useI18n();
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const gallery = useMemo(() => buildAboutGallery(images, locale), [images, locale]);
+  const gallerySrcs = useMemo(() => gallery.map((item) => item.src), [gallery]);
+
+  const lightboxLabels = {
+    close: t.cases.galleryClose,
+    prev: t.cases.galleryPrev,
+    next: t.cases.galleryNext,
+  };
 
   return (
     <div className="bg-black text-white">
@@ -51,27 +87,28 @@ export default function AboutContent({
             ))}
           </div>
 
-          <div className="mt-16 md:mt-20 w-full aspect-[16/9] md:h-[420px] relative rounded-2xl overflow-hidden border border-white/5 hero-fade-in-delay">
-            <CmsImage
-              src={images.brandIntro}
-              alt={locale === "zh" ? "dBsource 东莞工厂" : "dBsource Dongguan factory"}
-              fill
-              className="object-cover object-[center_45%]"
-              sizes="(max-width: 1024px) 100vw, 1024px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-          </div>
+          <AboutZoomableImage
+            src={gallery[0].src}
+            alt={gallery[0].alt}
+            onOpen={() => setLightboxIndex(0)}
+            containerClassName="mt-16 md:mt-20 w-full aspect-[16/9] md:h-[420px] md:aspect-auto rounded-2xl hero-fade-in-delay"
+            imageClassName="object-cover object-[center_45%]"
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            overlay={
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            }
+          />
 
-          <div className="mt-8 md:mt-12 w-full aspect-[4/3] md:h-[500px] relative rounded-2xl overflow-hidden border border-white/5">
-            <CmsImage
-              src={images.origin}
-              alt={locale === "zh" ? "消声室" : "Anechoic chamber"}
-              fill
-              className="object-cover object-center"
-              sizes="(max-width: 1024px) 100vw, 1024px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          </div>
+          <AboutZoomableImage
+            src={gallery[1].src}
+            alt={gallery[1].alt}
+            onOpen={() => setLightboxIndex(1)}
+            containerClassName="mt-8 md:mt-12 w-full aspect-[4/3] md:h-[500px] md:aspect-auto rounded-2xl"
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            overlay={
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            }
+          />
         </div>
       </section>
 
@@ -89,41 +126,30 @@ export default function AboutContent({
           </div>
 
           <div className="space-y-8 md:space-y-10 reveal-on-scroll">
-            <div
-              className={`relative w-full ${systemAspects[0]} rounded-2xl overflow-hidden border border-white/5`}
-            >
-              <CmsImage
-                src={images.system[0]}
-                alt={systemAlts[0]}
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1200px) 100vw, 1152px"
-              />
-            </div>
+            <AboutZoomableImage
+              src={gallery[2].src}
+              alt={gallery[2].alt}
+              onOpen={() => setLightboxIndex(2)}
+              containerClassName={`w-full ${systemAspects[0]} rounded-2xl`}
+              sizes="(max-width: 1200px) 100vw, 1152px"
+            />
 
             <div className="grid md:grid-cols-2 gap-8 md:gap-10">
-              <div
-                className={`relative w-full ${systemAspects[1]} rounded-2xl overflow-hidden border border-white/5`}
-              >
-                <CmsImage
-                  src={images.system[1]}
-                  alt={systemAlts[1]}
-                  fill
-                  className="object-cover object-center"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
-              <div
-                className={`relative w-full ${systemAspects[2]} rounded-2xl overflow-hidden border border-white/5 md:max-w-md md:justify-self-end`}
-              >
-                <CmsImage
-                  src={images.system[2]}
-                  alt={systemAlts[2]}
-                  fill
-                  className="object-cover object-top"
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                />
-              </div>
+              <AboutZoomableImage
+                src={gallery[3].src}
+                alt={gallery[3].alt}
+                onOpen={() => setLightboxIndex(3)}
+                containerClassName={`w-full ${systemAspects[1]} rounded-2xl`}
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+              <AboutZoomableImage
+                src={gallery[4].src}
+                alt={gallery[4].alt}
+                onOpen={() => setLightboxIndex(4)}
+                containerClassName={`w-full ${systemAspects[2]} rounded-2xl md:max-w-md md:justify-self-end`}
+                imageClassName="object-cover object-top"
+                sizes="(max-width: 768px) 100vw, 40vw"
+              />
             </div>
           </div>
         </div>
@@ -142,15 +168,13 @@ export default function AboutContent({
             </p>
           </div>
 
-          <div className="relative w-full aspect-[3/2] md:aspect-[1016/687] rounded-2xl overflow-hidden border border-white/5 reveal-on-scroll">
-            <CmsImage
-              src={images.focus}
-              alt="dBsource Focus"
-              fill
-              className="object-cover object-center"
-              sizes="(max-width: 1200px) 100vw, 1152px"
-            />
-          </div>
+          <AboutZoomableImage
+            src={gallery[5].src}
+            alt={gallery[5].alt}
+            onOpen={() => setLightboxIndex(5)}
+            containerClassName="relative w-full aspect-[3/2] md:aspect-[1016/687] rounded-2xl reveal-on-scroll"
+            sizes="(max-width: 1200px) 100vw, 1152px"
+          />
         </div>
       </section>
 
@@ -168,20 +192,20 @@ export default function AboutContent({
           </div>
 
           <div className="grid md:grid-cols-3 gap-5 md:gap-6">
-            {images.dsp.map((src, i) => (
-              <div
-                key={src}
-                className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-white/5 group reveal-on-scroll"
-              >
-                <CmsImage
-                  src={src}
-                  alt={`Unit48 ${i + 1}`}
-                  fill
-                  className="object-cover object-center group-hover:scale-[1.03] transition-transform duration-700"
+            {images.dsp.map((src, i) => {
+              const index = 6 + i;
+              const item = gallery[index];
+              return (
+                <AboutZoomableImage
+                  key={src}
+                  src={item.src}
+                  alt={item.alt}
+                  onOpen={() => setLightboxIndex(index)}
+                  containerClassName="aspect-[4/3] rounded-2xl reveal-on-scroll"
                   sizes="33vw"
                 />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -199,43 +223,25 @@ export default function AboutContent({
             </p>
           </div>
 
-          <div className="hidden lg:block space-y-8 reveal-on-scroll">
-            <ContactInfoSection
+          <div className="reveal-on-scroll">
+            <ContactDetailsLayout
               contact={contact}
-              layout="split"
-              mapEmbedWhen="lg"
-              infoId="about-contact-info"
-              mapId="about-contact-map"
-            />
-            {salesContacts.length > 0 ? (
-              <div className="contact-sales-shell">
-                <SalesContactCards contacts={salesContacts} />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="grid gap-6 lg:hidden reveal-on-scroll">
-            <ContactInfoSection
-              contact={contact}
-              showMap={false}
-              infoId="about-contact-info"
-              mapId="about-contact-map"
-            />
-            {salesContacts.length > 0 ? (
-              <div className="contact-sales-shell">
-                <SalesContactCards contacts={salesContacts} />
-              </div>
-            ) : null}
-            <ContactInfoSection
-              contact={contact}
-              showCompany={false}
-              mapEmbedWhen="below-lg"
+              salesContacts={salesContacts}
+              variant="about"
               infoId="about-contact-info"
               mapId="about-contact-map"
             />
           </div>
         </div>
       </section>
+
+      <ImageLightbox
+        images={gallerySrcs}
+        altPrefix={locale === "zh" ? "关于 dBsource" : "About dBsource"}
+        openIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        labels={lightboxLabels}
+      />
     </div>
   );
 }

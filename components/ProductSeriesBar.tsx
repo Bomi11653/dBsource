@@ -1,5 +1,6 @@
 "use client";
 
+import ProductFilterChip from "@/components/products/ProductFilterChip";
 import type { ReactNode } from "react";
 import { useI18n } from "./I18nProvider";
 
@@ -7,30 +8,6 @@ export type ProductFilterTab = {
   id: string;
   label: string;
 };
-
-function FilterButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  const base = "filter-chip touch-active transition";
-  const pillActive = "bg-brand-gold/90 text-black";
-  const pillIdle = "bg-white/5 text-gray-300 hover:bg-white/10";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${base} ${active ? pillActive : pillIdle}`}
-    >
-      {children}
-    </button>
-  );
-}
 
 export default function ProductSeriesBar({
   tabs,
@@ -49,22 +26,22 @@ export default function ProductSeriesBar({
 
   return (
     <div className="mb-6 md:mb-10">
-      <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top,0px))] z-30 -mx-1 px-1 py-3 md:static md:mx-0 md:px-0 md:py-0 bg-black/92 backdrop-blur-xl md:bg-transparent border-b border-white/10 md:border-0 space-y-3 md:space-y-6">
-        {search ? <div className="md:hidden w-full">{search}</div> : null}
+      <div className="sticky-filter-bar md:space-y-6 md:mb-0 mb-0 space-y-3">
+        {search ? <div className="md:hidden w-full px-1">{search}</div> : null}
 
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b md:border-white/10 md:pb-4">
-          <div className="filter-scroll md:flex md:flex-wrap md:gap-3 min-w-0 -mx-1 px-1">
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b md:border-white/10 md:pb-4 px-1 md:px-0">
+          <div className="filter-scroll md:gap-3 min-w-0 pb-1 md:pb-0">
             {tabs.map((tab) => (
-              <FilterButton
+              <ProductFilterChip
                 key={tab.id}
                 active={activeId === tab.id}
                 onClick={() => onChange(tab.id)}
               >
                 {tab.label}
-              </FilterButton>
+              </ProductFilterChip>
             ))}
           </div>
-          <span className="text-xs text-gray-500 md:hidden">
+          <span className="text-xs text-gray-500 md:hidden px-1">
             {t.products.total.replace("{count}", String(resultCount))}
           </span>
           {search ? (
@@ -72,7 +49,7 @@ export default function ProductSeriesBar({
           ) : null}
         </div>
 
-        <p className="hidden md:block text-xs text-gray-500">
+        <p className="hidden md:block text-xs text-gray-500 px-1 md:px-0">
           {t.products.total.replace("{count}", String(resultCount))}
         </p>
       </div>

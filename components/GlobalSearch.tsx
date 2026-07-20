@@ -10,7 +10,12 @@ import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export default function GlobalSearch() {
+export default function GlobalSearch({
+  onOpen,
+}: {
+  /** 打开搜索时回调（如关闭手机抽屉） */
+  onOpen?: () => void;
+}) {
   const { locale, t } = useI18n();
   const router = useRouter();
   const { products, cases, downloads } = useSiteData();
@@ -22,13 +27,17 @@ export default function GlobalSearch() {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((v) => !v);
+        setOpen((v) => {
+          const next = !v;
+          if (next) onOpen?.();
+          return next;
+        });
       }
       if (e.key === "Escape") setOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [onOpen]);
 
   useEffect(() => {
     if (!open) setQuery("");
@@ -46,6 +55,11 @@ export default function GlobalSearch() {
 
   const close = useCallback(() => setOpen(false), []);
 
+  const openSearch = useCallback(() => {
+    onOpen?.();
+    setOpen(true);
+  }, [onOpen]);
+
   const searchLabels = {
     configurator: t.search.configurator,
     products: t.search.products,
@@ -58,13 +72,22 @@ export default function GlobalSearch() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openSearch}
         className="hidden lg:inline-flex items-center gap-2 min-h-[36px] px-3 rounded-lg border border-white/10 text-xs text-gray-400 hover:text-white hover:border-white/20 transition-colors"
         aria-label={t.nav.search}
       >
         <Search size={14} />
         <span>{t.nav.search}</span>
         <kbd className="text-[10px] text-gray-600 border border-white/10 rounded px-1">⌘K</kbd>
+      </button>
+
+      <button
+        type="button"
+        onClick={openSearch}
+        className="lg:hidden touch-target touch-active flex items-center justify-center rounded-lg border border-white/20 text-white"
+        aria-label={t.nav.search}
+      >
+        <Search size={20} aria-hidden />
       </button>
 
       <AnimatePresence>
@@ -82,7 +105,7 @@ export default function GlobalSearch() {
               onClick={close}
             />
             <motion.div
-              className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl overflow-hidden safe-x"
               initial={{ opacity: 0, y: -12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
@@ -102,14 +125,14 @@ export default function GlobalSearch() {
                     }
                   }}
                   placeholder={t.search.placeholder}
-                  className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:text-gray-600"
+                  className="flex-1 bg-transparent py-4 text-base sm:text-sm outline-none placeholder:text-gray-600"
                 />
                 <button type="button" onClick={close} className="p-2 text-gray-500 hover:text-white">
                   <X size={18} />
                 </button>
               </div>
 
-              <div className="max-h-[60vh] overflow-y-auto p-3 space-y-4">
+              <div className="max-h-[min(60vh,calc(100dvh-8rem))] overflow-y-auto p-3 space-y-4 safe-bottom">
                 {!hasQuery ? (
                   <p className="text-xs text-gray-600 px-2 py-4">{t.search.placeholder}</p>
                 ) : isPending ? (

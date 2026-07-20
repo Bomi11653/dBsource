@@ -336,7 +336,7 @@ img[data-nimg="fill"],
   -webkit-overflow-scrolling: touch;
 }
 
-/* 全站移动端排版系统 */
+/* 全站移动端排版系统 — 断点：sm 640 / md 768 / lg 1024 */
 .page-x {
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
@@ -414,6 +414,69 @@ img[data-nimg="fill"],
   line-height: 1.25rem;
   border-radius: 9999px;
   touch-action: manipulation;
+}
+
+/* 筛选 / 推荐 Chip 状态（产品、下载、页脚、BrowseGuide 共用） */
+.filter-chip-idle {
+  background-color: rgb(255 255 255 / 0.05);
+  color: rgb(209 213 219);
+}
+
+.filter-chip-idle:hover {
+  background-color: rgb(255 255 255 / 0.1);
+  color: rgb(255 255 255);
+}
+
+.filter-chip-active {
+  background-color: rgb(255 255 255);
+  color: rgb(0 0 0);
+  font-weight: 500;
+}
+
+.filter-chip-active:hover {
+  background-color: rgb(255 255 255 / 0.9);
+}
+
+/* 区块小标题（推荐浏览、资源分类、关注我们 等） */
+.type-section-label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgb(107 114 128);
+}
+
+/* 手机端筛选条吸顶（产品中心、下载页） */
+.sticky-filter-bar {
+  position: sticky;
+  top: calc(4.25rem + env(safe-area-inset-top, 0px));
+  z-index: 20;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+  padding: 0.75rem 0.25rem;
+  background-color: rgb(0 0 0 / 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+
+@media (min-width: 768px) {
+  .filter-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .sticky-filter-bar {
+    position: static;
+    z-index: auto;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0;
+    background-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) {
