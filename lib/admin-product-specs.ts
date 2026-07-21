@@ -159,16 +159,6 @@ function normalizeLabel(label: string): string {
     .toLowerCase();
 }
 
-function createEmptyFixedRows(): SpecTableRow[] {
-  return DEFAULT_SPEC_FIELD_DEFS.map((def) => ({
-    id: def.id,
-    labelZh: def.labelZh,
-    labelEn: def.labelEn,
-    valueZh: "",
-    valueEn: "",
-    isFixed: true,
-  }));
-}
 
 function parseLine(line: string): { label: string; value: string } | null {
   const trimmed = line.trim();
@@ -400,49 +390,55 @@ function parseSegments(text: string, lang: "zh" | "en"): SegmentAssignment[] {
   return assignments;
 }
 
-function mergeAssignments(
+function findFieldDef(fieldId: SpecFieldId | null | undefined) {
+  if (!fieldId) return undefined;
+  return DEFAULT_SPEC_FIELD_DEFS.find((def) => def.id === fieldId);
+}
+
+function resolveRowLabels(
+  assignment: SegmentAssignment | undefined,
+  lang: "zh" | "en",
+  fieldId: SpecFieldId | null
+): string {
+  if (assignment?.label?.trim()) return assignment.label.trim();
+  const def = findFieldDef(fieldId);
+  if (def) return lang === "zh" ? def.labelZh : def.labelEn;
+  return lang === "zh" ? CUSTOM_OTHER_LABEL_ZH : CUSTOM_OTHER_LABEL_EN;
+}
+
+/** 按文本行顺序合并中英文，保留后台保存时的参数顺序 */
+function buildOrderedRows(
   zhAssignments: SegmentAssignment[],
   enAssignments: SegmentAssignment[]
 ): SpecTableRow[] {
-  const rows = createEmptyFixedRows();
-  const rowById = new Map(rows.map((row) => [row.id, row]));
-  const customZh: SegmentAssignment[] = [];
-  const customEn: SegmentAssignment[] = [];
+  const count = Math.max(zhAssignments.length, enAssignments.length);
+  const rows: SpecTableRow[] = [];
 
-  for (const item of zhAssignments) {
-    if (item.fieldId && rowById.has(item.fieldId) && !item.isCustom) {
-      const row = rowById.get(item.fieldId)!;
-      if (!row.valueZh) row.valueZh = item.value;
-    } else {
-      customZh.push(item);
-    }
-  }
+  for (let i = 0; i < count; i += 1) {
+    const zh = zhAssignments[i];
+    const en = enAssignments[i];
+    if (!zh && !en) continue;
 
-  for (const item of enAssignments) {
-    if (item.fieldId && rowById.has(item.fieldId) && !item.isCustom) {
-      const row = rowById.get(item.fieldId)!;
-      if (!row.valueEn) row.valueEn = item.value;
-    } else {
-      customEn.push(item);
-    }
-  }
+    const fieldId = zh?.fieldId ?? en?.fieldId ?? null;
+    const labelZh = resolveRowLabels(zh, "zh", fieldId);
+    const labelEn = resolveRowLabels(en, "en", fieldId);
+    const valueZh = zh?.value?.trim() ?? "";
+    const valueEn = en?.value?.trim() ?? "";
 
-  const customRows: SpecTableRow[] = [];
-  const customCount = Math.max(customZh.length, customEn.length);
-  for (let i = 0; i < customCount; i += 1) {
-    const zh = customZh[i];
-    const en = customEn[i];
-    customRows.push({
-      id: `custom-${i}-${normalizeLabel(zh?.value ?? en?.value ?? String(i))}`,
-      labelZh: zh?.label || CUSTOM_OTHER_LABEL_ZH,
-      labelEn: en?.label || CUSTOM_OTHER_LABEL_EN,
-      valueZh: zh?.value ?? "",
-      valueEn: en?.value ?? "",
+    if (!labelZh && !valueZh && !labelEn && !valueEn) continue;
+
+    const slug = normalizeLabel(`${labelZh}-${labelEn}-${valueZh}-${valueEn}`) || String(i);
+    rows.push({
+      id: fieldId ? `${fieldId}-${i}-${slug}` : `custom-${i}-${slug}`,
+      labelZh,
+      labelEn,
+      valueZh,
+      valueEn,
       isFixed: false,
     });
   }
 
-  return [...rows, ...customRows];
+  return rows;
 }
 
 export function parseProductSpecs(specsZh: string, specsEn: string): ParsedProductSpecs {
@@ -451,7 +447,7 @@ export function parseProductSpecs(specsZh: string, specsEn: string): ParsedProdu
 
   if (!zhText && !enText) {
     return {
-      rows: createEmptyFixedRows(),
+      rows: [],
       unparsedZh: "",
       unparsedEn: "",
       parseable: true,
@@ -471,14 +467,14 @@ export function parseProductSpecs(specsZh: string, specsEn: string): ParsedProdu
 
   if (!parseable) {
     return {
-      rows: createEmptyFixedRows(),
+      rows: [],
       unparsedZh: zhText,
       unparsedEn: enText,
       parseable: false,
     };
   }
 
-  const rows = mergeAssignments(zhAssignments, enAssignments);
+  const rows = buildOrderedRows(zhAssignments, enAssignments);
 
   const unparsedZh =
     !hasRecognized && !hasLabeled && zhText
@@ -536,4 +532,15 @@ export function createCustomSpecRow(index: number): SpecTableRow {
     valueEn: "",
     isFixed: false,
   };
+}
+
+export function hasProductSpecRows(specsZh: string, specsEn: string): boolean {
+  const { rows } = parseProductSpecs(specsZh, specsEn);
+  return rows.some(
+    (row) =>
+      row.labelZh.trim() ||
+      row.valueZh.trim() ||
+      row.labelEn.trim() ||
+      row.valueEn.trim()
+  );
 }

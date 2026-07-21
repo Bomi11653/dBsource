@@ -96,7 +96,6 @@ export type AdminCollection = keyof typeof ADMIN_COLLECTIONS;
 
 export function sectionToCollection(section: string): AdminCollection | "contact-info" | null {
   const map: Record<string, AdminCollection | "contact-info"> = {
-    home: "scenes",
     products: "products",
     cases: "cases",
     downloads: "downloads",

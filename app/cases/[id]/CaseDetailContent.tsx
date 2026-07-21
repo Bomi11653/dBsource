@@ -5,6 +5,7 @@ import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useI18n } from "@/components/I18nProvider";
 import { getCaseGalleryUrls, getCaseHeroUrl } from "@/lib/case-media";
+import { getCaseProjectOverview } from "@/lib/case-project-overview";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
 import { useState } from "react";
@@ -16,7 +17,7 @@ export default function CaseDetailContent({
 }) {
   const { locale, t } = useI18n();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const body = caseItem.detail?.[locale] ?? caseItem.desc[locale];
+  const body = getCaseProjectOverview(caseItem, locale);
   const heroSrc = getCaseHeroUrl(caseItem);
   const heroImages = getCaseGalleryUrls(caseItem);
   const highlights = caseItem.highlights?.[locale] ?? [];
@@ -44,11 +45,7 @@ export default function CaseDetailContent({
           >
             ← {t.cases.backToList}
           </Link>
-          <p className="type-label text-xs uppercase tracking-[0.25em] text-brand-gold mb-3">
-            {caseItem.scene[locale]}
-          </p>
           <h1 className="type-hero text-3xl md:text-5xl break-words">{caseItem.title[locale]}</h1>
-          <p className="text-gray-400 text-sm type-label mt-4 break-words">{caseItem.products}</p>
           <BrowseGuide
             title={t.guide.exploreTitle}
             items={[
@@ -86,9 +83,6 @@ export default function CaseDetailContent({
             </ul>
           </div>
         )}
-        <p className="text-sm text-gray-500 type-label mt-10 border-t border-white/10 pt-6 break-words">
-          {t.cases.equipment}: {caseItem.products}
-        </p>
       </section>
 
       <section

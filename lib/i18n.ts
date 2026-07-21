@@ -158,6 +158,15 @@ export const translations = {
     },
     about: {
       label: "关于我们",
+      companyIntro: "公司介绍",
+      brandStory: "品牌故事",
+      tech: {
+        title: "技术能力",
+      },
+      engineering: {
+        title: "系统解决方案",
+        body: "除喇叭与音箱制造外，我们提供完整的系统解决方案。自主开发的 dBcover 电脑版声学模拟软件，为工程设计与现场调试提供数字化支撑。",
+      },
       origin: {
         body: [
           "dBsource 是 2024 年建立的新品牌，由志同道合的一群资深音响人重新组建。工厂位于供应链集中的东莞，拥有消声室、实验室、演示厅与完整生产线。",
@@ -306,8 +315,6 @@ export const translations = {
       phone: "手机",
       email: "邮箱",
       address: "地址",
-      intro:
-        "专注专业音响系统与 DSP 音频技术解决方案，提供从产品研发、声学模拟到系统集成与现场调试的一站式服务。",
     },
   },
   en: {
@@ -470,6 +477,15 @@ export const translations = {
     },
     about: {
       label: "About",
+      companyIntro: "Company",
+      brandStory: "Our Story",
+      tech: {
+        title: "Technology",
+      },
+      engineering: {
+        title: "Engineering",
+        body: "Beyond loudspeaker manufacturing, we deliver turnkey systems—including our proprietary dBcover desktop acoustic simulation software for design and commissioning.",
+      },
       origin: {
         body: [
           "Founded in 2024, dBsource reunites veteran audio engineers in Dongguan—at the heart of the supply chain—with anechoic chambers, labs, demo rooms, and full production lines.",
@@ -618,8 +634,6 @@ export const translations = {
       phone: "Phone",
       email: "Email",
       address: "Address",
-      intro:
-        "Professional audio systems and DSP solutions—from R&D and acoustic simulation to integration and on-site commissioning.",
     },
   },
 } as const;

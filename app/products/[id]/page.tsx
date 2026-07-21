@@ -1,5 +1,4 @@
 import ProductDetailContent from "./ProductDetailContent";
-import SiteFooter from "@/components/SiteFooter";
 import { getProductById, getProducts } from "@/lib/cms";
 import { productPageMetadata, productJsonLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
@@ -35,7 +34,6 @@ export default async function ProductDetailPage({ params }: Props) {
       />
       <main>
         <ProductDetailContent product={product} />
-        <SiteFooter />
       </main>
     </>
   );

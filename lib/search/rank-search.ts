@@ -5,6 +5,7 @@ import {
   SEARCH_SCENE_LABELS,
 } from "@/data/search-aliases";
 import { expandSearchQuery, extractModelCodes } from "@/lib/ai/synonyms";
+import { caseOverviewMatchesModelCodes } from "@/lib/case-project-overview";
 import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
 
@@ -157,17 +158,25 @@ function scoreCase(
   const qUpper = rawQuery.trim().toUpperCase();
   let score = 0;
 
-  const titleHay = [c.title.zh, c.title.en, c.scene.zh, c.scene.en].join(" ").toLowerCase();
+  const titleHay = [c.title.zh, c.title.en].join(" ").toLowerCase();
   if (termMatches(titleHay, terms, qLower)) {
     score = Math.max(score, SEARCH_SCORE.name);
   }
 
-  if (modelPrefixInText(c.products, qUpper) || terms.some((t) => modelPrefixInText(c.products, t.toUpperCase()))) {
+  const overviewHay = [c.projectOverview.zh, c.projectOverview.en].join(" ");
+  if (
+    modelPrefixInText(overviewHay, qUpper) ||
+    terms.some((t) => modelPrefixInText(overviewHay, t.toUpperCase())) ||
+    caseOverviewMatchesModelCodes(c, extractModelCodes(rawQuery))
+  ) {
     score = Math.max(score, SEARCH_SCORE.series);
   }
 
   if (!shortMode) {
-    const descHay = [c.desc.zh, c.desc.en, c.detail?.zh, c.detail?.en].filter(Boolean).join(" ").toLowerCase();
+    const descHay = [c.projectOverview.zh, c.projectOverview.en]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
     if (terms.some((t) => t.length >= 3 && descHay.includes(t))) {
       score = Math.max(score, SEARCH_SCORE.description);
     }
@@ -307,7 +316,7 @@ export function rankSearch(
       type: "case",
       id: c.id,
       title: c.title[locale],
-      subtitle: c.scene[locale],
+      subtitle: c.projectOverview[locale]?.slice(0, 60) || undefined,
       href: `/cases/${c.id}`,
       score,
     });

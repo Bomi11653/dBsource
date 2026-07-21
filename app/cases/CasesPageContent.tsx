@@ -6,18 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import type { CaseItem, CaseType } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import dynamic from "next/dynamic";
-import {
-  filterCasesBySceneFilter,
-  getCaseSceneFilterLabel,
-  isCaseSceneFilterId,
-  type CaseSceneFilterId,
-} from "@/lib/case-scene-filters";
-import {
-  filterCasesBySub,
-  getCaseSubCategoryBySlug,
-  getCasesForType,
-  type CaseSubCategorySlug,
-} from "@/lib/cases";
+import { getCasesForType, getCaseSubCategoryBySlug, filterCasesBySub, type CaseSubCategorySlug } from "@/lib/cases";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
@@ -31,39 +20,31 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type") as CaseType | null;
   const subParam = searchParams.get("sub") as CaseSubCategorySlug | null;
-  const sceneParam = searchParams.get("scene");
   const validSub = subParam && getCaseSubCategoryBySlug(subParam) ? subParam : null;
-  const validScene: CaseSceneFilterId | null =
-    sceneParam && isCaseSceneFilterId(sceneParam) ? sceneParam : null;
 
   const hasTypeFilter = typeParam === "engineering" || typeParam === "performance";
-  const showListView = hasTypeFilter || Boolean(validScene);
+  const showListView = hasTypeFilter;
 
   const filtered = useMemo(() => {
     if (hasTypeFilter && validSub) {
       return filterCasesBySub(cases, typeParam, validSub);
     }
-    if (validScene) {
-      return filterCasesBySceneFilter(cases, validScene);
-    }
     if (hasTypeFilter) {
       return getCasesForType(typeParam, cases);
     }
     return cases;
-  }, [cases, hasTypeFilter, typeParam, validSub, validScene]);
+  }, [cases, hasTypeFilter, typeParam, validSub]);
 
   if (!showListView) {
     return <CasesScrollStory cases={cases} />;
   }
 
-  const title = validScene
-    ? t.cases.title
-    : typeParam === "engineering"
+  const title =
+    typeParam === "engineering"
       ? t.cases.engineeringTitle
       : t.cases.performanceTitle;
-  const subtitle = validScene
-    ? t.cases.subtitle
-    : typeParam === "engineering"
+  const subtitle =
+    typeParam === "engineering"
       ? t.cases.engineeringSubtitle
       : t.cases.performanceSubtitle;
 
@@ -86,20 +67,6 @@ export default function CasesPageContent({ cases }: { cases: CaseItem[] }) {
           />
         }
       />
-
-      {validScene ? (
-        <div className="flex flex-wrap items-center gap-3 mb-8 -mt-2">
-          <p className="text-sm text-gray-400">
-            {t.cases.filterActive.replace("{label}", getCaseSceneFilterLabel(validScene, locale))}
-          </p>
-          <Link
-            href="/cases"
-            className="text-sm min-h-[44px] inline-flex items-center px-4 py-2 rounded-lg border border-white/15 text-gray-300 hover:border-brand-gold/40 hover:text-brand-gold transition-colors touch-active"
-          >
-            {t.cases.clearFilter}
-          </Link>
-        </div>
-      ) : null}
 
       <div className="space-y-8">
         {filtered.map((item, i) => (

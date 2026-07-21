@@ -59,19 +59,26 @@ const HINTS = {
   en: { visit: "Tap to visit", empty: "Link not configured" },
 } as const;
 
-/** 页脚「关注我们」— 手机横滑卡片，电脑三列网格 */
+/** 「关注我们」— 手机横滑卡片，电脑三列网格 */
 export default function QRCarousel({
   items,
   socialLinks,
+  embedded = false,
 }: {
   items: QRItem[];
   socialLinks?: SocialLinkItem[];
+  /** 嵌入联系模块时去掉外层 page-x，避免重复边距 */
+  embedded?: boolean;
 }) {
   const { locale, t } = useI18n();
   const hints = HINTS[locale];
 
+  if (!items.length) {
+    return null;
+  }
+
   return (
-    <div className="max-w-6xl mx-auto page-x pb-8 md:pb-10">
+    <div className={embedded ? "w-full min-w-0" : "max-w-6xl mx-auto page-x pb-8 md:pb-10"}>
       <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 sm:px-8 py-8 sm:py-10">
         <p className="type-section-label text-center mb-6 sm:mb-8">
           {t.footer.scan}

@@ -408,14 +408,13 @@ export interface ApiCaseCase extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     market: Schema.Attribute.Enumeration<["cn", "global", "all"]> &
       Schema.Attribute.DefaultTo<"all">;
-    products: Schema.Attribute.String & Schema.Attribute.Required;
+    products: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
-    sceneEn: Schema.Attribute.String & Schema.Attribute.Required;
+    sceneEn: Schema.Attribute.String;
     sceneSlug: Schema.Attribute.Enumeration<
       ["stadium", "festival", "livehouse", "convention", "corporate", "auditorium"]
-    > &
-      Schema.Attribute.Required;
-    sceneZh: Schema.Attribute.String & Schema.Attribute.Required;
+    >;
+    sceneZh: Schema.Attribute.String;
     sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     titleEn: Schema.Attribute.String & Schema.Attribute.Required;
     titleZh: Schema.Attribute.String & Schema.Attribute.Required;

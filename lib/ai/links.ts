@@ -1,4 +1,5 @@
 import type { CaseItem, DownloadItem, Product } from "@/data/mock";
+import { caseOverviewMatchesModelCodes } from "@/lib/case-project-overview";
 import { matchProductsByModelCodes } from "@/lib/ai/synonyms";
 import { getProductSeriesHref } from "@/lib/product-series-tabs";
 import { PRODUCT_SUB_SERIES } from "@/lib/products";
@@ -55,7 +56,7 @@ export function buildAiLinks(
   let casePool = cases;
   if (focusModels?.length) {
     const matchedCases = cases.filter((c) =>
-      focusModels.some((code) => c.products.toUpperCase().includes(code))
+      focusModels.some((code) => caseOverviewMatchesModelCodes(c, [code]))
     );
     if (matchedCases.length) casePool = matchedCases;
   }

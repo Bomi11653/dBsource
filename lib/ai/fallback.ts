@@ -1,4 +1,5 @@
 import type { CaseItem, DownloadItem, Locale, Product } from "@/data/mock";
+import { caseOverviewMatchesModelCodes } from "@/lib/case-project-overview";
 import type { ConfiguratorScene } from "@/data/configurator-templates";
 import { recommendSystem } from "@/lib/configurator";
 import {
@@ -96,7 +97,7 @@ export function generateFallbackReply(
     if (matched.length) {
       products = matched.slice(0, modelCodes.length === 1 ? 1 : 4);
       const matchedCases = ctx.cases.filter((c) =>
-        modelCodes.some((code) => c.products.toUpperCase().includes(code))
+        caseOverviewMatchesModelCodes(c, modelCodes)
       );
       if (matchedCases.length) cases = matchedCases.slice(0, 3);
     }

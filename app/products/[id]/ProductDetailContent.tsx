@@ -5,15 +5,52 @@ import BrowseGuide from "@/components/BrowseGuide";
 import ImageLightbox from "@/components/ImageLightbox";
 import ProductStickyCta, { ProductDetailActions } from "@/components/ProductStickyCta";
 import StackedSpecPanel from "@/components/StackedSpecPanel";
-import { getSpecSheetForProduct, getStackedSpecPages } from "@/data/product-specs";
+import type { ProductSpecSheet } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
 import { getProductGallery } from "@/lib/products";
 import { formatProductHeading, getProductDisplayTitle } from "@/lib/product-display";
+import {
+  getCmsSpecDisplayRows,
+  getProductSpecFallback,
+  productHasCmsSpecTable,
+  productHasSpecSection,
+  type ProductSpecDisplayRow,
+} from "@/lib/product-spec-display";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { Check, Copy, Download } from "lucide-react";
 import CmsImage from "@/components/CmsImage";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+
+function SpecTable({
+  rows,
+  locale,
+}: {
+  rows: ProductSpecDisplayRow[];
+  locale: "zh" | "en";
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-white/10">
+      <table className="w-full text-sm min-w-[280px]">
+        <tbody>
+          {rows.map((row, i) => (
+            <tr
+              key={`${row.label[locale]}-${row.value[locale]}-${i}`}
+              className={i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"}
+            >
+              <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 min-w-[7rem] border-b border-white/5 break-words">
+                {row.label[locale] || "—"}
+              </th>
+              <td className="text-white px-5 py-3 border-b border-white/5 break-words min-w-0">
+                {row.value[locale]}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function ProductDetailContent({
   product,
@@ -26,13 +63,33 @@ export default function ProductDetailContent({
   const { primary, subtitle, label } = getProductDisplayTitle(product, locale);
   const gallery = getProductGallery(product);
   const body = product.detail?.[locale] ?? product.desc[locale];
-  const stackedPages = getStackedSpecPages(product.model);
-  const specSheet = stackedPages ? null : getSpecSheetForProduct(product);
+
+  const cmsSpecRows = useMemo(() => getCmsSpecDisplayRows(product), [product]);
+  const useCmsSpecTable = productHasCmsSpecTable(product);
+  const specFallback = useMemo(
+    () => (useCmsSpecTable ? null : getProductSpecFallback(product)),
+    [product, useCmsSpecTable]
+  );
+  const stackedPages = Array.isArray(specFallback) ? specFallback : null;
+  const specSheet = specFallback && !Array.isArray(specFallback) ? specFallback : null;
+  const showRawSpecText =
+    product.specs &&
+    !useCmsSpecTable &&
+    product.specs[locale].trim().length > 0;
 
   const copySpecs = useCallback(async () => {
     const lines: string[] = [formatProductHeading(product, locale)];
-    if (product.specs) lines.push(product.specs[locale]);
-    const sheets = stackedPages ?? (specSheet ? [specSheet] : []);
+
+    if (cmsSpecRows) {
+      lines.push("");
+      for (const row of cmsSpecRows) {
+        lines.push(`${row.label[locale]}: ${row.value[locale]}`);
+      }
+    } else if (showRawSpecText && product.specs) {
+      lines.push(product.specs[locale]);
+    }
+
+    const sheets: ProductSpecSheet[] = stackedPages ?? (specSheet ? [specSheet] : []);
     for (const sheet of sheets) {
       if (sheets.length > 1 || sheet.model !== product.model) {
         lines.push("", `[${sheet.model}]`);
@@ -43,12 +100,13 @@ export default function ProductDetailContent({
         lines.push(`${row.label[locale]}: ${row.value[locale]}`);
       }
     }
+
     const copied = await copyTextToClipboard(lines.join("\n").trim());
     if (copied) {
       setSpecsCopied(true);
       setTimeout(() => setSpecsCopied(false), 2000);
     }
-  }, [locale, product, specSheet, stackedPages]);
+  }, [cmsSpecRows, locale, product, showRawSpecText, specSheet, stackedPages]);
 
   const downloadName = useCallback(
     (src: string, index: number) => {
@@ -84,7 +142,7 @@ export default function ProductDetailContent({
             title={t.guide.exploreTitle}
             items={[
               { label: t.guide.productGallery, targetId: "product-gallery" },
-              ...(stackedPages || specSheet || product.specs
+              ...(productHasSpecSection(product)
                 ? [{ label: t.guide.productSpecs, targetId: "product-specs" }]
                 : []),
               { label: t.guide.productsSpeaker, href: "/products" },
@@ -153,7 +211,7 @@ export default function ProductDetailContent({
         }}
       />
 
-      {(stackedPages || specSheet || product.specs) && (
+      {productHasSpecSection(product) && (
         <section
           id="product-specs"
           className="page-x py-12 md:py-16 border-b border-white/10 max-w-6xl mx-auto scroll-mt-28"
@@ -179,37 +237,27 @@ export default function ProductDetailContent({
                   : "Copy specs"}
             </button>
           </div>
-          {product.specs && (
+          {useCmsSpecTable && cmsSpecRows ? (
+            <SpecTable rows={cmsSpecRows} locale={locale} />
+          ) : showRawSpecText ? (
             <p className="text-sm text-gray-400 type-label mb-6 rounded-xl border border-white/10 bg-white/[0.02] px-5 py-4">
-              {product.specs[locale]}
+              {product.specs?.[locale]}
             </p>
-          )}
-          {stackedPages ? (
+          ) : null}
+          {!useCmsSpecTable && stackedPages ? (
             <StackedSpecPanel pages={stackedPages} locale={locale} />
-          ) : specSheet ? (
+          ) : !useCmsSpecTable && specSheet ? (
             <>
               <p className="text-xs text-gray-500 mb-8 type-label">
                 {locale === "zh" ? "参考型号" : "Reference model"}: {specSheet.model}
               </p>
-              <div className="overflow-x-auto rounded-xl border border-white/10">
-                <table className="w-full text-sm min-w-[280px]">
-                  <tbody>
-                    {specSheet.rows.map((row, i) => (
-                      <tr
-                        key={row.label.zh}
-                        className={i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"}
-                      >
-                        <th className="text-left font-normal text-gray-400 px-5 py-3 w-2/5 min-w-[7rem] border-b border-white/5 break-words">
-                          {row.label[locale]}
-                        </th>
-                        <td className="text-white px-5 py-3 border-b border-white/5 break-words min-w-0">
-                          {row.value[locale]}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SpecTable
+                rows={specSheet.rows.map((row) => ({
+                  label: row.label,
+                  value: row.value,
+                }))}
+                locale={locale}
+              />
             </>
           ) : null}
         </section>

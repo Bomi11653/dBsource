@@ -30,11 +30,6 @@ import {
   type AdminCatalogCategory,
   type AdminProductCatalogFilter,
 } from "@/lib/admin-product-categories";
-import {
-  ADMIN_CASE_SCENE_OPTIONS,
-  getAdminCaseSceneLabel,
-  resolveAdminCaseSceneSelectValue,
-} from "@/lib/case-scene-filters";
 import { serializeSalesContactPayload } from "@/lib/admin-sales-contact-payload";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
@@ -45,6 +40,11 @@ import {
   initDownloadSubCategoryDraftFields,
   resolveDownloadSubCategoryForSave,
 } from "@/lib/downloads";
+import {
+  buildCaseAdminSavePayload,
+  caseDraftText,
+  normalizeCaseAdminDraft,
+} from "@/lib/admin-case-payload";
 import { formatStrapiMediaSize } from "@/lib/format-bytes";
 import { sectionToCollection } from "@/lib/strapi-admin";
 import { cn } from "@/lib/utils";
@@ -72,20 +72,6 @@ type StrapiRow = Record<string, unknown> & {
   cover?: StrapiMedia | null;
   file?: StrapiMedia | null;
   gallery?: StrapiMedia[] | null;
-};
-
-type HomeFeaturedDraft = {
-  homeFeaturedProductAId: number | null;
-  homeFeaturedProductBId: number | null;
-};
-
-type HomeFeaturedCaseDraft = StrapiRow & {
-  homeFeaturedCaseId?: number | null;
-  homeFeaturedCaseTitleZh?: string;
-  homeFeaturedCaseTitleEn?: string;
-  homeFeaturedCaseDescZh?: string;
-  homeFeaturedCaseDescEn?: string;
-  homeFeaturedCaseImage?: StrapiMedia | null;
 };
 
 function FieldHint({ children }: { children: ReactNode }) {
@@ -203,6 +189,73 @@ function getText(row: StrapiRow, key: string) {
   return typeof v === "string" ? v : "";
 }
 
+/** Admin 草稿字段转纯文本（兼容 Strapi richtext 块） */
+function getDraftText(row: StrapiRow, key: string): string {
+  return caseDraftText(row, key);
+}
+
+function normalizeCaseDraft(row: StrapiRow): StrapiRow {
+  return normalizeCaseAdminDraft(row) as StrapiRow;
+}
+
+function getCaseTranslatePairs(draft: StrapiRow) {
+  const detailZh = getDraftText(draft, "detailZh") || getText(draft, "descZh");
+  const detailEn = getDraftText(draft, "detailEn") || getText(draft, "descEn");
+  const descZh = getText(draft, "descZh") || detailZh;
+  const descEn = getText(draft, "descEn") || detailEn;
+
+  return [
+    {
+      zhKey: "titleZh",
+      enKey: "titleEn",
+      zh: getText(draft, "titleZh"),
+      en: getText(draft, "titleEn"),
+    },
+    {
+      zhKey: "detailZh",
+      enKey: "detailEn",
+      zh: detailZh,
+      en: detailEn,
+    },
+    {
+      zhKey: "descZh",
+      enKey: "descEn",
+      zh: descZh,
+      en: descEn,
+    },
+  ];
+}
+
+/** 互译结果写入案例草稿：概述/detail/desc 与表单联动 */
+function applyCaseTranslatePatch(patch: Record<string, string>): Record<string, string> {
+  const next = { ...patch };
+
+  const overviewEn = (next.detailEn ?? next.descEn ?? "").trim();
+  if (overviewEn) {
+    next.detailEn = overviewEn;
+    next.descEn = overviewEn;
+  }
+
+  const overviewZh = (next.detailZh ?? next.descZh ?? "").trim();
+  if (overviewZh) {
+    next.detailZh = overviewZh;
+    next.descZh = overviewZh;
+  }
+
+  return next;
+}
+
+/** 工程案例：存在待翻译中文且对应英文字段已有内容时需确认覆盖 */
+function caseNeedsTranslateOverwriteConfirm(draft: StrapiRow): boolean {
+  return getCaseTranslatePairs(draft).some((pair) => pair.zh.trim() && pair.en.trim());
+}
+
+function getCaseOverviewDisplay(row: StrapiRow, lang: "zh" | "en"): string {
+  const detailKey = lang === "zh" ? "detailZh" : "detailEn";
+  const descKey = lang === "zh" ? "descZh" : "descEn";
+  return getDraftText(row, detailKey) || getText(row, descKey);
+}
+
 function setDraft(drafts: Record<string, StrapiRow>, id: string, patch: Partial<StrapiRow>) {
   return { ...drafts, [id]: { ...drafts[id], ...patch } };
 }
@@ -231,10 +284,15 @@ function rowSubtitle(section: string, draft: StrapiRow): string | null {
   }
   if (section === "cases") {
     const typeLabel = getText(draft, "type") === "performance" ? "演出案例" : "工程案例";
-    const sceneLabel = getAdminCaseSceneLabel(getText(draft, "sceneSlug"));
-    const products = getText(draft, "products");
+    const overview =
+      getDraftText(draft, "detailZh") ||
+      getText(draft, "descZh") ||
+      getDraftText(draft, "detailEn") ||
+      getText(draft, "descEn");
     const sortOrder = Number(draft.sortOrder) || 0;
-    return [typeLabel, sceneLabel, products, sortOrder > 0 ? `排序 ${sortOrder}` : null]
+    const overviewPreview =
+      overview.length > 48 ? `${overview.slice(0, 48)}…` : overview || null;
+    return [typeLabel, overviewPreview, sortOrder > 0 ? `排序 ${sortOrder}` : null]
       .filter(Boolean)
       .join(" · ");
   }
@@ -318,10 +376,7 @@ export default function AdminSectionEditor({
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [showHint, setShowHint] = useState(true);
   const [translatingId, setTranslatingId] = useState<string | null>(null);
-  const [homeConfigDraft, setHomeConfigDraft] = useState<HomeFeaturedDraft | null>(null);
-  const [homeFeaturedCaseDraft, setHomeFeaturedCaseDraft] = useState<HomeFeaturedCaseDraft | null>(
-    null
-  );
+  const [translateConfirmId, setTranslateConfirmId] = useState<string | null>(null);
   const [leadStatusFilter, setLeadStatusFilter] = useState("all");
   const [leadPriorityOnly, setLeadPriorityOnly] = useState(false);
   const [productCatalogFilter, setProductCatalogFilter] =
@@ -499,6 +554,9 @@ export default function AdminSectionEditor({
               initDownloadSubCategoryDraftFields(String(row.subCategory ?? ""))
             );
           }
+          if (section === "cases") {
+            Object.assign(row, normalizeCaseDraft(row));
+          }
           init[docId(r)] = row;
         });
         setDrafts(init);
@@ -511,60 +569,6 @@ export default function AdminSectionEditor({
           }
           return list[0] ? docId(list[0]) : null;
         });
-        if (section === "home") {
-          const gsRes = await fetch("/api/admin/global-setting");
-          const gsJson = await gsRes.json();
-          let gs = (gsJson.ok ? gsJson.data?.data : null) as StrapiRow | null;
-          const hasGlobalCase =
-            gs &&
-            (gs.homeFeaturedCaseId != null ||
-              getText(gs, "homeFeaturedCaseTitleZh") ||
-              getText(gs, "homeFeaturedCaseTitleEn") ||
-              gs.homeFeaturedCaseImage);
-          if (!hasGlobalCase) {
-            const contactRes = await fetch("/api/admin/contact-info");
-            const contactJson = await contactRes.json();
-            const contact = contactJson.ok
-              ? (contactJson.data?.data as StrapiRow | undefined)
-              : undefined;
-            if (
-              contact &&
-              (contact.homeFeaturedCaseId != null ||
-                getText(contact, "homeFeaturedCaseTitleZh") ||
-                getText(contact, "homeFeaturedCaseTitleEn") ||
-                contact.homeFeaturedCaseImage)
-            ) {
-              gs = { ...(gs ?? {}), ...contact };
-            }
-          }
-          if (gs) {
-            setHomeConfigDraft({
-              homeFeaturedProductAId: Number(gs.homeFeaturedProductAId) || null,
-              homeFeaturedProductBId: Number(gs.homeFeaturedProductBId) || null,
-            });
-            setHomeFeaturedCaseDraft({
-              homeFeaturedCaseId: Number(gs.homeFeaturedCaseId) || null,
-              homeFeaturedCaseTitleZh: getText(gs, "homeFeaturedCaseTitleZh"),
-              homeFeaturedCaseTitleEn: getText(gs, "homeFeaturedCaseTitleEn"),
-              homeFeaturedCaseDescZh: getText(gs, "homeFeaturedCaseDescZh"),
-              homeFeaturedCaseDescEn: getText(gs, "homeFeaturedCaseDescEn"),
-              homeFeaturedCaseImage: (gs.homeFeaturedCaseImage as StrapiMedia | null) ?? null,
-            });
-          } else {
-            setHomeConfigDraft({ homeFeaturedProductAId: null, homeFeaturedProductBId: null });
-            setHomeFeaturedCaseDraft({
-              homeFeaturedCaseId: null,
-              homeFeaturedCaseTitleZh: "",
-              homeFeaturedCaseTitleEn: "",
-              homeFeaturedCaseDescZh: "",
-              homeFeaturedCaseDescEn: "",
-              homeFeaturedCaseImage: null,
-            });
-          }
-        } else {
-          setHomeConfigDraft(null);
-          setHomeFeaturedCaseDraft(null);
-        }
       } else {
         setMessage({ type: "error", text: json.error || "加载失败" });
       }
@@ -577,38 +581,48 @@ export default function AdminSectionEditor({
     load();
   }, [load]);
 
-  async function saveRow(id: string) {
+  async function saveRow(id: string, overlay?: Partial<StrapiRow>) {
     if (!collection || collection === "contact-info") return;
-    const draft = drafts[id];
-    if (!draft) return;
+    const baseDraft = drafts[id];
+    if (!baseDraft) return;
+
+    const draft = overlay ? { ...baseDraft, ...overlay } : baseDraft;
+    if (overlay) {
+      setDrafts((d) => setDraft(d, id, overlay));
+    }
 
     setSavingId(id);
     setMessage(null);
 
-    const payload: Record<string, unknown> = { ...draft };
-    delete payload.documentId;
-    delete payload.id;
-    delete payload.createdAt;
-    delete payload.updatedAt;
-    delete payload.publishedAt;
-    delete payload.locale;
-    delete payload.localizations;
-    if (payload.image === null) {
-      payload.image = null;
-    } else if (payload.image && typeof payload.image === "object") {
-      payload.image = (payload.image as StrapiMedia).id ?? payload.image;
-    }
-    if (payload.cover === null) {
-      payload.cover = null;
-    }
-    if (payload.cover && typeof payload.cover === "object") {
-      payload.cover = (payload.cover as StrapiMedia).id ?? payload.cover;
-    }
-    if (payload.file && typeof payload.file === "object") {
-      payload.file = (payload.file as StrapiMedia).id ?? payload.file;
-    }
-    if (Array.isArray(payload.gallery)) {
-      payload.gallery = (payload.gallery as StrapiMedia[]).map((g) => g.id ?? g);
+    let payload: Record<string, unknown>;
+    if (collection === "cases") {
+      payload = buildCaseAdminSavePayload(draft);
+    } else {
+      payload = { ...draft };
+      delete payload.documentId;
+      delete payload.id;
+      delete payload.createdAt;
+      delete payload.updatedAt;
+      delete payload.publishedAt;
+      delete payload.locale;
+      delete payload.localizations;
+      if (payload.image === null) {
+        payload.image = null;
+      } else if (payload.image && typeof payload.image === "object") {
+        payload.image = (payload.image as StrapiMedia).id ?? payload.image;
+      }
+      if (payload.cover === null) {
+        payload.cover = null;
+      }
+      if (payload.cover && typeof payload.cover === "object") {
+        payload.cover = (payload.cover as StrapiMedia).id ?? payload.cover;
+      }
+      if (payload.file && typeof payload.file === "object") {
+        payload.file = (payload.file as StrapiMedia).id ?? payload.file;
+      }
+      if (Array.isArray(payload.gallery)) {
+        payload.gallery = (payload.gallery as StrapiMedia[]).map((g) => g.id ?? g);
+      }
     }
 
     if (collection === "downloads") {
@@ -660,9 +674,20 @@ export default function AdminSectionEditor({
     if (json.ok) {
       const toast = formatSaveToast(json);
       setMessage({ type: toast.type, text: toast.text });
+      const savedRow =
+        collection === "cases"
+          ? normalizeCaseDraft({
+              ...draft,
+              ...payload,
+              documentId: draft.documentId,
+            })
+          : { ...draft, documentId: draft.documentId };
+      setDrafts((d) => setDraft(d, id, savedRow));
       setRows((prev) =>
         prev.map((r) =>
-          docId(r) === id ? { ...draft, documentId: r.documentId ?? draft.documentId } : r
+          docId(r) === id
+            ? { ...savedRow, documentId: r.documentId ?? draft.documentId }
+            : r
         )
       );
       setDirtyIds((prev) => {
@@ -753,14 +778,10 @@ export default function AdminSectionEditor({
       cases: {
         legacyId: maxLegacyId + 1,
         type: "engineering",
-        sceneSlug: "festival",
         titleZh: "新案例",
         titleEn: "New Case",
         descZh: "案例简介",
         descEn: "Case summary",
-        sceneZh: "演唱会 / 音乐节",
-        sceneEn: "Concerts & Festivals",
-        products: "",
         market: "all",
         sortOrder: rows.length + 1,
       },
@@ -981,77 +1002,6 @@ export default function AdminSectionEditor({
     }
   }
 
-  async function saveHomeConfig() {
-    if (section !== "home" || !homeConfigDraft) return;
-    setSavingId("home-config");
-    setMessage(null);
-    try {
-      const res = await fetch("/api/admin/global-setting", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeFeaturedProductAId: homeConfigDraft.homeFeaturedProductAId ?? null,
-          homeFeaturedProductBId: homeConfigDraft.homeFeaturedProductBId ?? null,
-        }),
-      });
-      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
-      if (!json.ok) {
-        setMessage({ type: "error", text: json.error || "首页配置保存失败" });
-      } else {
-        const toast = formatSaveToast(json);
-        setMessage({ type: toast.type, text: toast.text });
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "首页配置保存失败";
-      setMessage({ type: "error", text: msg });
-    } finally {
-      setSavingId(null);
-    }
-  }
-
-  async function saveHomeFeaturedCase() {
-    if (section !== "home" || !homeFeaturedCaseDraft) return;
-    setSavingId("home-featured-case");
-    setMessage(null);
-    const payload: Record<string, unknown> = {
-      homeFeaturedCaseId: homeFeaturedCaseDraft.homeFeaturedCaseId ?? null,
-      homeFeaturedCaseTitleZh: getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleZh"),
-      homeFeaturedCaseTitleEn: getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleEn"),
-      homeFeaturedCaseDescZh: getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescZh"),
-      homeFeaturedCaseDescEn: getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescEn"),
-    };
-    if (homeFeaturedCaseDraft.homeFeaturedCaseImage === null) {
-      payload.homeFeaturedCaseImage = null;
-    } else if (
-      homeFeaturedCaseDraft.homeFeaturedCaseImage &&
-      typeof homeFeaturedCaseDraft.homeFeaturedCaseImage === "object"
-    ) {
-      payload.homeFeaturedCaseImage =
-        (homeFeaturedCaseDraft.homeFeaturedCaseImage as StrapiMedia).id ??
-        homeFeaturedCaseDraft.homeFeaturedCaseImage;
-    }
-
-    try {
-      const res = await fetch("/api/admin/global-setting", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
-      if (json.ok) {
-        const toast = formatSaveToast(json);
-        setMessage({ type: toast.type, text: toast.text });
-      } else {
-        setMessage({ type: "error", text: json.error || "首页精选案例配置保存失败" });
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "首页精选案例配置保存失败";
-      setMessage({ type: "error", text: msg });
-    } finally {
-      setSavingId(null);
-    }
-  }
-
   function moveCaseRow(id: string, direction: "up" | "down") {
     if (section !== "cases") return;
     const current = drafts[id];
@@ -1176,33 +1126,41 @@ export default function AdminSectionEditor({
     }
   }
 
-  async function translateBilingualRow(id: string) {
+  function requestTranslateBilingualRow(id: string) {
     if (section !== "cases" && section !== "products") return;
     const draft = drafts[id];
     if (!draft) return;
 
-    const pairs =
-      section === "cases"
-        ? [
-            { zhKey: "titleZh", enKey: "titleEn" },
-            { zhKey: "descZh", enKey: "descEn" },
-            { zhKey: "detailZh", enKey: "detailEn" },
-            { zhKey: "sceneZh", enKey: "sceneEn" },
-          ]
-        : [
-            { zhKey: "nameZh", enKey: "nameEn" },
-            { zhKey: "descZh", enKey: "descEn" },
-            { zhKey: "detailZh", enKey: "detailEn" },
-            { zhKey: "specsZh", enKey: "specsEn" },
-            { zhKey: "seriesZh", enKey: "seriesEn" },
-          ];
+    if (section === "cases" && caseNeedsTranslateOverwriteConfirm(draft)) {
+      setTranslateConfirmId(id);
+      return;
+    }
 
-    const payloadPairs = pairs.map((pair) => ({
-      zhKey: pair.zhKey,
-      enKey: pair.enKey,
-      zh: getText(draft, pair.zhKey),
-      en: getText(draft, pair.enKey),
-    }));
+    void executeTranslateBilingualRow(id);
+  }
+
+  async function executeTranslateBilingualRow(id: string) {
+    if (section !== "cases" && section !== "products") return;
+    const draft = drafts[id];
+    if (!draft) return;
+
+    const payloadPairs =
+      section === "cases"
+        ? getCaseTranslatePairs(draft)
+        : (
+            [
+              { zhKey: "nameZh", enKey: "nameEn" },
+              { zhKey: "descZh", enKey: "descEn" },
+              { zhKey: "detailZh", enKey: "detailEn" },
+              { zhKey: "specsZh", enKey: "specsEn" },
+              { zhKey: "seriesZh", enKey: "seriesEn" },
+            ] as const
+          ).map((pair) => ({
+            zhKey: pair.zhKey,
+            enKey: pair.enKey,
+            zh: getText(draft, pair.zhKey),
+            en: getText(draft, pair.enKey),
+          }));
     const hasAnySource = payloadPairs.some((pair) => pair.zh.trim() || pair.en.trim());
     if (!hasAnySource) {
       setMessage({ type: "error", text: "请先填写中文或英文内容，再执行中英互转。" });
@@ -1227,7 +1185,12 @@ export default function AdminSectionEditor({
         return;
       }
 
-      setDrafts((prev) => setDraft(prev, id, json.data ?? {}));
+      const patch =
+        section === "cases"
+          ? applyCaseTranslatePatch(json.data ?? {})
+          : (json.data ?? {});
+
+      setDrafts((prev) => setDraft(prev, id, patch));
       setDirtyIds((prev) => new Set(prev).add(id));
       setMessage({ type: "ok", text: "中英内容已互转并填充，记得保存并发布。" });
     } catch (e) {
@@ -1267,6 +1230,7 @@ export default function AdminSectionEditor({
   }
 
   return (
+    <>
     <div className="space-y-4">
       {message ? (
         <AdminBanner variant={message.type === "ok" ? "ok" : "error"}>{message.text}</AdminBanner>
@@ -1813,145 +1777,6 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
-      {section === "home" ? (
-        <AdminBanner variant="warn">
-          <p>
-            当前官网首页仅展示 Hero 动画区，不包含场景卡片、核心产品与精选案例。
-            本页配置<strong className="text-amber-100">暂不会出现在前台</strong>。
-          </p>
-        </AdminBanner>
-      ) : null}
-
-      {section === "home" && homeConfigDraft ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4 opacity-80">
-          <h3 className="font-medium">首页核心产品（暂未启用）</h3>
-          <p className="text-xs text-gray-500">
-            以下 ID 配置保留供日后使用；当前前台首页不展示此区块。
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="核心产品 1（ID）">
-              <input
-                type="number"
-                className={inputClass}
-                value={String(homeConfigDraft.homeFeaturedProductAId ?? "")}
-                onChange={(e) =>
-                  setHomeConfigDraft({
-                    ...homeConfigDraft,
-                    homeFeaturedProductAId: Number(e.target.value) || null,
-                  })
-                }
-              />
-            </Field>
-            <Field label="核心产品 2（ID）">
-              <input
-                type="number"
-                className={inputClass}
-                value={String(homeConfigDraft.homeFeaturedProductBId ?? "")}
-                onChange={(e) =>
-                  setHomeConfigDraft({
-                    ...homeConfigDraft,
-                    homeFeaturedProductBId: Number(e.target.value) || null,
-                  })
-                }
-              />
-            </Field>
-          </div>
-          <SaveButton saving={savingId === "home-config"} onClick={saveHomeConfig} />
-        </div>
-      ) : null}
-
-      {section === "home" && homeFeaturedCaseDraft ? (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-4 opacity-80">
-          <h3 className="font-medium">首页精选案例（暂未启用）</h3>
-          <p className="text-xs text-gray-500">
-            以下配置保留供日后使用；当前前台首页不展示此区块。
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="精选案例 ID（来自工程案例）">
-              <input
-                type="number"
-                className={inputClass}
-                value={String(homeFeaturedCaseDraft.homeFeaturedCaseId ?? "")}
-                onChange={(e) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseId: Number(e.target.value) || null,
-                  })
-                }
-              />
-            </Field>
-            <ReadOnlyField label="提示" value="可不改原案例，单独配置首页展示文案" />
-            <Field label="首页标题（中文）">
-              <input
-                className={inputClass}
-                value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleZh")}
-                onChange={(e) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseTitleZh: e.target.value,
-                  })
-                }
-              />
-            </Field>
-            <Field label="首页标题（英文）">
-              <input
-                className={inputClass}
-                value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseTitleEn")}
-                onChange={(e) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseTitleEn: e.target.value,
-                  })
-                }
-              />
-            </Field>
-            <Field label="首页摘要（中文）">
-              <textarea
-                className={cn(inputClass, "min-h-[72px]")}
-                value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescZh")}
-                onChange={(e) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseDescZh: e.target.value,
-                  })
-                }
-              />
-            </Field>
-            <Field label="首页摘要（英文）">
-              <textarea
-                className={cn(inputClass, "min-h-[72px]")}
-                value={getText(homeFeaturedCaseDraft, "homeFeaturedCaseDescEn")}
-                onChange={(e) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseDescEn: e.target.value,
-                  })
-                }
-              />
-            </Field>
-            <div className="sm:col-span-2">
-              <ImageUploadField
-                label="首页精选案例图"
-                currentUrl={mediaUrl(homeFeaturedCaseDraft.homeFeaturedCaseImage as StrapiMedia)}
-                onUploaded={(mediaId, url) =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseImage: { id: mediaId, url },
-                  })
-                }
-                onRemoved={() =>
-                  setHomeFeaturedCaseDraft({
-                    ...homeFeaturedCaseDraft,
-                    homeFeaturedCaseImage: null,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <SaveButton saving={savingId === "home-featured-case"} onClick={saveHomeFeaturedCase} />
-        </div>
-      ) : null}
-
       {section !== "contact"
         ? (() => {
             const renderRow = (row: StrapiRow, _rowIndex?: number) => {
@@ -2115,12 +1940,15 @@ export default function AdminSectionEditor({
                       {renderFields(section, draft, (patch) => {
                         setDrafts((d) => setDraft(d, id, patch));
                         setDirtyIds((prev) => new Set(prev).add(id));
+                      }, {
+                        onPersistSpecs: (patch) => saveRow(id, patch),
+                        specsPersisting: savingId === id,
                       })}
                       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 pt-2 pb-1 bg-zinc-950/90 backdrop-blur-sm border-t border-white/5 -mx-5 px-5">
                         {section === "cases" || section === "products" ? (
                           <button
                             type="button"
-                            onClick={() => translateBilingualRow(id)}
+                            onClick={() => requestTranslateBilingualRow(id)}
                             disabled={translatingId === id || savingId === id}
                             className="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg border border-brand-gold/35 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
                           >
@@ -2208,13 +2036,56 @@ export default function AdminSectionEditor({
         <p className="text-sm text-gray-500 text-center py-8">没有匹配的条目，请换个关键词</p>
       ) : null}
     </div>
+
+    {translateConfirmId ? (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 px-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="translate-overwrite-title"
+      >
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+          <h3 id="translate-overwrite-title" className="text-base font-medium text-white">
+            已有英文内容，是否覆盖？
+          </h3>
+          <p className="mt-2 text-sm text-gray-400 leading-relaxed">
+            确认后将用翻译结果覆盖当前英文标题与项目概述，未保存前仍可手动修改。
+          </p>
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setTranslateConfirmId(null)}
+              className="text-sm px-4 py-2 rounded-lg border border-white/15 text-gray-300 hover:text-white hover:border-white/30"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const id = translateConfirmId;
+                setTranslateConfirmId(null);
+                if (id) void executeTranslateBilingualRow(id);
+              }}
+              className="text-sm px-4 py-2 rounded-lg border border-brand-gold/35 bg-brand-gold/10 text-brand-gold hover:bg-brand-gold/20"
+            >
+              确认覆盖
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 
 function renderFields(
   section: string,
   draft: StrapiRow,
-  onChange: (patch: Partial<StrapiRow>) => void
+  onChange: (patch: Partial<StrapiRow>) => void,
+  options?: {
+    onPersistSpecs?: (patch: { specsZh: string; specsEn: string }) => void | Promise<void>;
+    specsPersisting?: boolean;
+  }
 ) {
   const fields: React.ReactNode[] = [];
 
@@ -2235,22 +2106,6 @@ function renderFields(
       )}
     </Field>
   );
-
-  if (section === "home") {
-    fields.push(textField("nameZh", "场景名（中文）"));
-    fields.push(textField("nameEn", "场景名（英文）"));
-    fields.push(textField("descZh", "描述（中文）", true));
-    fields.push(textField("descEn", "描述（英文）", true));
-    fields.push(
-      <ImageUploadField
-        key="image"
-        label="场景图片"
-        currentUrl={mediaUrl(draft.image as StrapiMedia)}
-        onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
-        onRemoved={() => onChange({ image: null })}
-      />
-    );
-  }
 
   if (section === "products") {
     const catalogCategory = getAdminCatalogCategory(draft);
@@ -2464,6 +2319,8 @@ function renderFields(
             specsZh={getText(draft, "specsZh")}
             specsEn={getText(draft, "specsEn")}
             onChange={(patch) => onChange(patch)}
+            onPersist={options?.onPersistSpecs}
+            persisting={options?.specsPersisting}
           />
           <PdfSpecImportField
             modelHint={getText(draft, "model")}
@@ -2502,85 +2359,112 @@ function renderFields(
   }
 
   if (section === "cases") {
-    fields.push(textField("titleZh", "标题（中文）"));
-    fields.push(textField("titleEn", "标题（英文）"));
-    fields.push(textField("descZh", "摘要（中文）", true));
-    fields.push(textField("descEn", "摘要（英文）", true));
-    fields.push(
-      <SelectField
-        key="type"
-        label="案例类型"
-        value={getText(draft, "type") || "engineering"}
-        onChange={(v) => onChange({ type: v })}
-        options={[
-          { value: "engineering", label: "工程案例" },
-          { value: "performance", label: "演出案例" },
-        ]}
-      />
-    );
-    const sceneSlug = getText(draft, "sceneSlug");
-    const needsRecategorize =
-      sceneSlug && !ADMIN_CASE_SCENE_OPTIONS.some((option) => option.value === sceneSlug);
-    fields.push(
-      <div key="sceneSlug" className="sm:col-span-2 space-y-1">
-        <SelectField
-          label="应用场景分类"
-          value={resolveAdminCaseSceneSelectValue(sceneSlug)}
-          onChange={(v) => onChange({ sceneSlug: v })}
-          options={[...ADMIN_CASE_SCENE_OPTIONS]}
-        />
-        {needsRecategorize ? (
-          <p className="text-[11px] text-amber-400/90">
-            当前 sceneSlug 为「{sceneSlug}」，请重新选择上述分类后保存。
-          </p>
-        ) : null}
-        <p className="text-[11px] text-gray-500">
-          用于首页应用场景跳转与案例页筛选；展示文案仍可使用 sceneZh / sceneEn。
-        </p>
+    const legacyId = Number(draft.legacyId);
+    const detailPath =
+      Number.isInteger(legacyId) && legacyId > 0 ? `/cases/${legacyId}` : null;
+
+    const sectionCard = (title: string, children: React.ReactNode) => (
+      <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
+        <h4 className="text-sm font-medium text-gray-200">{title}</h4>
+        <div className="grid sm:grid-cols-2 gap-4">{children}</div>
       </div>
     );
-    fields.push(textField("sceneZh", "场景展示（中文）"));
-    fields.push(textField("sceneEn", "场景展示（英文）"));
-    fields.push(textField("products", "设备配置（型号列表）"));
-    fields.push(
-      <SelectField
-        key="market"
-        label="市场标签"
-        value={getText(draft, "market") || "all"}
-        onChange={(v) => onChange({ market: v })}
-        options={[
-          { value: "all", label: "全部市场" },
-          { value: "cn", label: "仅中国站" },
-          { value: "global", label: "仅海外站" },
-        ]}
-      />
-    );
-    fields.push(
-      <Field key="sortOrder" label="排序（同类型内数字越小越靠前）">
-        <input
-          type="number"
-          className={inputClass}
-          value={String(draft.sortOrder ?? "")}
-          onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
-        />
-      </Field>
-    );
-    fields.push(
-      <ImageUploadField
-        key="image"
-        label="封面图"
-        currentUrl={mediaUrl(draft.image as StrapiMedia)}
-        onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
-        onRemoved={() => onChange({ image: null })}
-      />
-    );
-    fields.push(
-      <div key="gallery" className="sm:col-span-2">
-        <GalleryUploadField
-          label="案例图集"
-          items={(draft.gallery as StrapiMedia[]) ?? []}
-          onChange={(gallery) => onChange({ gallery })}
-        />
+
+    const overviewField = (lang: "zh" | "en") => {
+      const detailKey = lang === "zh" ? "detailZh" : "detailEn";
+      const descKey = lang === "zh" ? "descZh" : "descEn";
+      const value = getCaseOverviewDisplay(draft, lang);
+
+      return (
+        <Field key={detailKey} label={`项目概述（${lang === "zh" ? "中文" : "英文"}）`}>
+          <textarea
+            className={cn(inputClass, "min-h-[140px]")}
+            value={value}
+            onChange={(e) => {
+              const next = e.target.value;
+              onChange({ [detailKey]: next, [descKey]: next });
+            }}
+            placeholder={lang === "zh" ? "案例项目概述，同步至前台「项目概述」区块" : "Project overview (EN)"}
+          />
+        </Field>
+      );
+    };
+
+    return (
+      <div className="grid sm:grid-cols-2 gap-4">
+        {sectionCard(
+          "基础信息",
+          <>
+            {textField("titleZh", "标题（中文）")}
+            {textField("titleEn", "标题（英文）")}
+            <SelectField
+              key="type"
+              label="案例类型"
+              value={getText(draft, "type") || "engineering"}
+              onChange={(v) => onChange({ type: v })}
+              options={[
+                { value: "engineering", label: "工程案例" },
+                { value: "performance", label: "演出案例" },
+              ]}
+            />
+            <SelectField
+              key="market"
+              label="市场标签"
+              value={getText(draft, "market") || "all"}
+              onChange={(v) => onChange({ market: v })}
+              options={[
+                { value: "all", label: "全部市场" },
+                { value: "cn", label: "仅中国站" },
+                { value: "global", label: "仅海外站" },
+              ]}
+            />
+            <Field key="sortOrder" label="排序（同类型内数字越小越靠前）">
+              <input
+                type="number"
+                className={inputClass}
+                value={String(draft.sortOrder ?? "")}
+                onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
+              />
+            </Field>
+            <ReadOnlyField
+              key="legacyId"
+              label="案例 ID（前台 URL，不可修改）"
+              value={Number.isInteger(legacyId) && legacyId > 0 ? String(legacyId) : "—"}
+              hint={detailPath ? `前台链接 ${detailPath}` : undefined}
+            />
+          </>
+        )}
+
+        {sectionCard(
+          "项目概述",
+          <>
+            {overviewField("zh")}
+            {overviewField("en")}
+            <p className="sm:col-span-2 text-[11px] text-gray-500 leading-relaxed">
+              保存并发布后将同步至案例详情页「项目概述」与列表摘要；原有场景/设备字段保留在 CMS，不在此编辑。
+            </p>
+          </>
+        )}
+
+        {sectionCard(
+          "案例图片",
+          <>
+            <ImageUploadField
+              key="image"
+              label="封面图"
+              currentUrl={mediaUrl(draft.image as StrapiMedia)}
+              onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
+              onRemoved={() => onChange({ image: null })}
+            />
+            <div className="sm:col-span-2">
+              <GalleryUploadField
+                label="案例图集"
+                items={(draft.gallery as StrapiMedia[]) ?? []}
+                onChange={(gallery) => onChange({ gallery })}
+              />
+            </div>
+          </>
+        )}
       </div>
     );
   }

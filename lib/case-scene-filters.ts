@@ -1,4 +1,13 @@
-import type { CaseItem, CaseSceneSlug, Locale, SceneItem } from "@/data/mock";
+import type { CaseItem, CaseType, Locale } from "@/data/mock";
+
+/** 遗留场景 slug（仅用于旧 URL / 首页跳转，不再映射到 CaseItem） */
+export type LegacyCaseSceneSlug =
+  | "stadium"
+  | "festival"
+  | "livehouse"
+  | "convention"
+  | "corporate"
+  | "auditorium";
 
 export type CaseSceneFilterId =
   | "performance"
@@ -11,7 +20,7 @@ export type CaseSceneFilterId =
 
 const CASE_SCENE_FILTERS: Record<
   CaseSceneFilterId,
-  { slugs: CaseSceneSlug[]; label: { zh: string; en: string } }
+  { slugs: LegacyCaseSceneSlug[]; label: { zh: string; en: string } }
 > = {
   performance: {
     slugs: ["festival"],
@@ -43,7 +52,7 @@ const CASE_SCENE_FILTERS: Record<
   },
 };
 
-/** 后台案例编辑：应用场景分类（写入 sceneSlug） */
+/** @deprecated 场景分类已从案例前台移除；保留供旧链接兼容提示 */
 export const ADMIN_CASE_SCENE_OPTIONS = [
   { value: "festival", label: "演唱会 / 音乐节" },
   { value: "stadium", label: "体育场馆" },
@@ -51,25 +60,6 @@ export const ADMIN_CASE_SCENE_OPTIONS = [
 ] as const;
 
 export type AdminCaseSceneSlug = (typeof ADMIN_CASE_SCENE_OPTIONS)[number]["value"];
-
-const ADMIN_CASE_SCENE_SLUGS = new Set<string>(
-  ADMIN_CASE_SCENE_OPTIONS.map((option) => option.value)
-);
-
-export function isAdminCaseSceneSlug(value: string): value is AdminCaseSceneSlug {
-  return ADMIN_CASE_SCENE_SLUGS.has(value);
-}
-
-export function getAdminCaseSceneLabel(slug: string): string {
-  return (
-    ADMIN_CASE_SCENE_OPTIONS.find((option) => option.value === slug)?.label ?? slug
-  );
-}
-
-export function resolveAdminCaseSceneSelectValue(slug: string): AdminCaseSceneSlug {
-  if (isAdminCaseSceneSlug(slug)) return slug;
-  return "festival";
-}
 
 const CASE_SCENE_FILTER_IDS = new Set<string>(Object.keys(CASE_SCENE_FILTERS));
 
@@ -81,32 +71,12 @@ export function getCaseSceneFilterLabel(id: CaseSceneFilterId, locale: Locale): 
   return CASE_SCENE_FILTERS[id].label[locale];
 }
 
-export function filterCasesBySceneFilter(
-  list: CaseItem[],
-  filterId: CaseSceneFilterId
-): CaseItem[] {
-  const slugs = new Set(CASE_SCENE_FILTERS[filterId].slugs);
-  return list.filter((item) => slugs.has(item.sceneSlug));
+/** @deprecated 场景筛选已废弃，始终返回原列表 */
+export function filterCasesBySceneFilter(list: CaseItem[], _filterId: CaseSceneFilterId): CaseItem[] {
+  return list;
 }
 
-/** 首页应用场景卡片 → 案例页 scene 筛选链接 */
-export function getHomeSceneHref(scene: SceneItem): string {
-  const blob = `${scene.name.zh} ${scene.name.en}`.toLowerCase();
-
-  if (/演唱会|音乐节|concert|festival/.test(blob)) {
-    return "/cases?scene=performance";
-  }
-  if (/体育|场馆|stadium/.test(blob)) {
-    return "/cases?scene=stadium";
-  }
-  if (/会议|礼堂|conference|auditorium/.test(blob)) {
-    return "/cases?scene=conference";
-  }
-
-  const order = scene.sortOrder ?? scene.id;
-  if (order === 1) return "/cases?scene=performance";
-  if (order === 2) return "/cases?scene=stadium";
-  if (order === 3) return "/cases?scene=conference";
-
+/** 首页应用场景卡片 → 案例页（仅保留 type 入口） */
+export function getHomeSceneHref(_scene: { sortOrder?: number; id?: number }): string {
   return "/cases";
 }

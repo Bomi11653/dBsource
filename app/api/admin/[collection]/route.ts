@@ -1,4 +1,5 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
+import { buildCaseAdminSavePayload } from "@/lib/admin-case-payload";
 import { translateCaseZhToEn } from "@/lib/ai/admin-content";
 import { buildAdminSaveResponse } from "@/lib/admin-post-save";
 import { ADMIN_COLLECTIONS, adminStrapiRequest, type AdminCollection } from "@/lib/strapi-admin";
@@ -45,19 +46,24 @@ export async function POST(request: NextRequest, { params }: Props) {
   }
 
   const body = await request.json();
-  const data: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+  let data: Record<string, unknown> = { ...(body as Record<string, unknown>) };
 
   if (params.collection === "cases") {
+    data = buildCaseAdminSavePayload(data);
     const titleZh = String(data.titleZh ?? "").trim();
     const descZh = String(data.descZh ?? "").trim();
     const titleEn = String(data.titleEn ?? "").trim();
     const descEn = String(data.descEn ?? "").trim();
+    const detailEn = String(data.detailEn ?? "").trim();
     if (titleZh && descZh && (!titleEn || !descEn)) {
       try {
         const translated = await translateCaseZhToEn({ titleZh, descZh });
         if (translated) {
           if (!titleEn) data.titleEn = translated.titleEn;
-          if (!descEn) data.descEn = translated.descEn;
+          if (!descEn) {
+            data.descEn = translated.descEn;
+            if (!detailEn) data.detailEn = translated.descEn;
+          }
         }
       } catch {
         // Ignore AI errors and keep user-provided fields unchanged.

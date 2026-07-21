@@ -1,4 +1,5 @@
 import type { CaseItem, DownloadItem, Product } from "@/data/mock";
+import { caseOverviewMatchesModelCodes, getCaseProjectOverview } from "@/lib/case-project-overview";
 import type { AiPageContext } from "@/lib/ai/page-context";
 import { buildSiteBaseline } from "@/lib/ai/site-knowledge";
 import {
@@ -55,7 +56,7 @@ export async function retrieveContext(
     if (matched.length) {
       topProducts = matched.slice(0, modelCodes.length === 1 ? 1 : 4);
       const relatedCases = cases.filter((c) =>
-        modelCodes.some((code) => c.products.toUpperCase().includes(code))
+        caseOverviewMatchesModelCodes(c, modelCodes)
       );
       if (relatedCases.length) {
         topCases = relatedCases.slice(0, 3);
@@ -119,8 +120,7 @@ function formatPageDetail(
     return [
       locale === "zh" ? "【当前页面案例（优先依据）】" : "【Current case page】",
       `- ${c.title[locale]}`,
-      `- ${c.desc[locale].slice(0, 200)}`,
-      `- 设备: ${c.products}`,
+      `- ${getCaseProjectOverview(c, locale).slice(0, 200)}`,
     ].join("\n");
   }
   return "";
@@ -147,7 +147,7 @@ function rankCases(cases: CaseItem[], terms: string[], locale: "zh" | "en") {
     .map((c) => ({
       c,
       score: scoreText(
-        [c.title.zh, c.title.en, c.desc.zh, c.desc.en, c.products, c.scene.zh, c.scene.en].join(
+        [c.title.zh, c.title.en, c.projectOverview.zh, c.projectOverview.en].join(
           " "
         ),
         terms
@@ -187,7 +187,9 @@ function formatContext(
   if (cases.length) {
     lines.push("【相关案例】");
     cases.forEach((c) => {
-      lines.push(`- ${c.title[locale]} | ${c.products} | /cases/${c.id}`);
+      lines.push(
+        `- ${c.title[locale]} | ${getCaseProjectOverview(c, locale).slice(0, 80)} | /cases/${c.id}`
+      );
     });
   }
   if (downloads.length) {

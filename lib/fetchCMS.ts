@@ -17,6 +17,7 @@ import { applyCaseImages, sortCases } from "@/lib/cases";
 import { shouldUseMockData } from "@/lib/cms-data-source";
 import { withLastKnownGood } from "@/lib/cms-lkg-cache";
 import { fetchStrapiCollection, fetchStrapiSingle, getCmsUrl } from "@/lib/strapi-client";
+import { cache } from "react";
 import {
   mapStrapiAboutSections,
   mapStrapiCase,
@@ -27,7 +28,6 @@ import {
   mapStrapiSalesContact,
   mapStrapiScene,
 } from "@/lib/strapi-mapper";
-import { cache } from "react";
 
 function isMockMode(): boolean {
   return shouldUseMockData();
@@ -248,7 +248,7 @@ export async function getQRCodes() {
   }
 }
 
-export async function getSalesContacts() {
+export const getSalesContacts = cache(async function getSalesContacts() {
   const fallback = fallbackSalesContacts();
   if (isMockMode()) return fallback;
 
@@ -270,7 +270,7 @@ export async function getSalesContacts() {
     console.error("[fetchCMS] sales-contacts 读取失败，使用 fallback:", e);
     return fallback;
   }
-}
+});
 
 export async function getAboutImages(): Promise<AboutImages> {
   if (isMockMode()) return aboutImages;
@@ -292,7 +292,7 @@ export async function getAboutImages(): Promise<AboutImages> {
   );
 }
 
-export async function getContactInfo() {
+export const getContactInfo = cache(async function getContactInfo() {
   if (isMockMode()) return contactInfo;
 
   const cmsUrl = getCmsUrl();
@@ -310,7 +310,7 @@ export async function getContactInfo() {
     },
     { ...EMPTY_CONTACT }
   );
-}
+});
 
 export async function getGlobalSetting() {
   if (isMockMode()) return globalSettingDefault;

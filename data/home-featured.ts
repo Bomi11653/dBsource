@@ -1,6 +1,7 @@
 import type { CaseItem, Product } from "./mock";
 import { PRODUCT_SPEC_SHEETS, type ProductSpecSheet } from "./product-specs";
 import { getCaseCoverUrl } from "@/lib/case-media";
+import { resolveCaseProjectOverview } from "@/lib/case-project-overview";
 
 export type HomeFeaturedSpecPage = {
   model: string;
@@ -159,17 +160,14 @@ export function getHomeFeaturedCaseWithImage(
     return {
       id: override?.caseId ?? 0,
       type: "engineering",
-      sceneSlug: "corporate",
       title: {
         zh: override?.title?.zh?.trim() || "未命名案例",
         en: override?.title?.en?.trim() || "Untitled case",
       },
-      desc: {
-        zh: override?.desc?.zh?.trim() || "",
-        en: override?.desc?.en?.trim() || "",
-      },
-      scene: { zh: "", en: "" },
-      products: "",
+      projectOverview: resolveCaseProjectOverview({
+        descZh: override?.desc?.zh,
+        descEn: override?.desc?.en,
+      }),
       image: cover,
       imageUrl: cover,
       gallery: cover ? [cover] : [],
@@ -188,13 +186,13 @@ export function getHomeFeaturedCaseWithImage(
             en: override.title.en?.trim() || base.title.en,
           }
         : base.title,
-    desc:
+    projectOverview:
       override?.desc?.zh || override?.desc?.en
-        ? {
-            zh: override.desc.zh?.trim() || base.desc.zh,
-            en: override.desc.en?.trim() || base.desc.en,
-          }
-        : base.desc,
+        ? resolveCaseProjectOverview({
+            descZh: override.desc.zh?.trim() || base.projectOverview.zh,
+            descEn: override.desc.en?.trim() || base.projectOverview.en,
+          })
+        : base.projectOverview,
     image: cover,
     imageUrl: cover,
   };

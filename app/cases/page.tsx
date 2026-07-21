@@ -6,6 +6,8 @@ import { Suspense } from "react";
 
 export const metadata = pageMetadata(PAGE_SEO.cases, "/cases");
 
+export const revalidate = 60;
+
 export default async function CasesPage() {
   const cases = await getCases();
   return (

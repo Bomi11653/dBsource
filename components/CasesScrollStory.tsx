@@ -2,6 +2,10 @@
 
 import type { CaseItem } from "@/data/mock";
 import { getCaseCoverUrl } from "@/lib/case-media";
+import {
+  getCaseOverviewExcerpt,
+  getCaseProjectOverview,
+} from "@/lib/case-project-overview";
 import { getScrollStoryLayout } from "@/lib/cases";
 import { useI18n } from "@/components/I18nProvider";
 import {
@@ -56,11 +60,10 @@ function StickyCaseVisual({
         className="relative z-10 text-center px-6 max-w-3xl"
         style={{ opacity: textOpacity }}
       >
-        <p className="text-brand-gold text-xs tracking-[0.35em] uppercase mb-4">
-          {caseItem.scene[locale]}
-        </p>
         <h2 className="type-hero text-3xl md:text-5xl">{caseItem.title[locale]}</h2>
-        <p className="text-gray-300 mt-4 text-sm type-label break-words">{caseItem.products}</p>
+        <p className="text-gray-300 mt-4 text-sm type-label break-words line-clamp-3">
+          {getCaseOverviewExcerpt(caseItem, locale, 120)}
+        </p>
         <Link
           href={`/cases/${caseItem.id}`}
           className="pointer-events-auto inline-block mt-8 text-sm border border-brand-gold/50 px-6 py-2.5 text-brand-gold hover:bg-brand-gold/10 transition-colors"
@@ -166,16 +169,15 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
           transition={{ duration: 0.8 }}
         >
           <p className="text-brand-gold text-xs tracking-[0.3em] uppercase mb-4">
-            {t.cases.projectBackground}
+            {t.cases.overview}
           </p>
           <Link href={`/cases/${profileCase.id}`} className="group inline-block">
             <h2 className="type-page-title text-3xl md:text-4xl mb-6 group-hover:text-brand-gold transition-colors">
               {profileCase.title[locale]}
             </h2>
           </Link>
-          <p className="text-gray-400 leading-relaxed text-lg">{profileCase.desc[locale]}</p>
-          <p className="text-gray-500 text-sm type-label mt-8 border-t border-white/10 pt-6 break-words">
-            {t.cases.deliverables}: {profileCase.products}
+          <p className="text-gray-400 leading-relaxed text-lg">
+            {getCaseProjectOverview(profileCase, locale)}
           </p>
         </motion.div>
         <motion.div
@@ -225,7 +227,9 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
               className="absolute inset-0 flex flex-col justify-end p-8 bg-gradient-to-t from-black/90 via-black/20 to-transparent hover:from-black/95 transition-colors"
             >
               <h3 className="type-card-title text-2xl">{spotlightCase.title[locale]}</h3>
-              <p className="text-gray-400 mt-2 text-sm">{spotlightCase.desc[locale]}</p>
+              <p className="text-gray-400 mt-2 text-sm">
+                {getCaseOverviewExcerpt(spotlightCase, locale, 160)}
+              </p>
               <span className="text-brand-gold text-sm mt-4">{t.cases.viewDetail} →</span>
             </Link>
           )}
@@ -330,13 +334,12 @@ export default function CasesScrollStory({ cases }: { cases: CaseItem[] }) {
                   )}
                 </div>
                 <div>
-                  <span className="text-xs text-brand-gold uppercase tracking-wider">
-                    {item.scene[locale]}
-                  </span>
                   <h4 className="type-card-title text-2xl mt-3 group-hover:text-brand-gold transition-colors">
                     {item.title[locale]}
                   </h4>
-                  <p className="text-gray-400 mt-4 leading-relaxed">{item.desc[locale]}</p>
+                  <p className="text-gray-400 mt-4 leading-relaxed">
+                    {getCaseOverviewExcerpt(item, locale, 200)}
+                  </p>
                   <span className="text-brand-gold text-sm mt-4 inline-block">
                     {t.cases.viewDetail} →
                   </span>

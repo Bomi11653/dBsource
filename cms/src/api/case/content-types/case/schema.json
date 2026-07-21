@@ -21,14 +21,6 @@
       "enum": ["engineering", "performance"],
       "required": true
     },
-    "sceneSlug": {
-      "type": "enumeration",
-      "enum": [
-        "stadium", "festival", "livehouse",
-        "convention", "corporate", "auditorium"
-      ],
-      "required": true
-    },
     "titleZh": {
       "type": "string",
       "required": true
@@ -51,17 +43,25 @@
     "detailEn": {
       "type": "richtext"
     },
+    "sceneSlug": {
+      "type": "enumeration",
+      "enum": [
+        "stadium",
+        "festival",
+        "livehouse",
+        "convention",
+        "corporate",
+        "auditorium"
+      ]
+    },
     "sceneZh": {
-      "type": "string",
-      "required": true
+      "type": "string"
     },
     "sceneEn": {
-      "type": "string",
-      "required": true
+      "type": "string"
     },
     "products": {
-      "type": "string",
-      "required": true
+      "type": "string"
     },
     "image": {
       "type": "media",

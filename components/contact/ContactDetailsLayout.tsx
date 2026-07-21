@@ -1,7 +1,8 @@
 "use client";
 
-import type { ContactInfo } from "@/data/mock";
+import type { ContactInfo, QRItem, SocialLinkItem } from "@/data/mock";
 import type { SalesContactItem } from "@/data/sales-contacts";
+import QRCarousel from "@/components/QRCarousel";
 import SalesContactCards from "@/components/SalesContactCards";
 import { ContactCompanySection, ContactMapSection } from "@/components/contact/ContactInfoSection";
 import type { ReactNode } from "react";
@@ -9,12 +10,11 @@ import type { ReactNode } from "react";
 type ContactDetailsLayoutProps = {
   contact: ContactInfo;
   salesContacts?: SalesContactItem[];
-  /** 联系页表单区域（关于页不传） */
+  qrItems?: QRItem[];
+  socialLinks?: SocialLinkItem[];
   formSlot?: ReactNode;
   infoId?: string;
   mapId?: string;
-  /** contact：表单左栏 + 信息侧栏；about：大屏公司/地图双列 */
-  variant?: "contact" | "about";
 };
 
 /**
@@ -24,36 +24,14 @@ type ContactDetailsLayoutProps = {
 export default function ContactDetailsLayout({
   contact,
   salesContacts = [],
+  qrItems = [],
+  socialLinks = [],
   formSlot,
   infoId = "contact-info",
   mapId = "contact-map",
-  variant = "contact",
 }: ContactDetailsLayoutProps) {
   const hasSales = salesContacts.length > 0;
-
-  if (variant === "about") {
-    return (
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8 lg:items-stretch min-w-0">
-        <ContactCompanySection
-          contact={contact}
-          infoId={infoId}
-          balanced
-          className="order-1 min-w-0 scroll-mt-nav"
-        />
-        {hasSales ? (
-          <div className="order-2 lg:order-3 lg:col-span-2 min-w-0">
-            <SalesContactCards contacts={salesContacts} />
-          </div>
-        ) : null}
-        <ContactMapSection
-          contact={contact}
-          mapId={mapId}
-          balanced
-          className="order-3 lg:order-2 min-w-0 scroll-mt-nav"
-        />
-      </div>
-    );
-  }
+  const hasQr = qrItems.length > 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-8 lg:items-stretch min-w-0">
@@ -77,6 +55,12 @@ export default function ContactDetailsLayout({
       {hasSales ? (
         <div className="order-2 lg:order-3 lg:col-span-2 min-w-0">
           <SalesContactCards contacts={salesContacts} />
+        </div>
+      ) : null}
+
+      {hasQr ? (
+        <div className="order-5 lg:order-4 lg:col-span-2 min-w-0 scroll-mt-nav" id="contact-social">
+          <QRCarousel items={qrItems} socialLinks={socialLinks} embedded />
         </div>
       ) : null}
     </div>

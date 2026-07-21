@@ -1,6 +1,5 @@
 import type {
   CaseItem,
-  CaseSceneSlug,
   CaseType,
   DownloadItem,
   Product,
@@ -10,6 +9,7 @@ import type {
   QRItem,
   SceneItem,
 } from "@/data/mock";
+import { resolveCaseProjectOverview } from "@/lib/case-project-overview";
 import type { SalesContactItem } from "@/data/sales-contacts";
 import type { AboutImages } from "@/data/about";
 import { mapCaseMediaFields } from "@/lib/case-media";
@@ -41,7 +41,7 @@ type StrapiCaseDoc = {
   legacyId: number;
   sortOrder?: number;
   type: string;
-  sceneSlug: string;
+  sceneSlug?: string | null;
   titleZh?: string | null;
   titleEn?: string | null;
   title?: string | null;
@@ -170,8 +170,6 @@ function richtextToPlain(value: unknown): string | undefined {
 }
 
 export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
-  const detailZh = richtextToPlain(doc.detailZh);
-  const detailEn = richtextToPlain(doc.detailEn);
   const mediaSource = {
     image: doc.image,
     cover: doc.cover,
@@ -194,12 +192,13 @@ export function mapStrapiCase(doc: StrapiCaseDoc, cmsUrl: string): CaseItem {
     id: doc.legacyId,
     sortOrder: typeof doc.sortOrder === "number" ? doc.sortOrder : undefined,
     type: doc.type as CaseType,
-    sceneSlug: doc.sceneSlug as CaseSceneSlug,
     title: { zh: titleZh, en: titleEn },
-    desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
-    detail: detailZh || detailEn ? { zh: detailZh ?? "", en: detailEn ?? "" } : undefined,
-    scene: { zh: doc.sceneZh?.trim() || "", en: doc.sceneEn?.trim() || "" },
-    products: doc.products?.trim() || "",
+    projectOverview: resolveCaseProjectOverview({
+      detailZh: doc.detailZh,
+      detailEn: doc.detailEn,
+      descZh: doc.descZh,
+      descEn: doc.descEn,
+    }),
     image: imageUrl,
     imageUrl,
     gallery,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CaseItem, Product } from "@/data/mock";
 import { formatProductHeading } from "@/lib/product-display";
 import { getCaseCoverUrl } from "@/lib/case-media";
+import { getCaseOverviewExcerpt, getCaseProjectOverview } from "@/lib/case-project-overview";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
 
 /** 生产环境默认正式域名（env 未配置时的 fallback） */
@@ -218,11 +219,11 @@ export function casePageMetadata(caseItem: CaseItem): Metadata {
     {
       zh: {
         title: caseItem.title.zh,
-        description: caseItem.desc.zh,
+        description: getCaseOverviewExcerpt(caseItem, "zh", 160),
       },
       en: {
         title: caseItem.title.en,
-        description: caseItem.desc.en,
+        description: getCaseOverviewExcerpt(caseItem, "en", 160),
       },
     },
     `/cases/${caseItem.id}`,
@@ -274,7 +275,7 @@ export function caseJsonLd(caseItem: CaseItem, locale: "zh" | "en" = "zh") {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: caseItem.title[locale],
-    description: caseItem.desc[locale],
+    description: getCaseProjectOverview(caseItem, locale),
     image: [image],
     url: `${siteConfig.url}/cases/${caseItem.id}`,
     author: {

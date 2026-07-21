@@ -23,12 +23,14 @@ export type AdminStats = {
 export const ADMIN_SECTIONS: AdminSection[] = [
   {
     id: "home",
-    title: { zh: "首页", en: "Home" },
-    description: { zh: "应用场景条目（当前首页仅 Hero，以下配置暂不在前台展示）", en: "Scene entries (homepage shows Hero only; blocks below not live yet)" },
+    title: { zh: "首页设置", en: "Home" },
+    description: {
+      zh: "Hero 首屏 · Logo · SEO · 全站基础设置",
+      en: "Hero · Logo · SEO · site basics",
+    },
     href: "/admin/home",
     previewHref: "/",
-    strapiPath: "/content-manager/collection-types/api::scene.scene",
-    countKey: "scenes",
+    strapiPath: "/content-manager/single-types/api::global-setting.global-setting",
     icon: "home",
   },
   {

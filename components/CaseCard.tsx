@@ -3,6 +3,7 @@
 import type { CaseItem } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
 import { getCaseCoverUrl, hasCaseCover } from "@/lib/case-media";
+import { getCaseOverviewExcerpt } from "@/lib/case-project-overview";
 import SafeImage, { SafeImageAspect } from "@/components/SafeImage";
 import Link from "next/link";
 
@@ -44,14 +45,12 @@ export default function CaseCard({
           />
         )}
         <div className="p-4 sm:p-6 flex flex-col justify-center min-w-0">
-          <span className="text-xs text-brand-gold uppercase type-label">
-            {item.scene[locale]}
-          </span>
-          <h2 className="type-card-title text-xl sm:text-2xl mt-2 group-hover:text-brand-gold transition-colors break-words">
+          <h2 className="type-card-title text-xl sm:text-2xl group-hover:text-brand-gold transition-colors break-words">
             {item.title[locale]}
           </h2>
-          <p className="text-sm text-gray-500 type-label mt-2 break-words">{item.products}</p>
-          <p className="text-gray-400 mt-3 leading-relaxed">{item.desc[locale]}</p>
+          <p className="text-gray-400 mt-3 leading-relaxed line-clamp-4">
+            {getCaseOverviewExcerpt(item, locale)}
+          </p>
         </div>
       </article>
     </Link>

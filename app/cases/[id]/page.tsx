@@ -1,10 +1,11 @@
 import CaseDetailContent from "./CaseDetailContent";
-import SiteFooter from "@/components/SiteFooter";
 import { getCaseById, getCases } from "@/lib/cms";
 import { caseJsonLd, casePageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 type Props = { params: { id: string } };
+
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   const list = await getCases();
@@ -35,7 +36,6 @@ export default async function CaseDetailPage({ params }: Props) {
       />
       <main>
         <CaseDetailContent caseItem={caseItem} />
-        <SiteFooter />
       </main>
     </>
   );

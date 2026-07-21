@@ -149,16 +149,10 @@ export function caseSubCategoryLabel(sub: CaseSubCategory, locale: Locale): stri
 export function filterCasesBySub(
   list: CaseItem[],
   type?: CaseType | null,
-  subSlug?: CaseSubCategorySlug | null
+  _subSlug?: CaseSubCategorySlug | null
 ): CaseItem[] {
-  let result = list;
-  if (type) {
-    result = result.filter((c) => c.type === type);
-  }
-  if (subSlug) {
-    result = result.filter((c) => c.sceneSlug === subSlug);
-  }
-  return result;
+  if (!type) return list;
+  return list.filter((c) => c.type === type);
 }
 
 function sortCasesWithinType(list: CaseItem[], type: CaseType): CaseItem[] {

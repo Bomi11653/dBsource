@@ -1,4 +1,5 @@
 import AdminSectionEditor from "@/components/admin/AdminSectionEditor";
+import HomeAdminEditor from "@/components/admin/HomeAdminEditor";
 import AdminShell from "@/components/admin/AdminShell";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { adminTokenConfigured } from "@/lib/strapi-admin";
@@ -12,6 +13,19 @@ export default function AdminSectionPage({ params }: Props) {
   if (!section) notFound();
 
   const tokenReady = adminTokenConfigured();
+
+  if (section.id === "home") {
+    return (
+      <AdminShell
+        title="首页设置 · 在线编辑"
+        subtitle="Hero 首屏 · Logo · SEO · 全站基础设置"
+      >
+        <Suspense fallback={<p className="text-sm text-gray-500">加载编辑器…</p>}>
+          <HomeAdminEditor tokenReady={tokenReady} />
+        </Suspense>
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell

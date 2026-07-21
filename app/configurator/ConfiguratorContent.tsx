@@ -13,6 +13,7 @@ import {
   type UsageType,
 } from "@/data/configurator-templates";
 import { useI18n } from "@/components/I18nProvider";
+import { getCaseOverviewExcerpt } from "@/lib/case-project-overview";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -483,7 +484,9 @@ export default function ConfiguratorContent({
                     href={`/cases/${c.id}`}
                     className="rounded-xl border border-white/10 p-4 hover:border-brand-gold/30 transition-colors"
                   >
-                    <p className="text-brand-gold text-xs">{c.scene[locale]}</p>
+                    <p className="text-brand-gold text-xs line-clamp-2">
+                      {getCaseOverviewExcerpt(c, locale, 80)}
+                    </p>
                     <p className="mt-1 font-medium">{c.title[locale]}</p>
                   </Link>
                 ))}
