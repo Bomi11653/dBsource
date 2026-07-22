@@ -2,6 +2,10 @@
 
 import ProductSpecsEditor from "@/components/admin/ProductSpecsEditor";
 import {
+  mergeProductSpecsForSave,
+  resolveAdminProductSpecs,
+} from "@/lib/admin-product-spec-seed";
+import {
   AdminBanner,
   Field,
   ImageUploadField,
@@ -14,22 +18,26 @@ import {
   inputClass,
 } from "@/components/admin/AdminFields";
 import {
-  ADMIN_CATALOG_CATEGORY_LABELS,
-  ADMIN_PRODUCT_CATALOG_TABS,
-  ADMIN_PRODUCT_LINE_LABELS,
   compareAdminProductRows,
   countAdminProductsByCatalogFilter,
-  getAdminCatalogCategory,
-  getAdminCatalogCategoryPatch,
-  getAdminEngineeringSeriesSelectOptions,
-  getAdminProductLineLabel,
+  getAdminProductCatalogTabs,
   getAdminProductMajorCategory,
   getAdminProductRowMeta,
-  getAdminSeriesGroupLabel,
+  getAdminProductSeriesPatch,
+  getAdminProductSeriesSelectOptions,
+  getAdminSeriesSelectValue,
   matchAdminProductCatalogFilter,
-  type AdminCatalogCategory,
+  resolveAdminSeriesSavePatch,
+  resolveAdminSeriesSelection,
   type AdminProductCatalogFilter,
 } from "@/lib/admin-product-categories";
+import {
+  buildProductSeriesConfig,
+  DEFAULT_PRODUCT_SERIES_CONFIG,
+  getAdminSeriesPatch,
+  type CmsProductSeriesRow,
+  type ProductSeriesConfig,
+} from "@/lib/product-series-config";
 import { serializeSalesContactPayload } from "@/lib/admin-sales-contact-payload";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
 import { formatSaveToast, type AdminSaveResponse } from "@/lib/admin-save-toast";
@@ -62,7 +70,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 type StrapiMedia = { id?: number; url?: string; size?: number };
 type StrapiRow = Record<string, unknown> & {
@@ -245,9 +253,30 @@ function applyCaseTranslatePatch(patch: Record<string, string>): Record<string, 
   return next;
 }
 
-/** 工程案例：存在待翻译中文且对应英文字段已有内容时需确认覆盖 */
-function caseNeedsTranslateOverwriteConfirm(draft: StrapiRow): boolean {
-  return getCaseTranslatePairs(draft).some((pair) => pair.zh.trim() && pair.en.trim());
+/** 存在待翻译中文且对应英文字段已有内容时需确认覆盖 */
+function needsTranslateOverwriteConfirm(
+  section: "cases" | "products",
+  draft: StrapiRow
+): boolean {
+  const pairs =
+    section === "cases" ? getCaseTranslatePairs(draft) : getProductTranslatePairs(draft);
+  return pairs.some((pair) => pair.zh.trim() && pair.en.trim());
+}
+
+function getProductTranslatePairs(draft: StrapiRow) {
+  return (
+    [
+      { zhKey: "nameZh", enKey: "nameEn" },
+      { zhKey: "descZh", enKey: "descEn" },
+      { zhKey: "detailZh", enKey: "detailEn" },
+      { zhKey: "specsZh", enKey: "specsEn" },
+    ] as const
+  ).map((pair) => ({
+    zhKey: pair.zhKey,
+    enKey: pair.enKey,
+    zh: getText(draft, pair.zhKey),
+    en: getText(draft, pair.enKey),
+  }));
 }
 
 function getCaseOverviewDisplay(row: StrapiRow, lang: "zh" | "en"): string {
@@ -258,6 +287,10 @@ function getCaseOverviewDisplay(row: StrapiRow, lang: "zh" | "en"): string {
 
 function setDraft(drafts: Record<string, StrapiRow>, id: string, patch: Partial<StrapiRow>) {
   return { ...drafts, [id]: { ...drafts[id], ...patch } };
+}
+
+function productRowTitle(draft: StrapiRow): string {
+  return getText(draft, "model") || docId(draft);
 }
 
 function rowTitle(draft: StrapiRow): string {
@@ -272,14 +305,18 @@ function rowTitle(draft: StrapiRow): string {
   );
 }
 
-function rowSubtitle(section: string, draft: StrapiRow): string | null {
+function rowSubtitle(
+  section: string,
+  draft: StrapiRow,
+  productSeriesConfig: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): string | null {
   if (section === "downloads") {
     const size = getText(draft, "size");
     const fileName = getText(draft, "fileName");
     return [size && size !== "—" ? size : null, fileName].filter(Boolean).join(" · ") || null;
   }
   if (section === "products") {
-    const meta = getAdminProductRowMeta(draft);
+    const meta = getAdminProductRowMeta(draft, productSeriesConfig);
     return meta.subtitle || null;
   }
   if (section === "cases") {
@@ -313,10 +350,14 @@ function compareCaseRows(a: StrapiRow, b: StrapiRow) {
   return rowTitle(a).localeCompare(rowTitle(b), "zh-Hans-CN");
 }
 
-function rowSearchText(section: string, draft: StrapiRow): string {
+function rowSearchText(
+  section: string,
+  draft: StrapiRow,
+  productSeriesConfig: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): string {
   const base = [
     rowTitle(draft),
-    rowSubtitle(section, draft),
+    rowSubtitle(section, draft, productSeriesConfig),
     getText(draft, "nameEn"),
     getText(draft, "titleEn"),
     getText(draft, "model"),
@@ -339,14 +380,14 @@ function rowSearchText(section: string, draft: StrapiRow): string {
       getText(draft, "descEn"),
       getText(draft, "category"),
       getText(draft, "seriesGroup"),
-      getAdminProductRowMeta(draft).majorCategory.label
+      getAdminProductRowMeta(draft, productSeriesConfig).majorCategory.label
     );
   }
 
   return base.filter(Boolean).join(" ").toLowerCase();
 }
 
-const CREATABLE_SECTIONS = new Set(["products", "series", "cases", "downloads", "about", "qr"]);
+const CREATABLE_SECTIONS = new Set(["products", "cases", "downloads", "about", "qr"]);
 
 export default function AdminSectionEditor({
   section,
@@ -360,6 +401,8 @@ export default function AdminSectionEditor({
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<StrapiRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, StrapiRow>>({});
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
   const [openId, setOpenId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -383,14 +426,21 @@ export default function AdminSectionEditor({
     useState<AdminProductCatalogFilter>("all");
   /** 产品排序输入草稿（与「保存并发布」解耦，由「应用排序」立即写入 CMS） */
   const [productSortDrafts, setProductSortDrafts] = useState<Record<string, string>>({});
+  const [productSeriesConfig, setProductSeriesConfig] = useState<ProductSeriesConfig>(
+    DEFAULT_PRODUCT_SERIES_CONFIG
+  );
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
+  const adminProductCatalogTabs = useMemo(
+    () => getAdminProductCatalogTabs(productSeriesConfig),
+    [productSeriesConfig]
+  );
 
   const productCatalogTabCounts = useMemo(() => {
     if (section !== "products") return null;
     const draftsRows = rows.map((row) => drafts[docId(row)] ?? row);
-    return countAdminProductsByCatalogFilter(draftsRows);
-  }, [section, rows, drafts]);
+    return countAdminProductsByCatalogFilter(draftsRows, productSeriesConfig);
+  }, [section, rows, drafts, productSeriesConfig]);
 
   /** 全站产品按 sortOrder 升序（上移/下移邻居，不受系列 Tab 筛选影响） */
   const sortedAllProducts = useMemo(() => {
@@ -401,7 +451,7 @@ export default function AdminSectionEditor({
       const safeA = Number.isFinite(orderA) ? orderA : Number.MAX_SAFE_INTEGER;
       const safeB = Number.isFinite(orderB) ? orderB : Number.MAX_SAFE_INTEGER;
       if (safeA !== safeB) return safeA - safeB;
-      return String(a.model ?? a.nameZh ?? "").localeCompare(String(b.model ?? b.nameZh ?? ""));
+      return String(a.model ?? "").localeCompare(String(b.model ?? ""), "zh-Hans-CN");
     });
   }, [section, rows]);
 
@@ -442,19 +492,19 @@ export default function AdminSectionEditor({
     const searched = q
       ? rows.filter((row) => {
           const draft = drafts[docId(row)] ?? row;
-          return rowSearchText(section, draft).includes(q);
+          return rowSearchText(section, draft, productSeriesConfig).includes(q);
         })
       : rows;
 
     if (section === "products") {
       const seriesFiltered = searched.filter((row) => {
         const draft = drafts[docId(row)] ?? row;
-        return matchAdminProductCatalogFilter(draft, productCatalogFilter);
+        return matchAdminProductCatalogFilter(draft, productCatalogFilter, productSeriesConfig);
       });
       return [...seriesFiltered].sort((a, b) => {
         const draftA = drafts[docId(a)] ?? a;
         const draftB = drafts[docId(b)] ?? b;
-        return compareAdminProductRows(draftA, draftB);
+        return compareAdminProductRows(draftA, draftB, productSeriesConfig);
       });
     }
 
@@ -474,6 +524,7 @@ export default function AdminSectionEditor({
     leadStatusFilter,
     leadPriorityOnly,
     productCatalogFilter,
+    productSeriesConfig,
   ]);
 
   const load = useCallback(
@@ -539,6 +590,19 @@ export default function AdminSectionEditor({
 
       const res = await fetch(`/api/admin/${collection}`);
       const json = await res.json();
+      if (section === "products") {
+        try {
+          const seriesRes = await fetch("/api/admin/product-series-configs");
+          const seriesJson = (await seriesRes.json()) as {
+            ok?: boolean;
+            data?: { data?: CmsProductSeriesRow[] };
+          };
+          const cmsRows = seriesJson.ok ? seriesJson.data?.data : undefined;
+          setProductSeriesConfig(buildProductSeriesConfig(cmsRows));
+        } catch {
+          setProductSeriesConfig(DEFAULT_PRODUCT_SERIES_CONFIG);
+        }
+      }
       if (json.ok && json.data?.data) {
         const list = json.data.data as StrapiRow[];
         setRows(list);
@@ -625,6 +689,28 @@ export default function AdminSectionEditor({
       }
     }
 
+    if (collection === "products") {
+      const model = String(draft.model ?? "").trim();
+      payload.model = model;
+      payload.nameZh = String(draft.nameZh ?? model).trim() || model;
+      payload.nameEn = String(draft.nameEn ?? model).trim() || model;
+      const seriesPatch = resolveAdminSeriesSavePatch(productSeriesConfig, {
+        productLine: String(draft.productLine ?? "").trim(),
+        model,
+        seriesZh: String(draft.seriesZh ?? "").trim(),
+      });
+      if (seriesPatch) {
+        payload.productLine = seriesPatch.productLine;
+        payload.seriesZh = seriesPatch.seriesZh;
+        payload.seriesEn = seriesPatch.seriesEn;
+        payload.seriesGroup = seriesPatch.seriesGroup;
+        payload.category = seriesPatch.category;
+      }
+      const mergedSpecs = mergeProductSpecsForSave(draft as Record<string, unknown>);
+      payload.specsZh = mergedSpecs.specsZh;
+      payload.specsEn = mergedSpecs.specsEn;
+    }
+
     if (collection === "downloads") {
       const customSub = String(payload.subCategoryCustom ?? "").trim();
       const presetSub = String(
@@ -681,7 +767,15 @@ export default function AdminSectionEditor({
               ...payload,
               documentId: draft.documentId,
             })
-          : { ...draft, documentId: draft.documentId };
+          : collection === "products"
+            ? {
+                ...draft,
+                ...payload,
+                specsZh: String(payload.specsZh ?? ""),
+                specsEn: String(payload.specsEn ?? ""),
+                documentId: draft.documentId,
+              }
+            : { ...draft, documentId: draft.documentId };
       setDrafts((d) => setDraft(d, id, savedRow));
       setRows((prev) =>
         prev.map((r) =>
@@ -695,6 +789,9 @@ export default function AdminSectionEditor({
         next.delete(id);
         return next;
       });
+      if (collection === "products") {
+        await load(id);
+      }
     } else {
       setMessage({ type: "error", text: json.error || "保存失败" });
     }
@@ -756,24 +853,13 @@ export default function AdminSectionEditor({
     const defaults: Record<string, Record<string, unknown>> = {
       products: {
         model: "NEW-MODEL",
-        nameZh: "新产品",
-        nameEn: "New Product",
+        nameZh: "NEW-MODEL",
+        nameEn: "NEW-MODEL",
         descZh: "",
         descEn: "",
-        productLine: "la",
-        seriesGroup: "speaker",
-        category: "speaker",
+        ...getAdminSeriesPatch(productSeriesConfig, "engineering", "la", "NEW-MODEL"),
         market: "all",
         sortOrder: rows.length + 1,
-      },
-      "product-series-configs": {
-        slug: `series-${Date.now()}`,
-        seriesGroup: "speaker",
-        nameZh: "新系列",
-        nameEn: "New Series",
-        modelPrefix: "XX",
-        sortOrder: rows.length + 1,
-        visible: true,
       },
       cases: {
         legacyId: maxLegacyId + 1,
@@ -1128,10 +1214,10 @@ export default function AdminSectionEditor({
 
   function requestTranslateBilingualRow(id: string) {
     if (section !== "cases" && section !== "products") return;
-    const draft = drafts[id];
+    const draft = draftsRef.current[id];
     if (!draft) return;
 
-    if (section === "cases" && caseNeedsTranslateOverwriteConfirm(draft)) {
+    if (needsTranslateOverwriteConfirm(section, draft)) {
       setTranslateConfirmId(id);
       return;
     }
@@ -1141,26 +1227,12 @@ export default function AdminSectionEditor({
 
   async function executeTranslateBilingualRow(id: string) {
     if (section !== "cases" && section !== "products") return;
-    const draft = drafts[id];
+    // 始终读取当前 drafts 中的最新表单值，不读 CMS 旧快照
+    const draft = draftsRef.current[id];
     if (!draft) return;
 
     const payloadPairs =
-      section === "cases"
-        ? getCaseTranslatePairs(draft)
-        : (
-            [
-              { zhKey: "nameZh", enKey: "nameEn" },
-              { zhKey: "descZh", enKey: "descEn" },
-              { zhKey: "detailZh", enKey: "detailEn" },
-              { zhKey: "specsZh", enKey: "specsEn" },
-              { zhKey: "seriesZh", enKey: "seriesEn" },
-            ] as const
-          ).map((pair) => ({
-            zhKey: pair.zhKey,
-            enKey: pair.enKey,
-            zh: getText(draft, pair.zhKey),
-            en: getText(draft, pair.enKey),
-          }));
+      section === "cases" ? getCaseTranslatePairs(draft) : getProductTranslatePairs(draft);
     const hasAnySource = payloadPairs.some((pair) => pair.zh.trim() || pair.en.trim());
     if (!hasAnySource) {
       setMessage({ type: "error", text: "请先填写中文或英文内容，再执行中英互转。" });
@@ -1172,16 +1244,42 @@ export default function AdminSectionEditor({
     try {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ section, pairs: payloadPairs }),
       });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        setMessage({
+          type: "error",
+          text:
+            res.status === 401 || res.status === 403
+              ? "未授权或登录已失效，请重新登录后台后再试。"
+              : `翻译接口返回异常（HTTP ${res.status}），请确认线上已部署 /api/admin/translate。`,
+        });
+        return;
+      }
+
       const json = (await res.json()) as {
         ok?: boolean;
         error?: string;
         data?: Record<string, string>;
       };
+
+      if (res.status === 401 || res.status === 403) {
+        setMessage({
+          type: "error",
+          text: json.error || "未授权，请先登录管理后台后再试。",
+        });
+        return;
+      }
+
       if (!json.ok || !json.data) {
-        setMessage({ type: "error", text: json.error || "翻译失败，请稍后重试。" });
+        setMessage({
+          type: "error",
+          text: json.error || "翻译失败，请稍后重试。",
+        });
         return;
       }
 
@@ -1195,7 +1293,12 @@ export default function AdminSectionEditor({
       setMessage({ type: "ok", text: "中英内容已互转并填充，记得保存并发布。" });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "翻译失败";
-      setMessage({ type: "error", text: msg });
+      setMessage({
+        type: "error",
+        text: /JSON|Unexpected token|Failed to fetch/i.test(msg)
+          ? `翻译请求失败：${msg}。请检查是否已登录，以及生产环境 DEEPSEEK_API_KEY 是否已配置。`
+          : msg,
+      });
     } finally {
       setTranslatingId(null);
     }
@@ -1331,16 +1434,6 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
-      {section === "series" ? (
-        <AdminBanner variant="warn">
-          <p>
-            导航栏与产品中心由各产品的 <code className="text-amber-100">productLine</code>{" "}
-            控制（工程系列 / 流动演出）。本页「在导航显示」「推荐产品 ID」等字段
-            <strong className="text-amber-100">暂不影响前台</strong>，仅作 CMS 数据保留。
-          </p>
-        </AdminBanner>
-      ) : null}
-
       {section === "products" && duplicateProductSortOrders.length > 0 ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200 space-y-1">
           <p>检测到产品排序号重复，请先修复，否则排序交换可能失败：</p>
@@ -1355,10 +1448,10 @@ export default function AdminSectionEditor({
       {section === "products" && productCatalogTabCounts ? (
         <div className="space-y-2">
           <p className="text-[11px] text-gray-500">
-            筛选与前台一致：工程系列 / 流动演出由 productLine 决定；下方为工程子系列。
+            筛选与前台一致：工程系列 / 流动演出由产品系列配置决定；下方为工程子系列 Tab。
           </p>
           <div className="flex flex-wrap gap-2">
-            {ADMIN_PRODUCT_CATALOG_TABS.map((tab) => {
+            {adminProductCatalogTabs.map((tab) => {
               const active = productCatalogFilter === tab.id;
               const count = productCatalogTabCounts[tab.id];
               return (
@@ -1783,8 +1876,8 @@ export default function AdminSectionEditor({
               const id = docId(row);
               const draft = drafts[id] ?? row;
               const isOpen = openId === id;
-              const title = rowTitle(draft);
-              const subtitle = rowSubtitle(section, draft);
+              const title = section === "products" ? productRowTitle(draft) : rowTitle(draft);
+              const subtitle = rowSubtitle(section, draft, productSeriesConfig);
               const isDirty = dirtyIds.has(id);
               const savedSortOrder = Number(row.sortOrder);
               const productSortLabel =
@@ -1828,7 +1921,7 @@ export default function AdminSectionEditor({
                         <span className="font-medium truncate">{title}</span>
                         {section === "products" ? (
                           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
-                            {getAdminProductMajorCategory(draft).label}
+                            {getAdminProductMajorCategory(draft, productSeriesConfig).label}
                           </span>
                         ) : null}
                         {productSortLabel ? (
@@ -1940,10 +2033,7 @@ export default function AdminSectionEditor({
                       {renderFields(section, draft, (patch) => {
                         setDrafts((d) => setDraft(d, id, patch));
                         setDirtyIds((prev) => new Set(prev).add(id));
-                      }, {
-                        onPersistSpecs: (patch) => saveRow(id, patch),
-                        specsPersisting: savingId === id,
-                      })}
+                      }, productSeriesConfig)}
                       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 pt-2 pb-1 bg-zinc-950/90 backdrop-blur-sm border-t border-white/5 -mx-5 px-5">
                         {section === "cases" || section === "products" ? (
                           <button
@@ -2049,7 +2139,8 @@ export default function AdminSectionEditor({
             已有英文内容，是否覆盖？
           </h3>
           <p className="mt-2 text-sm text-gray-400 leading-relaxed">
-            确认后将用翻译结果覆盖当前英文标题与项目概述，未保存前仍可手动修改。
+            确认后将用翻译结果覆盖当前英文字段；取消则保留原英文。未保存前仍可手动修改，保存并发布后才会写入
+            CMS。
           </p>
           <div className="mt-6 flex flex-wrap justify-end gap-3">
             <button
@@ -2082,10 +2173,7 @@ function renderFields(
   section: string,
   draft: StrapiRow,
   onChange: (patch: Partial<StrapiRow>) => void,
-  options?: {
-    onPersistSpecs?: (patch: { specsZh: string; specsEn: string }) => void | Promise<void>;
-    specsPersisting?: boolean;
-  }
+  productSeriesConfig: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ) {
   const fields: React.ReactNode[] = [];
 
@@ -2108,18 +2196,13 @@ function renderFields(
   );
 
   if (section === "products") {
-    const catalogCategory = getAdminCatalogCategory(draft);
-    const isTouringCatalog = catalogCategory === "touring";
-    const engineeringSeriesOptions = getAdminEngineeringSeriesSelectOptions();
-    const seriesGroupRaw = getText(draft, "seriesGroup");
+    const seriesSelection = resolveAdminSeriesSelection(draft, productSeriesConfig);
+    const seriesOptions = getAdminProductSeriesSelectOptions();
+    const seriesSelectValue = getAdminSeriesSelectValue(draft, productSeriesConfig);
+    const seriesBadgeZh = getText(draft, "seriesZh");
+    const seriesBadgeEn = getText(draft, "seriesEn");
     const productLineRaw = getText(draft, "productLine");
-    const seriesZhRaw = getText(draft, "seriesZh");
-    const seriesEnRaw = getText(draft, "seriesEn");
-    const sortOrderNum = Number(draft.sortOrder);
-    const detailPath =
-      Number.isInteger(sortOrderNum) && sortOrderNum > 0
-        ? `/products/${sortOrderNum}`
-        : null;
+    const seriesInStandardList = seriesOptions.some((o) => o.value === productLineRaw);
 
     const sectionCard = (title: string, children: React.ReactNode) => (
       <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
@@ -2131,164 +2214,45 @@ function renderFields(
     return (
       <div className="grid sm:grid-cols-2 gap-4">
         {sectionCard(
-          "一、基础信息",
+          "基础信息",
           <>
-            <div className="sm:col-span-2 rounded-xl border border-white/10 bg-black/20 p-3 space-y-2">
-              <p className="text-xs font-medium text-gray-300">分类预览（保存后同步前台）</p>
-              <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-400">
-                <p>
-                  前台大类：
-                  <span className="ml-1 text-white">
-                    {ADMIN_CATALOG_CATEGORY_LABELS[catalogCategory]}
-                  </span>
+            <Field key="model" label="产品型号">
+              <input
+                className={inputClass}
+                value={getText(draft, "model")}
+                onChange={(e) => onChange({ model: e.target.value })}
+              />
+              <FieldHint>前台列表、详情与导航标题均显示此型号。</FieldHint>
+            </Field>
+            {textField("nameZh", "产品名称（中文）")}
+            {textField("nameEn", "产品名称（英文）")}
+            <p className="sm:col-span-2 text-[11px] text-white/40 -mt-2">
+              名称为 CMS 存档字段（唯一编辑入口）；保存时若为空则自动沿用型号。
+            </p>
+            <div className="sm:col-span-2">
+              <SelectField
+                key="productSeries"
+                label="产品系列"
+                value={seriesSelectValue}
+                options={seriesOptions}
+                onChange={(v) => onChange(getAdminProductSeriesPatch(v))}
+              />
+              <FieldHint>
+                唯一系列编辑入口：选择后自动写入 productLine / seriesZh / seriesEn（不可手填）
+                {seriesBadgeZh || seriesBadgeEn
+                  ? `；当前：${[seriesBadgeZh, seriesBadgeEn].filter(Boolean).join(" / ")}`
+                  : ""}
+                。
+              </FieldHint>
+              {!seriesInStandardList || seriesSelection.category === "other" ? (
+                <p className="mt-2 text-[11px] text-amber-200/80 leading-relaxed">
+                  当前 productLine（{productLineRaw || "空"}）不在标准七项内。请重新选择「产品系列」后保存并发布。
                 </p>
-                <p>
-                  seriesGroup：
-                  <span className="ml-1 font-mono text-white/80">
-                    {seriesGroupRaw || "未设置"}
-                  </span>
-                  {seriesGroupRaw ? (
-                    <span className="ml-1 text-white/45">
-                      （{getAdminSeriesGroupLabel(seriesGroupRaw)}）
-                    </span>
-                  ) : null}
-                </p>
-                <p>
-                  productLine：
-                  <span className="ml-1 font-mono text-white/80">
-                    {productLineRaw || "未设置"}
-                  </span>
-                  {productLineRaw ? (
-                    <span className="ml-1 text-white/45">
-                      （{getAdminProductLineLabel(productLineRaw)}）
-                    </span>
-                  ) : null}
-                </p>
-                <p>
-                  系列中文名：
-                  <span className="ml-1 text-white/80">{seriesZhRaw || "未设置"}</span>
-                </p>
-                <p>
-                  系列英文名：
-                  <span className="ml-1 text-white/80">{seriesEnRaw || "未设置"}</span>
-                </p>
-                <p>
-                  sortOrder：
-                  <span className="ml-1 font-mono text-white/80">
-                    {draft.sortOrder != null ? String(draft.sortOrder) : "未设置"}
-                  </span>
-                </p>
-                <p className="sm:col-span-2">
-                  详情页链接：
-                  {detailPath ? (
-                    <a
-                      href={detailPath}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="ml-1 font-mono text-brand-gold hover:underline"
-                    >
-                      {detailPath}
-                    </a>
-                  ) : (
-                    <span className="ml-1 text-white/45">未设置</span>
-                  )}
-                </p>
-              </div>
-              <p className="text-[11px] text-white/40 leading-relaxed">
-                请在下方选择「前台大类」与「产品系列」。保存后写入 productLine，并同步到导航栏与产品中心。
-                流动演出固定 productLine = tour；工程系列请选择 LA / MI / DO 等具体系列。
-              </p>
+              ) : null}
             </div>
             <SelectField
-              key="catalogCategory"
-              label="前台大类"
-              value={catalogCategory === "touring" ? "touring" : "engineering"}
-              onChange={(v) => {
-                const next = v as AdminCatalogCategory;
-                if (next === "other") return;
-                onChange(getAdminCatalogCategoryPatch(next, draft));
-              }}
-              options={[
-                { value: "engineering", label: ADMIN_CATALOG_CATEGORY_LABELS.engineering },
-                { value: "touring", label: ADMIN_CATALOG_CATEGORY_LABELS.touring },
-              ]}
-            />
-            {isTouringCatalog ? (
-              <ReadOnlyField
-                key="productLineTour"
-                label="产品系列（productLine）"
-                value="流动演出（tour）"
-                hint="流动演出产品固定为 tour，请在系列中英文名填写具体型号展示名。"
-              />
-            ) : (
-              <SelectField
-                key="engineeringSeries"
-                label="产品系列（productLine）"
-                value={
-                  engineeringSeriesOptions.some((o) => o.value === productLineRaw)
-                    ? productLineRaw
-                    : "la"
-                }
-                onChange={(v) => onChange({ productLine: v })}
-                options={engineeringSeriesOptions}
-              />
-            )}
-            {catalogCategory === "other" ? (
-              <p className="sm:col-span-2 text-[11px] text-amber-200/80 leading-relaxed">
-                当前 productLine 未归入工程 / 流动演出标准值。请选择「前台大类」与「产品系列」后保存并发布。
-              </p>
-            ) : null}
-            {textField("model", "型号")}
-            {textField("nameZh", "名称（中文）")}
-            {textField("nameEn", "名称（英文）")}
-            {textField("seriesZh", "系列中文名")}
-            {textField("seriesEn", "系列英文名")}
-            <Field key="sortOrder" label="排序号 / 详情页 ID（sortOrder）">
-              <p className="text-sm text-white font-mono">
-                #{String(draft.sortOrder ?? "—")}
-                {detailPath ? (
-                  <span className="ml-2 text-xs text-white/45 font-sans">{detailPath}</span>
-                ) : null}
-              </p>
-              <p className="text-xs text-white/45 mt-1.5">
-                请用卡片右侧「上移 / 下移 / 应用」立即保存并自动交换；勿依赖「保存并发布」改排序号。
-              </p>
-            </Field>
-          </>
-        )}
-
-        {sectionCard(
-          "二、内部字段（前台不展示）",
-          <>
-            <p className="sm:col-span-2 text-[11px] text-gray-500 leading-relaxed">
-              以下字段保留在 CMS 中供数据统计或日后扩展；当前产品中心与导航栏不读取这些值。
-            </p>
-            <SelectField
-              key="seriesGroup"
-              label="大类 / 分组（seriesGroup）"
-              value={getText(draft, "seriesGroup") || "speaker"}
-              onChange={(v) => onChange({ seriesGroup: v })}
-              options={[
-                { value: "speaker", label: "音箱（speaker）" },
-                { value: "dsp", label: "处理器（dsp）" },
-                { value: "software", label: "软件（software）" },
-                { value: "engineering", label: "工程（engineering）" },
-              ]}
-            />
-            <SelectField
-              key="category"
-              label="数据分类（category）"
-              value={getText(draft, "category") || "speaker"}
-              onChange={(v) => onChange({ category: v })}
-              options={[
-                { value: "speaker", label: "音箱" },
-                { value: "dsp", label: "处理器" },
-                { value: "software", label: "软件" },
-              ]}
-            />
-            <SelectField
               key="market"
-              label="市场标签（market）"
+              label="市场标签"
               value={getText(draft, "market") || "all"}
               onChange={(v) => onChange({ market: v })}
               options={[
@@ -2297,33 +2261,47 @@ function renderFields(
                 { value: "global", label: "仅海外站" },
               ]}
             />
+            <p className="sm:col-span-2 text-[11px] text-white/40 leading-relaxed">
+              所有内容变更请统一点击底部「保存并发布」。列表右侧「应用」仅用于调整排序号。
+            </p>
           </>
         )}
 
         {sectionCard(
-          "三、产品介绍",
+          "产品介绍",
           <>
             {textField("descZh", "简介（中文）", true)}
             {textField("descEn", "简介（英文）", true)}
             {textField("detailZh", "详情 / 适用范围（中文）", true)}
             {textField("detailEn", "详情 / 适用范围（英文）", true)}
             <p className="sm:col-span-2 text-[11px] text-gray-500">
-              适用范围暂无独立字段，请在「详情」中维护；简介用于列表与卡片摘要。
+              简介用于列表与卡片摘要；详情用于产品页正文。
             </p>
           </>
         )}
 
         <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
-          <h4 className="text-sm font-medium text-gray-200">四、技术规格</h4>
-          <ProductSpecsEditor
-            specsZh={getText(draft, "specsZh")}
-            specsEn={getText(draft, "specsEn")}
-            onChange={(patch) => onChange(patch)}
-            onPersist={options?.onPersistSpecs}
-            persisting={options?.specsPersisting}
-          />
+          <h4 className="text-sm font-medium text-gray-200">技术规格</h4>
+          {(() => {
+            const resolvedSpecs = resolveAdminProductSpecs({
+              specsZh: getText(draft, "specsZh"),
+              specsEn: getText(draft, "specsEn"),
+              model: getText(draft, "model"),
+              productLine: getText(draft, "productLine"),
+            });
+            return (
+              <ProductSpecsEditor
+                specsZh={resolvedSpecs.specsZh}
+                specsEn={resolvedSpecs.specsEn}
+                source={resolvedSpecs.source}
+                onChange={(patch) => onChange(patch)}
+              />
+            );
+          })()}
           <PdfSpecImportField
             modelHint={getText(draft, "model")}
+            currentSpecsZh={getText(draft, "specsZh")}
+            currentSpecsEn={getText(draft, "specsEn")}
             onExtract={(data) =>
               onChange({
                 specsZh: data.specsZh,
@@ -2336,7 +2314,7 @@ function renderFields(
         </div>
 
         {sectionCard(
-          "五、产品图片",
+          "产品图片",
           <>
             <ImageUploadField
               key="image"
@@ -2743,54 +2721,6 @@ function renderFields(
         currentUrl={mediaUrl(draft.image as StrapiMedia)}
         onUploaded={(mediaId, url) => onChange({ image: { id: mediaId, url } })}
         onRemoved={() => onChange({ image: null })}
-      />
-    );
-  }
-
-  if (section === "series") {
-    fields.push(textField("slug", "Slug（唯一标识，勿随意修改）"));
-    fields.push(
-      <Field key="seriesGroup" label="所属大类">
-        <select
-          className={inputClass}
-          value={getText(draft, "seriesGroup") || "speaker"}
-          onChange={(e) => onChange({ seriesGroup: e.target.value })}
-        >
-          {["speaker", "dsp", "software", "engineering"].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </Field>
-    );
-    fields.push(textField("nameZh", "名称（中文）"));
-    fields.push(textField("nameEn", "名称（英文）"));
-    fields.push(textField("modelPrefix", "型号前缀"));
-    fields.push(
-      <Field key="sortOrder" label="排序">
-        <input
-          type="number"
-          className={inputClass}
-          value={String(draft.sortOrder ?? "")}
-          onChange={(e) => onChange({ sortOrder: Number(e.target.value) || 0 })}
-        />
-      </Field>
-    );
-    fields.push(
-      <ReadOnlyField
-        key="visibleLegacy"
-        label="在导航显示（遗留，暂不影响前台）"
-        value={draft.visible === false ? "隐藏" : "显示"}
-        hint="前台导航由产品 productLine 决定，此开关暂不生效。"
-      />
-    );
-    fields.push(
-      <ReadOnlyField
-        key="featuredProductIdLegacy"
-        label="推荐产品 ID（遗留，暂不影响前台）"
-        value={draft.featuredProductId != null ? String(draft.featuredProductId) : "未设置"}
-        hint="首页核心产品配置亦未启用；此字段暂不生效。"
       />
     );
   }

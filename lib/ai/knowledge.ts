@@ -106,12 +106,14 @@ function formatPageDetail(
     if (!p) return "";
     const lines = [
       locale === "zh" ? "【当前页面产品（优先依据）】" : "【Current product page】",
+      `- 名称: ${p.name?.[locale] || p.name?.zh || p.model}`,
       `- 型号: ${p.model}`,
-      `- 名称: ${p.name[locale]}`,
       `- 简介: ${p.desc[locale]}`,
     ];
     if (p.detail?.[locale]) lines.push(`- 详情: ${p.detail[locale].slice(0, 300)}`);
-    if (p.series) lines.push(`- 系列: ${p.series[locale]}`);
+    if (p.series?.[locale] || p.series?.zh) {
+      lines.push(`- 系列: ${p.series?.[locale] || p.series?.zh}`);
+    }
     return lines.join("\n");
   }
   if (pageContext.type === "case") {
@@ -131,7 +133,16 @@ function rankProducts(products: Product[], terms: string[], locale: "zh" | "en")
     .map((p) => ({
       p,
       score: scoreText(
-        [p.model, p.name.zh, p.name.en, p.desc.zh, p.desc.en, p.series?.zh, p.series?.en, p.productLine]
+        [
+          p.name?.zh,
+          p.name?.en,
+          p.model,
+          p.desc.zh,
+          p.desc.en,
+          p.series?.zh,
+          p.series?.en,
+          p.productLine,
+        ]
           .filter(Boolean)
           .join(" "),
         terms
@@ -180,7 +191,7 @@ function formatContext(
     lines.push("【相关产品】");
     products.forEach((p) => {
       lines.push(
-        `- ${p.model} | ${p.name[locale]} | ${p.desc[locale].slice(0, 80)} | /products/${p.id}`
+        `- ${p.name?.[locale] || p.name?.zh || p.model} | ${p.desc[locale].slice(0, 80)} | /products/${p.id}`
       );
     });
   }

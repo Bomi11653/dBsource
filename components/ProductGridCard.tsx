@@ -3,7 +3,7 @@
 import type { Product } from "@/data/mock";
 import type { Locale } from "@/lib/i18n";
 import SafeImage, { SafeImageAspect } from "@/components/SafeImage";
-import { getProductDisplayTitle } from "@/lib/product-display";
+import { getProductDisplayTitle, getProductSeriesLabel } from "@/lib/product-display";
 import { Package } from "lucide-react";
 import Link from "next/link";
 
@@ -16,7 +16,8 @@ export default function ProductGridCard({
   locale: Locale;
   index?: number;
 }) {
-  const { primary, subtitle, label } = getProductDisplayTitle(product, locale);
+  const { primary, label } = getProductDisplayTitle(product, locale);
+  const seriesLabel = getProductSeriesLabel(product, locale);
 
   return (
     <Link
@@ -43,20 +44,17 @@ export default function ProductGridCard({
             <Package className="h-10 w-10 text-white/20" />
           </div>
         )}
-        {product.series && (
+        {seriesLabel ? (
           <span className="absolute top-2 left-2 z-10 text-[10px] uppercase tracking-wider px-2 py-0.5 bg-black/70 border border-white/10 text-brand-gold">
-            {product.series[locale]}
+            {seriesLabel}
           </span>
-        )}
+        ) : null}
       </div>
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
         <div>
           <h2 className="type-card-title text-sm leading-snug line-clamp-2 break-words group-hover:text-white transition-colors">
             {primary}
           </h2>
-          {subtitle ? (
-            <p className="text-brand-gold text-xs type-label mt-1 line-clamp-1">{subtitle}</p>
-          ) : null}
         </div>
         <p className="text-gray-500 text-xs mt-3 line-clamp-2 leading-relaxed">
           {product.desc[locale]}

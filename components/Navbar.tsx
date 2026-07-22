@@ -30,7 +30,7 @@ import type { DownloadTab } from "@/lib/downloads";
 export default function Navbar() {
   const { locale, t } = useI18n();
   const { resolvedMode } = usePerformanceMode();
-  const { products, downloads, cases } = useSiteData();
+  const { products, downloads, cases, productSeriesConfig } = useSiteData();
   const pathname = usePathname();
   const { navigateWithTransition } = usePageTransition();
   const [megaOpen, setMegaOpen] = useState<NavMegaMenuKey | null>(null);
@@ -52,8 +52,9 @@ export default function Navbar() {
         products,
         cases,
         downloads,
+        productSeriesConfig,
       }),
-    [locale, catalogLabels, products, cases, downloads]
+    [locale, catalogLabels, products, cases, downloads, productSeriesConfig]
   );
 
   const megaItems = useMemo(

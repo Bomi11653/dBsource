@@ -15,9 +15,22 @@ import { aboutImages, type AboutImages } from "@/data/about";
 import { fallbackSalesContacts } from "@/data/sales-contacts";
 import { applyCaseImages, sortCases } from "@/lib/cases";
 import { shouldUseMockData } from "@/lib/cms-data-source";
-import { withLastKnownGood } from "@/lib/cms-lkg-cache";
-import { fetchStrapiCollection, fetchStrapiSingle, getCmsUrl } from "@/lib/strapi-client";
+import { withLastKnownGood, writeLkgCache } from "@/lib/cms-lkg-cache";
+import {
+  buildProductSeriesConfig,
+  DEFAULT_PRODUCT_SERIES_CONFIG,
+  type CmsProductSeriesRow,
+  type ProductSeriesConfig,
+} from "@/lib/product-series-config";
+import {
+  CMS_FETCH_TAGS,
+  FRONTEND_REVALIDATE_SECONDS,
+  fetchStrapiCollection,
+  fetchStrapiSingle,
+  getCmsUrl,
+} from "@/lib/strapi-client";
 import { cache } from "react";
+import type { Product } from "@/data/mock";
 import {
   mapStrapiAboutSections,
   mapStrapiCase,
@@ -116,35 +129,71 @@ const ABOUT_QUERY =
 const GLOBAL_SETTING_QUERY =
   "/global-setting?populate[logo]=true&populate[homeFeaturedCaseImage]=true";
 const SMART_SELECTION_PAGE_QUERY = "/smart-selection-page";
+const PRODUCT_SERIES_CONFIG_QUERY =
+  "/product-series-configs?sort[0]=sortOrder:asc&pagination[pageSize]=100&filters[visible][$eq]=true";
+
+export const getProductSeriesConfig = cache(async function getProductSeriesConfig(): Promise<ProductSeriesConfig> {
+  if (isMockMode()) return DEFAULT_PRODUCT_SERIES_CONFIG;
+
+  try {
+    const docs = await fetchStrapiCollection<CmsProductSeriesRow>(
+      PRODUCT_SERIES_CONFIG_QUERY,
+      FRONTEND_REVALIDATE_SECONDS,
+      [CMS_FETCH_TAGS.productSeries]
+    );
+    return buildProductSeriesConfig(docs);
+  } catch (e) {
+    console.error("[fetchCMS] product-series-config 读取失败，使用默认配置:", e);
+    return DEFAULT_PRODUCT_SERIES_CONFIG;
+  }
+});
+
 const SOCIAL_LINKS_QUERY =
   "/social-links?populate[qrImage]=true&sort[0]=sortOrder:asc";
+
+async function fetchProductsMapped(
+  revalidate: number | false
+): Promise<Product[]> {
+  const cmsUrl = getCmsUrl();
+  const fetchMapped = async (query: string) => {
+    const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(
+      query,
+      revalidate,
+      [CMS_FETCH_TAGS.products]
+    );
+    if (!docs.length) return null;
+    return docs.map((doc, index) => mapStrapiProduct(doc, cmsUrl, index));
+  };
+
+  const withMarket = await fetchMapped(withMarketFilter(PRODUCTS_QUERY));
+  if (withMarket?.length) return withMarket;
+
+  const withoutMarket = await fetchMapped(PRODUCTS_QUERY);
+  if (withoutMarket?.length) return withoutMarket;
+
+  logStrapiEmpty("products");
+  return [];
+}
 
 export const getProducts = cache(async function getProducts() {
   if (isMockMode()) return filterByMarket(products);
 
-  const cmsUrl = getCmsUrl();
   return withLastKnownGood(
     "products",
     strapiUrl(PRODUCTS_QUERY),
-    async () => {
-      const fetchMapped = async (query: string) => {
-        const docs = await fetchStrapiCollection<Parameters<typeof mapStrapiProduct>[0]>(query);
-        if (!docs.length) return null;
-        return docs.map((doc, index) => mapStrapiProduct(doc, cmsUrl, index));
-      };
-
-      const withMarket = await fetchMapped(withMarketFilter(PRODUCTS_QUERY));
-      if (withMarket?.length) return withMarket;
-
-      const withoutMarket = await fetchMapped(PRODUCTS_QUERY);
-      if (withoutMarket?.length) return withoutMarket;
-
-      logStrapiEmpty("products");
-      return [];
-    },
+    () => fetchProductsMapped(FRONTEND_REVALIDATE_SECONDS),
     []
   );
 });
+
+/** 后台保存后强制拉新并写入 LKG（绕过 Next fetch Data Cache） */
+export async function refreshProductsLkgFromStrapi(): Promise<Product[]> {
+  if (isMockMode()) return filterByMarket(products);
+
+  const list = await fetchProductsMapped(false);
+  writeLkgCache("products", list, strapiUrl(PRODUCTS_QUERY));
+  return list;
+}
 
 export async function getProductById(id: number) {
   const list = await getProducts();

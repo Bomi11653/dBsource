@@ -23,7 +23,6 @@ type Props = {
 
 const TYPE_LABELS: Record<string, string> = {
   products: "产品",
-  productSeries: "产品系列",
   cases: "案例",
   downloads: "下载",
   about: "关于",

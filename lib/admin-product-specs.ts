@@ -179,6 +179,62 @@ function parseLine(line: string): { label: string; value: string } | null {
   return null;
 }
 
+/** 按行顺序解析后台表格保存的 label:value 格式，不做字段重排 */
+function parseLabeledLinesInOrder(text: string): { label: string; value: string }[] {
+  if (!text.trim()) return [];
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => parseLine(line))
+    .filter((parsed): parsed is { label: string; value: string } => parsed !== null);
+}
+
+/** 是否为后台表格序列化格式（多行 label:value，顺序即展示顺序） */
+export function isTableSerializedSpecs(specsZh: string, specsEn: string): boolean {
+  const zh = specsZh.trim();
+  const en = specsEn.trim();
+  if (!zh.includes("\n") && !en.includes("\n")) return false;
+  const zhLines = parseLabeledLinesInOrder(zh);
+  const enLines = parseLabeledLinesInOrder(en);
+  return zhLines.length + enLines.length >= 2;
+}
+
+/** 严格按 specsZh/specsEn 行顺序解析，不重排、不按字段名排序 */
+export function parseTableSerializedSpecs(
+  specsZh: string,
+  specsEn: string
+): SpecTableRow[] | null {
+  if (!isTableSerializedSpecs(specsZh, specsEn)) return null;
+
+  const zhLines = parseLabeledLinesInOrder(specsZh);
+  const enLines = parseLabeledLinesInOrder(specsEn);
+  const count = Math.max(zhLines.length, enLines.length);
+  if (!count) return null;
+
+  const rows: SpecTableRow[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const zh = zhLines[i];
+    const en = enLines[i];
+    const labelZh = zh?.label ?? "";
+    const labelEn = en?.label ?? "";
+    const valueZh = zh?.value ?? "";
+    const valueEn = en?.value ?? "";
+    if (!labelZh && !valueZh && !labelEn && !valueEn) continue;
+
+    rows.push({
+      id: `table-row-${i}-${normalizeLabel(`${labelZh}-${labelEn}-${valueZh}-${valueEn}`) || i}`,
+      labelZh,
+      labelEn,
+      valueZh,
+      valueEn,
+      isFixed: false,
+    });
+  }
+
+  return rows.length ? rows : null;
+}
+
 /** 按换行或 | 拆分为值片段（紧凑摘要或多行无标签格式） */
 function splitIntoSegments(text: string): string[] {
   const trimmed = text.trim();
@@ -442,6 +498,16 @@ function buildOrderedRows(
 }
 
 export function parseProductSpecs(specsZh: string, specsEn: string): ParsedProductSpecs {
+  const tableRows = parseTableSerializedSpecs(specsZh, specsEn);
+  if (tableRows?.length) {
+    return {
+      rows: tableRows,
+      unparsedZh: "",
+      unparsedEn: "",
+      parseable: true,
+    };
+  }
+
   const zhText = specsZh.trim();
   const enText = specsEn.trim();
 
@@ -543,4 +609,30 @@ export function hasProductSpecRows(specsZh: string, specsEn: string): boolean {
       row.labelEn.trim() ||
       row.valueEn.trim()
   );
+}
+
+/**
+ * 将任意识别/导入的 specs 文本规范为后台表格保存格式（多行「标签: 值」）。
+ * - 不补齐固定 15 行空模板
+ * - 保留解析后的行顺序
+ */
+export function normalizeExtractedSpecsToTableFormat(
+  specsZh: string,
+  specsEn: string
+): { specsZh: string; specsEn: string; rowCount: number; rows: SpecTableRow[] } {
+  const parsed = parseProductSpecs(specsZh, specsEn);
+  const rows = parsed.rows.filter(
+    (row) =>
+      row.labelZh.trim() ||
+      row.valueZh.trim() ||
+      row.labelEn.trim() ||
+      row.valueEn.trim()
+  );
+  const serialized = serializeProductSpecs(rows);
+  return {
+    specsZh: serialized.specsZh,
+    specsEn: serialized.specsEn,
+    rowCount: rows.length,
+    rows,
+  };
 }

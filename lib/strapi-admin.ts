@@ -103,7 +103,6 @@ export function sectionToCollection(section: string): AdminCollection | "contact
     qr: "qr-codes",
     contact: "contact-info",
     leads: "leads",
-    series: "product-series-configs",
   };
   return map[section] ?? null;
 }

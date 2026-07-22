@@ -1,0 +1,30 @@
+﻿{
+    "la":  {
+               "cms_line":  "la",
+               "cms_seriesZh":  "LA??",
+               "cms_seriesEn":  "LA Series",
+               "list_has_LA206":  true,
+               "list_has_LASeries":  true
+           },
+    "putMi":  {
+                  "saved":  true,
+                  "reval":  true,
+                  "cache":  true
+              },
+    "putLa":  {
+                  "saved":  true
+              },
+    "mi":  {
+               "cms_line":  "mi",
+               "cms_seriesZh":  "MI??",
+               "cms_seriesEn":  "MI Series",
+               "admin_line":  "mi",
+               "admin_seriesZh":  "MI??",
+               "admin_seriesEn":  "MI Series",
+               "list_has_LA206":  true,
+               "list_has_MISeries":  true,
+               "detail_has_MISeries":  false,
+               "list_has_name":  true,
+               "detail_has_name":  true
+           }
+}

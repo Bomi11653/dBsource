@@ -6,8 +6,13 @@ import {
 } from "@/data/search-aliases";
 import { expandSearchQuery, extractModelCodes } from "@/lib/ai/synonyms";
 import { caseOverviewMatchesModelCodes } from "@/lib/case-project-overview";
+import {
+  DEFAULT_PRODUCT_SERIES_CONFIG,
+  getTouringSeriesOptions,
+  getUnifiedEngineeringSeriesEntries,
+} from "@/lib/product-series-config";
 import { getProductSeriesHref } from "@/lib/product-series-tabs";
-import { PRODUCT_SUB_SERIES } from "@/lib/products";
+import { getProductDisplayName, getProductSeriesLabel } from "@/lib/product-display";
 
 export type SmartSearchHit = {
   type: "product" | "case" | "download" | "scene";
@@ -90,9 +95,13 @@ function scoreProduct(
     score = Math.max(score, SEARCH_SCORE.modelContains);
   }
 
-  const name = p.name[locale].toLowerCase();
-  const nameEn = p.name.en.toLowerCase();
-  if (terms.some((t) => name.includes(t) || nameEn.includes(t)) || name.includes(qLower)) {
+  const nameZh = (p.name?.zh || "").toLowerCase();
+  const nameEn = (p.name?.en || "").toLowerCase();
+  if (
+    terms.some((t) => nameZh.includes(t) || nameEn.includes(t)) ||
+    nameZh.includes(qLower) ||
+    nameEn.includes(qLower)
+  ) {
     score = Math.max(score, SEARCH_SCORE.name);
   }
 
@@ -104,30 +113,6 @@ function scoreProduct(
     seriesEn.includes(qLower)
   ) {
     score = Math.max(score, SEARCH_SCORE.series);
-  }
-
-  for (const sub of PRODUCT_SUB_SERIES) {
-    const prefix = sub.modelPrefix.toUpperCase();
-    const slug = sub.slug.toLowerCase();
-    const labelZh = sub.label.zh.toLowerCase();
-    const labelEn = sub.label.en.toLowerCase();
-    const aliasHit =
-      terms.some(
-        (t) =>
-          t === slug ||
-          t === prefix.toLowerCase() ||
-          labelZh.includes(t) ||
-          labelEn.includes(t)
-      ) ||
-      qLower === slug ||
-      qUpper === prefix;
-
-    if (aliasHit && model.startsWith(prefix)) {
-      score = Math.max(score, SEARCH_SCORE.alias);
-      if (qUpper === prefix || qLower === slug) {
-        score = Math.max(score, SEARCH_SCORE.modelPrefix);
-      }
-    }
   }
 
   if (terms.some((t) => p.productLine === t) || p.productLine === qLower) {
@@ -197,23 +182,12 @@ function scoreDownload(
   return shortMode ? SEARCH_SCORE.series : SEARCH_SCORE.name;
 }
 
-function buildProductHit(p: Product, locale: Locale, rawQuery: string): SmartSearchHit {
-  const name = p.name[locale];
-  const qUpper = rawQuery.trim().toUpperCase();
-  const modelHit =
-    p.model.toUpperCase() === qUpper ||
-    p.model.toUpperCase().startsWith(qUpper) ||
-    extractModelCodes(rawQuery).some((c) => p.model.toUpperCase() === c);
-
+function buildProductHit(p: Product, locale: Locale, _rawQuery: string): SmartSearchHit {
   return {
     type: "product",
     id: p.id,
-    title: modelHit
-      ? p.model
-      : name.trim().toLowerCase() === p.model.trim().toLowerCase()
-        ? p.model
-        : `${p.model} · ${name}`,
-    subtitle: p.series?.[locale],
+    title: getProductDisplayName(p, locale),
+    subtitle: getProductSeriesLabel(p, locale) || undefined,
     href: `/products/${p.id}`,
   };
 }
@@ -240,22 +214,37 @@ function collectSceneHits(rawQuery: string, terms: string[], locale: Locale): Sc
     });
   }
 
-  for (const sub of PRODUCT_SUB_SERIES) {
-    const slug = sub.slug.toLowerCase();
-    const prefix = sub.modelPrefix.toLowerCase();
+  const seriesOptions = [
+    ...getUnifiedEngineeringSeriesEntries().map((entry) => ({
+      key: entry.key,
+      productLine: entry.productLine,
+      labelZh: entry.labelZh,
+      labelEn: entry.labelEn,
+    })),
+    ...getTouringSeriesOptions(DEFAULT_PRODUCT_SERIES_CONFIG),
+  ];
+  for (const series of seriesOptions) {
+    const slug = series.key.toLowerCase();
+    const line = series.productLine.toLowerCase();
+    const labelZh = series.labelZh.toLowerCase();
+    const labelEn = series.labelEn.toLowerCase();
     const matched =
-      terms.some((t) => t === slug || t === prefix) ||
+      terms.some(
+        (t) => t === slug || t === line || labelZh.includes(t) || labelEn.includes(t)
+      ) ||
       rawQuery.trim().toLowerCase() === slug ||
-      rawQuery.trim().toUpperCase() === sub.modelPrefix.toUpperCase();
+      rawQuery.trim().toLowerCase() === line;
 
-    if (!matched || seen.has(sub.slug)) continue;
-    seen.add(sub.slug);
+    if (!matched || seen.has(series.key)) continue;
+    seen.add(series.key);
     hits.push({
       type: "scene",
-      id: `series-${sub.slug}`,
-      title: sub.label[locale],
+      id: `series-${series.key}`,
+      title: locale === "zh" ? series.labelZh : series.labelEn,
       subtitle: locale === "zh" ? "产品系列" : "Product series",
-      href: getProductSeriesHref(sub.slug),
+      href: getProductSeriesHref(
+        series.productLine === "tour" ? series.key : series.productLine
+      ),
       score: SEARCH_SCORE.series,
     });
   }

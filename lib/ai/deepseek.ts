@@ -17,19 +17,25 @@ export async function chatCompletion(
   const { apiKey, baseUrl, model, ready } = getDeepSeekConfig();
   if (!ready) throw new Error("DEEPSEEK_API_KEY 未配置");
 
-  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: options?.maxTokens ?? 800,
-      temperature: options?.temperature ?? 0.4,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        max_tokens: options?.maxTokens ?? 800,
+        temperature: options?.temperature ?? 0.4,
+      }),
+    });
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : "network error";
+    throw new Error(`无法连接翻译服务: ${detail}`);
+  }
 
   if (!res.ok) {
     const err = await res.text();

@@ -11,10 +11,8 @@ import { PRODUCTS_PAGE_SIZE } from "@/data/mock";
 import { useI18n } from "@/components/I18nProvider";
 import { searchProducts } from "@/lib/products";
 import {
-  ENGINEERING_SERIES_ORDER,
   filterEngineeringProducts,
   filterTouringProducts,
-  getEngineeringSeriesLabel,
   getTouringProductLabel,
   getTouringProductNavItems,
   isTouringProductKey,
@@ -24,6 +22,11 @@ import {
   type ProductCategoryType,
 } from "@/lib/product-classification";
 import {
+  DEFAULT_PRODUCT_SERIES_CONFIG,
+  getProductPageSeriesFilterTabs,
+  type ProductSeriesConfig,
+} from "@/lib/product-series-config";
+import {
   getProductSeriesTabLabel,
   parseProductSeriesTabFromParams,
   type ProductSeriesTabFilter,
@@ -32,22 +35,24 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
-const ENGINEERING_SERIES_KEYS = new Set<ProductSeriesTabFilter>([
-  "all",
-  ...ENGINEERING_SERIES_ORDER.map((entry) => entry.key),
-]);
-
 function parseProductCategory(
   group: string | null,
-  product: string | null
+  product: string | null,
+  config: ProductSeriesConfig
 ): ProductCategoryType {
-  if (group === "touring" || (product && isTouringProductKey(product))) {
+  if (group === "touring" || (product && isTouringProductKey(product, config))) {
     return "touring";
   }
   return "engineering";
 }
 
-export default function ProductsContent({ products }: { products: Product[] }) {
+export default function ProductsContent({
+  products,
+  productSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG,
+}: {
+  products: Product[];
+  productSeriesConfig?: ProductSeriesConfig;
+}) {
   const { locale, t } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -59,7 +64,25 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 250);
 
-  const touringNav = useMemo(() => getTouringProductNavItems(products), [products]);
+  /** 前台筛选：与导航/后台同一套 PRODUCT_SERIES_DISPLAY */
+  const engineeringFilterTabs = useMemo(
+    () => getProductPageSeriesFilterTabs(locale),
+    [locale]
+  );
+
+  const engineeringSeriesKeys = useMemo(
+    () =>
+      new Set<ProductSeriesTabFilter>([
+        "all",
+        ...engineeringFilterTabs.map((entry) => entry.id as ProductSeriesTabFilter),
+      ]),
+    [engineeringFilterTabs]
+  );
+
+  const touringNav = useMemo(
+    () => getTouringProductNavItems(products, productSeriesConfig),
+    [products, productSeriesConfig]
+  );
 
   const syncUrl = useCallback(
     (next: {
@@ -94,21 +117,28 @@ export default function ProductsContent({ products }: { products: Product[] }) {
     const q = searchParams.get("q") ?? "";
     const page = Number(searchParams.get("page") ?? "1");
 
-    const category = parseProductCategory(group, product);
+    const category = parseProductCategory(group, product, productSeriesConfig);
     setProductCategory(category);
 
     if (category === "touring") {
-      setTouringFilter(product && isTouringProductKey(product) ? product : "all");
+      setTouringFilter(
+        product && isTouringProductKey(product, productSeriesConfig) ? product : "all"
+      );
       setSeriesFilter("all");
     } else {
-      const parsed = parseProductSeriesTabFromParams(series, sub, categoryParam);
-      setSeriesFilter(ENGINEERING_SERIES_KEYS.has(parsed) ? parsed : "all");
+      const parsed = parseProductSeriesTabFromParams(
+        series,
+        sub,
+        categoryParam,
+        productSeriesConfig
+      );
+      setSeriesFilter(engineeringSeriesKeys.has(parsed) ? parsed : "all");
       setTouringFilter("all");
     }
 
     setSearchQuery(q);
     setCurrentPage(Number.isFinite(page) && page > 0 ? page : 1);
-  }, [searchParams]);
+  }, [searchParams, productSeriesConfig, engineeringSeriesKeys]);
 
   const categoryLabels = useMemo(
     () => ({
@@ -119,15 +149,12 @@ export default function ProductsContent({ products }: { products: Product[] }) {
   );
 
   const filterTabs = useMemo(() => {
-    const allTab = { id: "all", label: getProductSeriesTabLabel("all") };
+    const allTab = {
+      id: "all",
+      label: getProductSeriesTabLabel("all", productSeriesConfig),
+    };
     if (productCategory === "engineering") {
-      return [
-        allTab,
-        ...ENGINEERING_SERIES_ORDER.map((entry) => ({
-          id: entry.key,
-          label: getEngineeringSeriesLabel(entry, locale),
-        })),
-      ];
+      return [allTab, ...engineeringFilterTabs];
     }
     return [
       allTab,
@@ -136,7 +163,7 @@ export default function ProductsContent({ products }: { products: Product[] }) {
         label: getTouringProductLabel(item, locale),
       })),
     ];
-  }, [locale, productCategory, touringNav.items]);
+  }, [engineeringFilterTabs, locale, productCategory, productSeriesConfig, touringNav.items]);
 
   const activeFilterId =
     productCategory === "engineering" ? seriesFilter : touringFilter;

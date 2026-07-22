@@ -1,4 +1,5 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CMS_FETCH_TAGS } from "@/lib/strapi-client";
 import type { AdminCollection } from "./strapi-admin";
 
 export type RevalidateModule =
@@ -41,6 +42,15 @@ function trackRevalidate(revalidated: Set<string>, path: string, type?: "layout"
   }
 }
 
+function trackRevalidateTag(revalidated: Set<string>, tag: string) {
+  try {
+    revalidateTag(tag);
+    revalidated.add(`tag:${tag}`);
+  } catch {
+    // ignore invalid tags
+  }
+}
+
 /** 按模块刷新官网静态/ISR 缓存（精准路径，避免无差别全站 layout 刷新） */
 export function revalidateSiteModules(
   modules: RevalidateModule[],
@@ -57,8 +67,13 @@ export function revalidateSiteModules(
     switch (siteModule) {
       case "home":
         trackRevalidate(revalidated, "/");
+        trackRevalidate(revalidated, "/", "layout");
         break;
       case "products":
+        trackRevalidateTag(revalidated, CMS_FETCH_TAGS.products);
+        trackRevalidateTag(revalidated, CMS_FETCH_TAGS.productSeries);
+        // 根 layout 注入 SiteDataProvider（导航用产品列表），必须刷 layout
+        trackRevalidate(revalidated, "/", "layout");
         trackRevalidate(revalidated, "/products");
         if (detailId) {
           trackRevalidate(revalidated, `/products/${detailId}`);

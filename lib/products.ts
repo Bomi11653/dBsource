@@ -1,10 +1,8 @@
-import type { Locale, Product, ProductCategory, ProductSeriesGroup } from "@/data/mock";
+import type { Locale, Product, ProductSeriesGroup } from "@/data/mock";
 import { products } from "@/data/mock";
 import { resolveBrowserMediaUrl } from "@/lib/media-url";
+import { PRODUCT_SERIES_DISPLAY } from "@/lib/product-series-config";
 import { rankProductsForList } from "@/lib/search/rank-search";
-
-export type SeriesTab = "all" | ProductSeriesGroup;
-export type CategoryFilter = "all" | ProductCategory;
 
 export type ProductSubSeriesSlug = string;
 
@@ -16,53 +14,64 @@ export interface ProductSubSeries {
   featuredProductId: number;
 }
 
+const UNIFIED_LABEL_BY_KEY = Object.fromEntries(
+  PRODUCT_SERIES_DISPLAY.map((entry) => [
+    entry.key,
+    { zh: entry.labelZh, en: entry.labelEn },
+  ])
+) as Record<string, { zh: string; en: string }>;
+
+/**
+ * 历史子系列元数据（AI / featured 等）。
+ * 统一七项文案派生自 PRODUCT_SERIES_DISPLAY，避免与前台/后台再写一套 map。
+ */
 export const PRODUCT_SUB_SERIES: ProductSubSeries[] = [
   {
     slug: "la",
     seriesGroup: "speaker",
-    label: { zh: "LA 线阵列音箱", en: "LA Line Array" },
+    label: UNIFIED_LABEL_BY_KEY.la,
     modelPrefix: "LA",
     featuredProductId: 1,
   },
   {
     slug: "lw",
     seriesGroup: "speaker",
-    label: { zh: "LW 中远程防水音箱", en: "LW Medium-Throw IP" },
+    label: UNIFIED_LABEL_BY_KEY.lw,
     modelPrefix: "LW",
     featuredProductId: 10,
   },
   {
     slug: "mi",
     seriesGroup: "speaker",
-    label: { zh: "MI 返送音箱", en: "MI Stage Monitor" },
+    label: UNIFIED_LABEL_BY_KEY.mi,
     modelPrefix: "MI",
     featuredProductId: 19,
   },
   {
     slug: "do",
     seriesGroup: "speaker",
-    label: { zh: "DO 多功能全频音箱", en: "DO Full-Range" },
+    label: UNIFIED_LABEL_BY_KEY.do,
     modelPrefix: "DO",
     featuredProductId: 21,
   },
   {
     slug: "sol",
     seriesGroup: "speaker",
-    label: { zh: "SOL 多功能防水音柱", en: "SOL IP Column" },
+    label: UNIFIED_LABEL_BY_KEY.sol,
     modelPrefix: "SOL",
     featuredProductId: 31,
   },
   {
     slug: "k",
     seriesGroup: "speaker",
-    label: { zh: "K 系列娱乐音箱", en: "K Entertainment" },
+    label: UNIFIED_LABEL_BY_KEY.k,
     modelPrefix: "K",
     featuredProductId: 34,
   },
   {
     slug: "re",
     seriesGroup: "speaker",
-    label: { zh: "RE 全频音箱", en: "RE Full-Range" },
+    label: UNIFIED_LABEL_BY_KEY.re,
     modelPrefix: "RE",
     featuredProductId: 38,
   },
@@ -131,46 +140,12 @@ export const PRODUCT_SERIES_GROUPS: ProductSeriesGroup[] = [
   "software",
 ];
 
-export function getSubSeriesForGroup(group: ProductSeriesGroup): ProductSubSeries[] {
-  return PRODUCT_SUB_SERIES.filter((s) => s.seriesGroup === group);
-}
-
 export function getSubSeriesBySlug(slug: string): ProductSubSeries | undefined {
   return PRODUCT_SUB_SERIES.find((s) => s.slug === slug);
 }
 
 export function subSeriesLabel(sub: ProductSubSeries, locale: Locale): string {
   return sub.label[locale];
-}
-
-export function filterProducts(
-  list: Product[],
-  seriesTab: SeriesTab,
-  categoryFilter: CategoryFilter,
-  subSeriesSlug?: ProductSubSeriesSlug | "all"
-): Product[] {
-  let result = list;
-  if (seriesTab !== "all") {
-    result = result.filter((p) => p.seriesGroup === seriesTab);
-  }
-  if (categoryFilter !== "all") {
-    result = result.filter((p) => p.category === categoryFilter);
-    if (seriesTab === "all") {
-      result = result.filter((p) => p.seriesGroup !== "engineering");
-    }
-  }
-  if (subSeriesSlug && subSeriesSlug !== "all") {
-    const sub = getSubSeriesBySlug(subSeriesSlug);
-    if (sub) {
-      result = result.filter(
-        (p) =>
-          p.productLine === sub.slug ||
-          p.model.startsWith(sub.modelPrefix) ||
-          p.model.toUpperCase().startsWith(sub.modelPrefix.toUpperCase())
-      );
-    }
-  }
-  return result;
 }
 
 export function searchProducts(list: Product[], query: string, locale: Locale = "zh"): Product[] {

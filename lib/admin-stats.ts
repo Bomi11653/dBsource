@@ -17,7 +17,7 @@ async function countCollection(endpoint: string): Promise<number> {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  const [products, cases, downloads, scenes, qrCodes, aboutSections, productSeries] =
+  const [products, cases, downloads, scenes, qrCodes, aboutSections] =
     await Promise.all([
     countCollection("/products?"),
     countCollection("/cases?"),
@@ -25,7 +25,6 @@ export async function getAdminStats(): Promise<AdminStats> {
     countCollection("/scenes?"),
     countCollection("/qr-codes?"),
     countCollection("/about-sections?"),
-    countCollection("/product-series-configs?"),
   ]);
 
   let leads = 0;
@@ -38,7 +37,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     leads = json?.data?.length ?? 0;
   }
 
-  return { products, cases, downloads, scenes, qrCodes, aboutSections, leads, productSeries };
+  return { products, cases, downloads, scenes, qrCodes, aboutSections, leads };
 }
 
 export type LeadRow = {

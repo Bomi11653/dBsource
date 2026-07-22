@@ -1,0 +1,74 @@
+﻿{
+    "before":  {
+                   "model":  "LA206",
+                   "nameZh":  "LA206",
+                   "nameEn":  "LA206",
+                   "productLine":  "la",
+                   "seriesZh":  "LA 线阵列音箱",
+                   "seriesEn":  "LA Line Array",
+                   "seriesGroup":  "speaker",
+                   "sortOrder":  1
+               },
+    "after":  {
+                  "nameZh":  "LA206测试中文名-082012",
+                  "productLine":  "mi",
+                  "nameEn":  "LA206 Test EN-082012",
+                  "seriesZh":  "MI系列",
+                  "seriesEn":  "MI Series"
+              },
+    "cmsAfter":  {
+                     "nameZh":  "LA206?????-082012",
+                     "productLine":  "mi",
+                     "nameEn":  "LA206 Test EN-082012",
+                     "seriesZh":  "MI??",
+                     "seriesEn":  "MI Series"
+                 },
+    "adminAfter":  {
+                       "nameZh":  "LA206?????-082012",
+                       "productLine":  "mi",
+                       "nameEn":  "LA206 Test EN-082012",
+                       "seriesZh":  "MI??",
+                       "seriesEn":  "MI Series"
+                   },
+    "frontend":  {
+                     "detail_nameZh":  false,
+                     "detail_seriesZh":  false,
+                     "list_nameZh":  false,
+                     "list_seriesZh":  false,
+                     "home_nameZh":  false,
+                     "detail_oldName":  true
+                 },
+    "put":  {
+                "ok":  true,
+                "revalidation":  {
+                                     "ok":  true,
+                                     "module":  "products",
+                                     "modules":  [
+                                                     "products",
+                                                     "home"
+                                                 ],
+                                     "paths":  [
+                                                   "tag:cms-products",
+                                                   "tag:cms-product-series",
+                                                   "/ (layout)",
+                                                   "/products",
+                                                   "/products/1",
+                                                   "/"
+                                               ],
+                                     "revalidatedAt":  "2026-07-22T00:20:12.826Z"
+                                 },
+                "saved":  true,
+                "cacheRefresh":  {
+                                     "ok":  true,
+                                     "module":  "products",
+                                     "savedAt":  "2026-07-22T00:20:12.829Z",
+                                     "contentTypes":  [
+                                                          "products"
+                                                      ]
+                                 }
+            },
+    "urls":  {
+                 "list":  "http://127.0.0.1:3003/products",
+                 "detail":  "http://127.0.0.1:3003/products/1"
+             }
+}

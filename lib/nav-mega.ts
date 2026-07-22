@@ -1,4 +1,4 @@
-import type { CaseItem, CaseType, DownloadItem, Product } from "@/data/mock";
+import type { CaseItem, CaseType, DownloadItem, Locale, Product } from "@/data/mock";
 import { CASE_TYPES, getCaseMegaLinks } from "@/lib/cases";
 import {
   DOWNLOAD_TABS,
@@ -15,7 +15,8 @@ import {
   type ProductCategoryType,
   type TouringProductNavItem,
 } from "@/lib/product-classification";
-import type { Locale } from "@/lib/i18n";
+import type { ProductSeriesConfig } from "@/lib/product-series-config";
+import { DEFAULT_PRODUCT_SERIES_CONFIG } from "@/lib/product-series-config";
 
 /** PC 悬停大菜单 + 手机抽屉共用的菜单 key */
 export type NavMegaMenuKey = "products" | "cases" | "downloads";
@@ -248,9 +249,11 @@ export function buildNavMegaSections(input: {
   products: Product[];
   cases: CaseItem[];
   downloads: DownloadItem[];
+  productSeriesConfig?: ProductSeriesConfig;
 }): Record<NavMegaMenuKey, NavMegaSectionData> {
-  const engineeringItems = getEngineeringSeriesNavItems(input.products);
-  const touringItems = getTouringProductNavItems(input.products).items;
+  const config = input.productSeriesConfig ?? DEFAULT_PRODUCT_SERIES_CONFIG;
+  const engineeringItems = getEngineeringSeriesNavItems(input.products, { config });
+  const touringItems = getTouringProductNavItems(input.products, config).items;
 
   return {
     products: buildProductsMegaSection(

@@ -256,7 +256,7 @@ export function productJsonLd(product: Product, locale: "zh" | "en" = "zh") {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.name[locale],
+    name: formatProductHeading(product, locale),
     description: product.desc[locale],
     sku: product.model,
     brand: {

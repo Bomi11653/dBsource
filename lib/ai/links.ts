@@ -33,7 +33,7 @@ export function buildAiLinks(
     seen.add(key);
     links.push({
       type: "product",
-      label: p.model,
+      label: p.name?.zh || p.model,
       href: `/products/${p.id}`,
     });
 

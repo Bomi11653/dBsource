@@ -1,0 +1,48 @@
+﻿{
+    "put":  {
+                "cacheOk":  true,
+                "saved":  true,
+                "revalOk":  true,
+                "paths":  [
+                              "tag:cms-products",
+                              "tag:cms-product-series",
+                              "/ (layout)",
+                              "/products",
+                              "/products/1",
+                              "/"
+                          ]
+            },
+    "marker":  "082122",
+    "after":  {
+                  "nameZh":  "LA206ZH082122",
+                  "productLine":  "mi",
+                  "nameEn":  "LA206EN082122",
+                  "seriesZh":  "MISeriesZH082122",
+                  "seriesEn":  "MISeriesEN082122"
+              },
+    "before":  {
+                   "nameZh":  "LA206",
+                   "productLine":  "la",
+                   "nameEn":  "LA206",
+                   "seriesZh":  "LA ?????",
+                   "seriesEn":  "LA Line Array"
+               },
+    "cms":  {
+                "nameZh":  "LA206ZH082122",
+                "productLine":  "mi",
+                "nameEn":  "LA206EN082122",
+                "seriesZh":  "MISeriesZH082122",
+                "seriesEn":  "MISeriesEN082122"
+            },
+    "fe":  {
+               "detail_nameEn":  true,
+               "detail_seriesEn":  true,
+               "detail_nameZh":  true,
+               "detail_seriesZh":  true,
+               "list_nameEn":  true,
+               "list_seriesEn":  true,
+               "list_nameZh":  true,
+               "home_nameEn":  false,
+               "detail_rsc_nameEn":  true
+           }
+}

@@ -11,7 +11,7 @@ import SmoothScroll from "@/components/SmoothScroll";
 import WeChatCompat from "@/components/WeChatCompat";
 import { I18nProvider } from "@/components/I18nProvider";
 import { contactInfo as mockContactInfo } from "@/data/mock";
-import { getCases, getContactInfo, getDownloads, getProducts } from "@/lib/cms";
+import { getCases, getContactInfo, getDownloads, getProducts, getProductSeriesConfig } from "@/lib/cms";
 import {
   getMaintenanceMessage,
   isMaintenanceMode,
@@ -49,22 +49,25 @@ export default async function RootLayout({
   let products: Awaited<ReturnType<typeof getProducts>>;
   let cases: Awaited<ReturnType<typeof getCases>>;
   let downloads: Awaited<ReturnType<typeof getDownloads>>;
+  let productSeriesConfig: Awaited<ReturnType<typeof getProductSeriesConfig>>;
   let maintenanceContact = mockContactInfo;
 
   if (maintenance) {
     products = [];
     cases = [];
     downloads = [];
+    productSeriesConfig = await getProductSeriesConfig();
     try {
       maintenanceContact = await getContactInfo();
     } catch {
       maintenanceContact = mockContactInfo;
     }
   } else {
-    [products, cases, downloads] = await Promise.all([
+    [products, cases, downloads, productSeriesConfig] = await Promise.all([
       getProducts(),
       getCases(),
       getDownloads(),
+      getProductSeriesConfig(),
     ]);
   }
 
@@ -101,7 +104,12 @@ export default async function RootLayout({
             contact={maintenanceContact}
           >
             <PerformanceModeProvider>
-              <SiteDataProvider products={products} cases={cases} downloads={downloads}>
+              <SiteDataProvider
+                products={products}
+                cases={cases}
+                downloads={downloads}
+                productSeriesConfig={productSeriesConfig}
+              >
                 <PageTransitionProvider>
                   <SmoothScroll />
                   <AdminAwareChrome>{children}</AdminAwareChrome>

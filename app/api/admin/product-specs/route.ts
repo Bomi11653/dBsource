@@ -2,24 +2,45 @@ import { assertAdminRequest } from "@/lib/admin-auth";
 import { extractProductSpecsFromPdfText } from "@/lib/ai/admin-content";
 import { getAdminToken } from "@/lib/strapi-admin";
 import { getCmsUrl } from "@/lib/strapi-client";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { NextRequest, NextResponse } from "next/server";
-import { createRequire } from "node:module";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const require = createRequire(import.meta.url);
-const { PDFParse } = require("pdf-parse") as {
-  PDFParse: new (params: { data: Buffer }) => {
-    getText: () => Promise<{ text: string }>;
-    destroy: () => Promise<void>;
-  };
-};
 
 function resolvePdfUrl(raw: string): string {
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   const cms = getCmsUrl();
   return `${cms}${raw.startsWith("/") ? "" : "/"}${raw}`;
+}
+
+type PDFParseClass = new (params: { data: Buffer }) => {
+  getText: () => Promise<{ text: string }>;
+  destroy: () => Promise<void>;
+};
+
+/**
+ * Load CJS PDF helper from disk. webpackIgnore keeps this out of the app-route
+ * bundle so production cannot rewrite require.resolve("pdf-parse") to a module id.
+ */
+async function loadPdfParseClass(): Promise<PDFParseClass> {
+  const loaderAbs = path.join(process.cwd(), "lib", "pdf-parse-loader.cjs");
+  if (!fs.existsSync(loaderAbs)) {
+    throw new Error(`PDF loader 缺失：${loaderAbs}`);
+  }
+  const loaderUrl = pathToFileURL(loaderAbs).href;
+  const loaded = await import(
+    /* webpackIgnore: true */
+    loaderUrl
+  );
+  const api = (loaded as { default?: { getPDFParseClass?: () => PDFParseClass } }).default ?? loaded;
+  const getPDFParseClass = (api as { getPDFParseClass?: () => PDFParseClass }).getPDFParseClass;
+  if (typeof getPDFParseClass !== "function") {
+    throw new Error("PDF loader 无效：缺少 getPDFParseClass");
+  }
+  return getPDFParseClass();
 }
 
 export async function POST(request: NextRequest) {
@@ -52,6 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const arr = await upstream.arrayBuffer();
+    const PDFParse = await loadPdfParseClass();
     const parser = new PDFParse({ data: Buffer.from(arr) });
     const parsed = await parser.getText();
     await parser.destroy();
@@ -67,7 +89,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, data: extracted });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "PDF 参数识别失败";
+    const raw = e instanceof Error ? e.message : "PDF 参数识别失败";
+    const message = /pdf\.worker|fake worker|Cannot find module|require is not defined|74193/i.test(
+      raw
+    )
+      ? `PDF 解析组件加载失败：${raw}。请确认生产环境已部署 pdf.worker.mjs 与 lib/pdf-parse-loader.cjs 并重启网站进程。`
+      : raw;
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

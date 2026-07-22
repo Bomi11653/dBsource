@@ -4,11 +4,10 @@ import {
   getContactInfo,
   getDownloads,
   getGlobalSetting,
-  getProducts,
+  refreshProductsLkgFromStrapi,
 } from "@/lib/fetchCMS";
 import type { LkgContentType } from "@/lib/cms-lkg-cache";
 import { cmsLog } from "@/lib/cms-lkg-cache";
-import { fetchSeriesConfigFromCMS } from "@/lib/fetch-series-config";
 import type { AdminCollection } from "@/lib/strapi-admin";
 import { getCmsUrl } from "@/lib/strapi-client";
 import { probeStrapiApi, resetCmsHealthCache } from "@/lib/cms-health";
@@ -29,7 +28,6 @@ const COLLECTION_TO_TYPES: Partial<
   downloads: ["downloads"],
   "about-sections": ["about"],
   scenes: ["scenes"],
-  "product-series-configs": ["productSeries"],
   "contact-info": ["contact", "globalSetting"],
   "global-setting": ["globalSetting", "contact"],
   leads: [],
@@ -41,7 +39,8 @@ const COLLECTION_TO_TYPES: Partial<
 async function refreshContentType(type: LkgContentType): Promise<void> {
   switch (type) {
     case "products":
-      await getProducts();
+      // 必须 no-store，避免把 Next Data Cache 旧数据写进 LKG
+      await refreshProductsLkgFromStrapi();
       break;
     case "cases":
       await getCases();
@@ -57,9 +56,6 @@ async function refreshContentType(type: LkgContentType): Promise<void> {
       break;
     case "globalSetting":
       await getGlobalSetting();
-      break;
-    case "productSeries":
-      await fetchSeriesConfigFromCMS();
       break;
     case "scenes":
       await (await import("@/lib/fetchCMS")).getScenes();
@@ -119,7 +115,6 @@ export async function refreshAllLkgCaches(): Promise<{
     "downloads",
     "about-sections",
     "scenes",
-    "product-series-configs",
     "contact-info",
   ] as const;
 

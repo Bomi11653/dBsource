@@ -5,7 +5,6 @@ import {
   pickDownloadFilePath,
   pickDownloadTitleZh,
   pickMediaPath,
-  pickProductNameZh,
   resolveCmsAssetUrl,
   resolveServerMediaUrl,
   unwrapStrapiGallery,
@@ -442,8 +441,9 @@ async function checkProducts(
   const issues: HealthIssueRow[] = [];
 
   for (const row of rows) {
-    const titleSource = row as TitleSource & { model?: string | null };
-    const title = pickProductNameZh(titleSource);
+    const model = String(row.model ?? "").trim();
+    const nameZh = String(row.nameZh ?? "").trim();
+    const title = nameZh || model || "未命名产品";
     const mediaSource: MediaSource = {
       image: row.image,
       cover: row.cover,
@@ -452,15 +452,11 @@ async function checkProducts(
     const imagePath = pickMediaPath(mediaSource);
     const imageUrl = imagePath ? resolveAbsoluteUrl(imagePath, cmsUrl) : "";
 
-    if (
-      !hasText(
-        row.nameZh as string,
-        row.name as string,
-        row.titleZh as string,
-        row.title as string
-      )
-    ) {
-      pushIssue(issues, "products", row, title, "缺少 nameZh / name / titleZh / title", imageUrl);
+    if (!model) {
+      pushIssue(issues, "products", row, title, "缺少 model 产品型号", imageUrl);
+    }
+    if (!nameZh) {
+      pushIssue(issues, "products", row, title, "缺少 nameZh 产品名称（中文）", imageUrl);
     }
 
     if (!imagePath) {
@@ -473,7 +469,6 @@ async function checkProducts(
       pushIssue(issues, "products", row, title, `image.url 无法访问（${imageUrl}）`, imageUrl);
     }
 
-    const model = String(row.model ?? "").trim();
     const productLine = String(row.productLine ?? "default").trim() || "default";
     const hasCmsSpecs = hasText(row.specsZh, row.specsEn);
     const hasStaticSpecs =

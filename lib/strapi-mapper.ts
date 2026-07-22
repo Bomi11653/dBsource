@@ -22,8 +22,6 @@ import {
   pickDownloadTitleZh,
   pickListMediaPath,
   pickMediaPath,
-  pickProductNameEn,
-  pickProductNameZh,
   resolveCmsAssetUrl,
   resolveDownloadFileUrl,
   resolveListMediaUrlFromSource,
@@ -350,19 +348,23 @@ export function mapStrapiProduct(doc: StrapiProductDoc, cmsUrl: string, index: n
     thumbnail: doc.thumbnail,
   };
   const image = resolveListMediaUrlFromSource(mediaSource, cmsUrl);
-  const nameZh = pickProductNameZh(doc);
-  const nameEn = pickProductNameEn(doc);
+  const model = doc.model?.trim() || "";
+  const nameZh = doc.nameZh?.trim() || model;
+  const nameEn = doc.nameEn?.trim() || nameZh || model;
 
   const missing: string[] = [];
-  if (!doc.nameZh?.trim() && !doc.name?.trim() && !doc.titleZh?.trim()) {
-    missing.push("nameZh/name/titleZh");
+  if (!model) {
+    missing.push("model");
+  }
+  if (!nameZh) {
+    missing.push("nameZh");
   }
   if (!pickMediaPath(mediaSource)) missing.push("image/cover/thumbnail");
   warnStrapiMapping("product", id, missing);
 
   return {
     id,
-    model: doc.model?.trim() || "",
+    model,
     name: { zh: nameZh, en: nameEn },
     desc: { zh: doc.descZh?.trim() || "", en: doc.descEn?.trim() || "" },
     detail:
@@ -372,7 +374,9 @@ export function mapStrapiProduct(doc: StrapiProductDoc, cmsUrl: string, index: n
     image,
     gallery: (doc.gallery ?? []).map((item) => resolveStrapiMediaUrl(item, cmsUrl)).filter(Boolean),
     series:
-      doc.seriesZh || doc.seriesEn ? { zh: doc.seriesZh ?? "", en: doc.seriesEn ?? "" } : undefined,
+      doc.seriesZh || doc.seriesEn
+        ? { zh: doc.seriesZh?.trim() || "", en: doc.seriesEn?.trim() || "" }
+        : undefined,
     productLine: doc.productLine as ProductLineSlug,
     seriesGroup: doc.seriesGroup as ProductSeriesGroup,
     category: doc.category as ProductCategory,

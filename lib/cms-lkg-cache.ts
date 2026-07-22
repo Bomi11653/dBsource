@@ -3,7 +3,6 @@ import path from "path";
 
 export type LkgContentType =
   | "products"
-  | "productSeries"
   | "cases"
   | "downloads"
   | "about"
@@ -124,7 +123,6 @@ export function readRuntimeStatus(): CmsRuntimeStatus {
 
   const types: LkgContentType[] = [
     "products",
-    "productSeries",
     "cases",
     "downloads",
     "about",

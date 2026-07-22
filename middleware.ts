@@ -32,6 +32,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /* API 必须返回 JSON，避免 fetch 跟随重定向拿到登录页 HTML 后“静默失败” */
+  if (isAdminApi) {
+    return NextResponse.json(
+      { ok: false, error: "未授权，请先登录管理后台后再试。" },
+      { status: 401 }
+    );
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.dbsource-pro.com";
 
   const loginUrl = new URL("/admin/login", siteUrl);

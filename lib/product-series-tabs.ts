@@ -1,4 +1,11 @@
 /** 产品型号系列 Tab（后台 /admin/products 与前台 /products 共用） */
+import {
+  DEFAULT_PRODUCT_SERIES_CONFIG,
+  getEngineeringSeriesOrder,
+  getUnifiedEngineeringSeriesEntries,
+  type ProductSeriesConfig,
+} from "@/lib/product-series-config";
+
 export type ProductSeriesTabFilter =
   | "all"
   | "sol"
@@ -21,41 +28,40 @@ export interface ProductSeriesTabRow {
   id?: unknown;
 }
 
-export const PRODUCT_SERIES_TAB_ORDER: ProductSeriesTabFilter[] = [
-  "all",
-  "sol",
-  "la",
-  "lw",
-  "mi",
-  "do",
-  "k",
-  "re",
-  "electronics",
-  "other",
-];
+function buildEngineeringTabMeta(config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG) {
+  const unified = getUnifiedEngineeringSeriesEntries();
+  const fullOrder = getEngineeringSeriesOrder(config);
+  const tabOrder: ProductSeriesTabFilter[] = [
+    "all",
+    ...unified.map((entry) => entry.key as ProductSeriesTabFilter),
+    "other",
+  ];
+  const tabLabels = {
+    all: "全部",
+    other: "其他",
+    electronics: "电子产品",
+  } as Record<ProductSeriesTabFilter, string>;
+  for (const entry of unified) {
+    tabLabels[entry.key as ProductSeriesTabFilter] = entry.labelZh;
+  }
+  for (const entry of fullOrder) {
+    if (entry.key === "electronics") {
+      tabLabels.electronics = entry.labelZh || "电子产品";
+    }
+  }
+  const lineToTab: Record<string, ProductSeriesTabFilter> = {};
+  for (const entry of fullOrder) {
+    lineToTab[entry.key] = entry.key as ProductSeriesTabFilter;
+  }
+  return { tabOrder, tabLabels, lineToTab };
+}
 
-const TAB_LABELS: Record<ProductSeriesTabFilter, string> = {
-  all: "全部",
-  sol: "SOL系列",
-  la: "LA系列",
-  lw: "LW系列",
-  mi: "MI系列",
-  do: "DO系列",
-  k: "K系列",
-  re: "RE系列",
-  electronics: "电子周边",
-  other: "其他",
-};
+const DEFAULT_TAB_META = buildEngineeringTabMeta();
 
-const LINE_TO_TAB: Record<string, ProductSeriesTabFilter> = {
-  sol: "sol",
-  la: "la",
-  lw: "lw",
-  mi: "mi",
-  do: "do",
-  k: "k",
-  re: "re",
-};
+export const PRODUCT_SERIES_TAB_ORDER = DEFAULT_TAB_META.tabOrder;
+
+const TAB_LABELS = DEFAULT_TAB_META.tabLabels;
+const LINE_TO_TAB = DEFAULT_TAB_META.lineToTab;
 
 const MODEL_PREFIX_RULES: { prefix: string; tab: ProductSeriesTabFilter }[] = [
   { prefix: "SOL", tab: "sol" },
@@ -75,6 +81,14 @@ export const PRODUCT_SERIES_TABS = PRODUCT_SERIES_TAB_ORDER.map((id) => ({
   id,
   label: TAB_LABELS[id],
 }));
+
+export function getProductSeriesTabs(config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG) {
+  const meta = buildEngineeringTabMeta(config);
+  return meta.tabOrder.map((id) => ({
+    id,
+    label: meta.tabLabels[id],
+  }));
+}
 
 function strField(row: ProductSeriesTabRow, key: string): string {
   const value = (row as Record<string, unknown>)[key];
@@ -104,11 +118,15 @@ function isSoftware(row: ProductSeriesTabRow): boolean {
 }
 
 /** 返回产品所属型号系列 Tab（互斥） */
-export function getProductSeriesTab(row: ProductSeriesTabRow): ProductSeriesTabFilter {
+export function getProductSeriesTab(
+  row: ProductSeriesTabRow,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): ProductSeriesTabFilter {
+  const meta = buildEngineeringTabMeta(config);
   const line = strField(row, "productLine").toLowerCase();
   const model = strField(row, "model");
 
-  if (line && LINE_TO_TAB[line]) return LINE_TO_TAB[line];
+  if (line && meta.lineToTab[line]) return meta.lineToTab[line];
   if (line === "c") return "other";
   if (isSoftware(row)) return "other";
   if (isElectronics(row)) return "electronics";
@@ -121,10 +139,11 @@ export function getProductSeriesTab(row: ProductSeriesTabRow): ProductSeriesTabF
 
 export function matchProductSeriesTab(
   row: ProductSeriesTabRow,
-  filter: ProductSeriesTabFilter
+  filter: ProductSeriesTabFilter,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): boolean {
   if (filter === "all") return true;
-  return getProductSeriesTab(row) === filter;
+  return getProductSeriesTab(row, config) === filter;
 }
 
 export function isProductSeriesTab(value: string): value is ProductSeriesTabFilter {
@@ -166,14 +185,17 @@ export function getProductSeriesHref(slugOrGroup: string): string {
 export function parseProductSeriesTabFromParams(
   series: string | null,
   sub: string | null,
-  category: string | null
+  category: string | null,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): ProductSeriesTabFilter {
   if (sub && isProductSeriesTab(sub)) return sub;
   if (series && isProductSeriesTab(series)) return series;
 
+  const meta = buildEngineeringTabMeta(config);
+
   if (sub) {
     const subLine = sub.toLowerCase();
-    if (LINE_TO_TAB[subLine]) return LINE_TO_TAB[subLine];
+    if (meta.lineToTab[subLine]) return meta.lineToTab[subLine];
     if (["electronics", "accessory", "driver", "unit48"].includes(subLine)) return "electronics";
     if (subLine === "suite") return "all";
   }
@@ -185,21 +207,27 @@ export function parseProductSeriesTabFromParams(
   return "all";
 }
 
-export function getProductSeriesTabLabel(filter: ProductSeriesTabFilter): string {
-  return TAB_LABELS[filter] ?? filter;
+export function getProductSeriesTabLabel(
+  filter: ProductSeriesTabFilter,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): string {
+  const meta = buildEngineeringTabMeta(config);
+  return meta.tabLabels[filter] ?? filter;
 }
 
 export function countProductsBySeriesTab(
-  rows: ProductSeriesTabRow[]
+  rows: ProductSeriesTabRow[],
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): Record<ProductSeriesTabFilter, number> {
+  const meta = buildEngineeringTabMeta(config);
   const counts = Object.fromEntries(
-    PRODUCT_SERIES_TAB_ORDER.map((id) => [id, 0])
+    meta.tabOrder.map((id) => [id, 0])
   ) as Record<ProductSeriesTabFilter, number>;
 
   counts.all = rows.length;
 
   for (const row of rows) {
-    const tab = getProductSeriesTab(row);
+    const tab = getProductSeriesTab(row, config);
     counts[tab] += 1;
   }
 
@@ -212,14 +240,17 @@ function compareModelNatural(a: string, b: string): number {
 
 export function compareProductsBySeriesTab(
   a: ProductSeriesTabRow,
-  b: ProductSeriesTabRow
+  b: ProductSeriesTabRow,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): number {
   const orderA = Number(a.sortOrder ?? a.id) || 0;
   const orderB = Number(b.sortOrder ?? b.id) || 0;
   if (orderA !== orderB) return orderA - orderB;
 
-  const tabA = TAB_WEIGHT.get(getProductSeriesTab(a)) ?? 999;
-  const tabB = TAB_WEIGHT.get(getProductSeriesTab(b)) ?? 999;
+  const meta = buildEngineeringTabMeta(config);
+  const tabWeight = new Map(meta.tabOrder.map((id, index) => [id, index]));
+  const tabA = tabWeight.get(getProductSeriesTab(a, config)) ?? 999;
+  const tabB = tabWeight.get(getProductSeriesTab(b, config)) ?? 999;
   if (tabA !== tabB) return tabA - tabB;
 
   return compareModelNatural(strField(a, "model"), strField(b, "model"));
@@ -227,9 +258,10 @@ export function compareProductsBySeriesTab(
 
 export function filterProductsBySeriesTab<T extends ProductSeriesTabRow>(
   list: T[],
-  filter: ProductSeriesTabFilter
+  filter: ProductSeriesTabFilter,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): T[] {
   const filtered =
-    filter === "all" ? list : list.filter((item) => matchProductSeriesTab(item, filter));
-  return [...filtered].sort(compareProductsBySeriesTab);
+    filter === "all" ? list : list.filter((item) => matchProductSeriesTab(item, filter, config));
+  return [...filtered].sort((a, b) => compareProductsBySeriesTab(a, b, config));
 }

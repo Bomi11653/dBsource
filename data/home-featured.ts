@@ -61,10 +61,7 @@ export function resolveProductHref(
   const hint = modelHint.toUpperCase();
   const match =
     products.find((p) => p.model.toUpperCase() === hint) ||
-    products.find((p) => p.model.toUpperCase().startsWith(hint)) ||
-    products.find(
-      (p) => p.name.en.toUpperCase().includes(hint) || p.name.zh.includes(modelHint)
-    );
+    products.find((p) => p.model.toUpperCase().startsWith(hint));
   return match ? `/products/${match.id}` : `/products/${fallbackId}`;
 }
 
@@ -79,11 +76,12 @@ export function buildHomeFeaturedProducts(products: Product[]): HomeFeaturedProd
 }
 
 function buildFromProduct(product: Product): HomeFeaturedProduct {
+  const model = product.model.trim();
   return {
     id: `product-${product.id}`,
-    name: product.name,
+    name: { zh: model, en: model },
     desc: product.desc,
-    models: { zh: product.model, en: product.model },
+    models: { zh: model, en: model },
     image: product.image,
     specPages: [],
     detailHref: `/products/${product.id}`,

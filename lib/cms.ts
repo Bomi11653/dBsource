@@ -4,6 +4,7 @@
 export {
   getProducts,
   getProductById,
+  getProductSeriesConfig,
   getCases,
   getCaseById,
   getDownloads,

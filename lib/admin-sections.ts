@@ -17,7 +17,6 @@ export type AdminStats = {
   qrCodes: number;
   aboutSections: number;
   leads: number;
-  productSeries: number;
 };
 
 export const ADMIN_SECTIONS: AdminSection[] = [
@@ -34,19 +33,9 @@ export const ADMIN_SECTIONS: AdminSection[] = [
     icon: "home",
   },
   {
-    id: "series",
-    title: { zh: "产品系列", en: "Series" },
-    description: { zh: "CMS 系列数据（导航由产品 productLine 控制，此处暂不影响前台）", en: "CMS series records (nav uses product productLine; not wired to frontend nav)" },
-    href: "/admin/series",
-    previewHref: "/products",
-    strapiPath: "/content-manager/collection-types/api::product-series.product-series",
-    countKey: "productSeries",
-    icon: "layers",
-  },
-  {
     id: "products",
     title: { zh: "产品中心", en: "Products" },
-    description: { zh: "55+ 产品型号与图集", en: "Product catalog & galleries" },
+    description: { zh: "产品型号、系列、参数与图集（唯一编辑入口）", en: "Product catalog — single edit entry" },
     href: "/admin/products",
     previewHref: "/products",
     strapiPath: "/content-manager/collection-types/api::product.product",

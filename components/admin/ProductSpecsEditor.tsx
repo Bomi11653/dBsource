@@ -8,6 +8,7 @@ import {
   shouldDefaultRawMode,
   type SpecTableRow,
 } from "@/lib/admin-product-specs";
+import type { AdminProductSpecSource } from "@/lib/admin-product-spec-seed";
 import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,16 +18,14 @@ type EditorMode = "table" | "raw";
 export default function ProductSpecsEditor({
   specsZh,
   specsEn,
+  source = "cms",
   onChange,
-  onPersist,
-  persisting = false,
 }: {
   specsZh: string;
   specsEn: string;
+  /** cms=来自 Strapi；static=CMS 为空，展示旧参数库 */
+  source?: AdminProductSpecSource;
   onChange: (patch: { specsZh: string; specsEn: string }) => void;
-  /** 排序变更后立即保存到 CMS */
-  onPersist?: (patch: { specsZh: string; specsEn: string }) => void | Promise<void>;
-  persisting?: boolean;
 }) {
   const lastEmitted = useRef({ specsZh, specsEn });
   const [mode, setMode] = useState<EditorMode>(() =>
@@ -69,16 +68,10 @@ export default function ProductSpecsEditor({
     setMode("table");
   }, [specsZh, specsEn]);
 
-  const updateRows = (
-    nextRows: SpecTableRow[],
-    options?: { persist?: boolean }
-  ) => {
+  const updateRows = (nextRows: SpecTableRow[]) => {
     setRows(nextRows);
     const serialized = serializeProductSpecs(nextRows);
     emit(serialized.specsZh, serialized.specsEn);
-    if (options?.persist && onPersist) {
-      void onPersist(serialized);
-    }
   };
 
   const updateRow = (id: string, patch: Partial<SpecTableRow>) => {
@@ -99,9 +92,10 @@ export default function ProductSpecsEditor({
     const index = rows.findIndex((item) => item.id === row.id);
     const target = index + direction;
     if (index < 0 || target < 0 || target >= rows.length) return;
+
     const next = [...rows];
     [next[index], next[target]] = [next[target], next[index]];
-    updateRows(next, { persist: true });
+    updateRows(next);
   };
 
   const switchToTable = () => {
@@ -124,53 +118,51 @@ export default function ProductSpecsEditor({
   return (
     <div className="sm:col-span-2 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-200">技术规格表</p>
-        <div className="flex items-center gap-2">
+        <div>
+          <p className="text-xs text-gray-400">
+            {source === "static"
+              ? "CMS 暂无参数，已自动载入旧参数库供编辑；保存后将写入 CMS。"
+              : source === "cms"
+                ? "当前参数来自 CMS。"
+                : "暂无参数，可手动添加或导入 PDF。"}
+          </p>
+        </div>
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => (mode === "table" ? switchToRaw() : switchToTable())}
             className={cn(
               "text-xs px-3 py-1.5 rounded-lg border transition-colors",
-              mode === "table"
-                ? "border-white/15 text-gray-400 hover:text-white"
-                : "border-brand-gold/50 text-brand-gold bg-brand-gold/10"
+              mode === "raw"
+                ? "border-brand-gold/40 text-brand-gold bg-brand-gold/10"
+                : "border-white/15 text-gray-400 hover:text-white"
             )}
           >
-            {mode === "table" ? "切换到原文编辑" : "切换到表格编辑"}
+            {mode === "table" ? "原文模式" : "表格模式"}
           </button>
-          <span
-            className={cn(
-              "text-[10px] px-2 py-1 rounded-full",
-              mode === "table" ? "bg-brand-gold/15 text-brand-gold" : "bg-white/10 text-gray-400"
-            )}
-          >
-            {mode === "table" ? "表格模式" : "原文模式"}
-          </span>
         </div>
       </div>
 
       {mode === "raw" ? (
         <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="规格原文（中文）">
+          <Field label="specsZh">
             <textarea
-              className={cn(inputClass, "min-h-[160px] font-mono text-xs")}
+              className={cn(inputClass, "min-h-[200px] font-mono text-xs")}
               value={rawZh}
               onChange={(e) => {
                 setRawZh(e.target.value);
                 emit(e.target.value, rawEn);
               }}
-              placeholder={"频率响应(-10dB): 85Hz–20kHz\n功率(额定/峰值): 250W / 1000W"}
             />
           </Field>
-          <Field label="规格原文（英文）">
+          <Field label="specsEn">
             <textarea
-              className={cn(inputClass, "min-h-[160px] font-mono text-xs")}
+              className={cn(inputClass, "min-h-[200px] font-mono text-xs")}
               value={rawEn}
               onChange={(e) => {
                 setRawEn(e.target.value);
                 emit(rawZh, e.target.value);
               }}
-              placeholder={"Frequency Response (-10dB): 85Hz–20kHz\nPower (Rated/Peak): 250W / 1000W"}
             />
           </Field>
           <p className="sm:col-span-2 text-[11px] text-gray-500">
@@ -180,22 +172,22 @@ export default function ProductSpecsEditor({
       ) : (
         <div className="space-y-3">
           <div className="overflow-x-auto rounded-xl border border-white/10">
-            <table className="w-full min-w-[780px] text-xs">
+            <table className="w-full text-xs min-w-[640px]">
               <thead>
-                <tr className="border-b border-white/10 bg-white/[0.03] text-gray-400">
-                  <th className="text-left font-normal px-2 py-2 w-[16%]">中文参数名</th>
-                  <th className="text-left font-normal px-2 py-2 w-[20%]">中文参数值</th>
-                  <th className="text-left font-normal px-2 py-2 w-[16%]">英文参数名</th>
-                  <th className="text-left font-normal px-2 py-2 w-[20%]">英文参数值</th>
-                  <th className="text-left font-normal px-2 py-2 w-[12%]">排序</th>
-                  <th className="text-left font-normal px-2 py-2 w-[8%]">操作</th>
+                <tr className="border-b border-white/10 text-gray-500">
+                  <th className="text-left px-2 py-2 font-normal w-[18%]">标签（中）</th>
+                  <th className="text-left px-2 py-2 font-normal w-[22%]">值（中）</th>
+                  <th className="text-left px-2 py-2 font-normal w-[18%]">Label (EN)</th>
+                  <th className="text-left px-2 py-2 font-normal w-[22%]">Value (EN)</th>
+                  <th className="text-left px-2 py-2 font-normal w-[10%]">排序</th>
+                  <th className="text-left px-2 py-2 font-normal w-[10%]">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                      暂无参数，点击下方「新增参数行」开始编辑
+                      暂无参数行，点击下方「新增参数行」或使用 PDF 导入。
                     </td>
                   </tr>
                 ) : (
@@ -234,7 +226,7 @@ export default function ProductSpecsEditor({
                           <button
                             type="button"
                             onClick={() => moveRow(row, -1)}
-                            disabled={index === 0 || persisting}
+                            disabled={index === 0}
                             className="inline-flex items-center justify-center h-8 w-8 rounded border border-white/10 text-gray-500 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
                             title="上移"
                           >
@@ -243,7 +235,7 @@ export default function ProductSpecsEditor({
                           <button
                             type="button"
                             onClick={() => moveRow(row, 1)}
-                            disabled={index === rows.length - 1 || persisting}
+                            disabled={index === rows.length - 1}
                             className="inline-flex items-center justify-center h-8 w-8 rounded border border-white/10 text-gray-500 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
                             title="下移"
                           >
@@ -255,8 +247,7 @@ export default function ProductSpecsEditor({
                         <button
                           type="button"
                           onClick={() => removeRow(row)}
-                          disabled={persisting}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded border border-white/10 text-gray-500 hover:text-red-400 hover:border-red-500/40 disabled:opacity-30"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded border border-white/10 text-gray-500 hover:text-red-400 hover:border-red-500/40"
                           title="删除参数"
                         >
                           <Trash2 size={14} />
@@ -272,16 +263,14 @@ export default function ProductSpecsEditor({
           <button
             type="button"
             onClick={addCustomRow}
-            disabled={persisting}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-white/15 text-gray-300 hover:border-brand-gold/40 hover:text-white disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-white/15 text-gray-300 hover:border-brand-gold/40 hover:text-white"
           >
             <Plus size={14} />
             新增参数行
           </button>
 
           <p className="text-[11px] text-gray-500">
-            调整顺序后会立即保存到 CMS 并刷新前台详情页。修改名称或内容后请点击下方「保存并发布」。
-            {persisting ? " 正在保存排序…" : null}
+            参数增删改与排序均随下方「保存并发布」一并写入 CMS，请勿使用其他保存入口。
           </p>
         </div>
       )}

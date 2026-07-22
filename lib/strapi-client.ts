@@ -3,6 +3,14 @@ export const FRONTEND_REVALIDATE_SECONDS = 300;
 export const STRAPI_FETCH_TIMEOUT_MS = 5000;
 const FETCH_TIMEOUT_MS = STRAPI_FETCH_TIMEOUT_MS;
 
+/** Next.js Data Cache tags — 后台保存后 revalidateTag 可立刻失效 */
+export const CMS_FETCH_TAGS = {
+  products: "cms-products",
+  cases: "cms-cases",
+  downloads: "cms-downloads",
+  productSeries: "cms-product-series",
+} as const;
+
 export function getCmsUrl(): string {
   return (
     process.env.CMS_URL ||
@@ -14,6 +22,7 @@ export function getCmsUrl(): string {
 export type StrapiFetchCache = {
   /** ISR revalidate seconds; `false` = no-store */
   revalidate?: number | false;
+  tags?: string[];
 };
 
 function buildFetchInit(
@@ -21,12 +30,23 @@ function buildFetchInit(
   cache?: StrapiFetchCache
 ): RequestInit {
   const revalidate = cache?.revalidate;
+  const tags = cache?.tags?.filter(Boolean);
   if (revalidate === false || revalidate === 0) {
-    return { ...init, cache: "no-store" };
+    return {
+      ...init,
+      cache: "no-store",
+      ...(tags?.length ? { next: { tags } } : {}),
+    };
   }
   const seconds =
     typeof revalidate === "number" ? revalidate : FRONTEND_REVALIDATE_SECONDS;
-  return { ...init, next: { revalidate: seconds } };
+  return {
+    ...init,
+    next: {
+      revalidate: seconds,
+      ...(tags?.length ? { tags } : {}),
+    },
+  };
 }
 
 async function fetchWithTimeout(
@@ -53,11 +73,12 @@ async function fetchWithTimeout(
 
 export async function fetchStrapiCollection<T>(
   path: string,
-  revalidate: number | false = FRONTEND_REVALIDATE_SECONDS
+  revalidate: number | false = FRONTEND_REVALIDATE_SECONDS,
+  tags?: string[]
 ): Promise<T[]> {
   try {
     const url = `${getCmsUrl()}/api${path}`;
-    const res = await fetchWithTimeout(url, {}, { revalidate });
+    const res = await fetchWithTimeout(url, {}, { revalidate, tags });
     if (res.status === 404) return [];
     if (!res.ok) throw new Error(`Strapi ${path} HTTP ${res.status}`);
     const json = (await res.json()) as { data?: T[] };
@@ -70,11 +91,12 @@ export async function fetchStrapiCollection<T>(
 
 export async function fetchStrapiSingle<T>(
   path: string,
-  revalidate: number | false = FRONTEND_REVALIDATE_SECONDS
+  revalidate: number | false = FRONTEND_REVALIDATE_SECONDS,
+  tags?: string[]
 ): Promise<T | null> {
   try {
     const url = `${getCmsUrl()}/api${path}`;
-    const res = await fetchWithTimeout(url, {}, { revalidate });
+    const res = await fetchWithTimeout(url, {}, { revalidate, tags });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Strapi ${path} HTTP ${res.status}`);
     const json = (await res.json()) as { data?: T | null };

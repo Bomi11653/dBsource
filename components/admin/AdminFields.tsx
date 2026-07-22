@@ -165,21 +165,34 @@ export function SelectField({
   label,
   value,
   onChange,
-  options,
+  options = [],
+  groups,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
+  /** 分组下拉（如产品系列：工程系列 / 流动演出） */
+  groups?: Array<{ label: string; options: { value: string; label: string }[] }>;
 }) {
   return (
     <Field label={label}>
       <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
+        {groups?.length
+          ? groups.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          : options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
       </select>
     </Field>
   );
@@ -517,13 +530,19 @@ type ProductSpecExtractionResult = {
   specsEn: string;
   descZh?: string;
   descEn?: string;
+  rowCount?: number;
 };
 
 export function PdfSpecImportField({
   modelHint,
+  currentSpecsZh = "",
+  currentSpecsEn = "",
   onExtract,
 }: {
   modelHint?: string;
+  /** 当前表单未保存的参数，用于覆盖确认 */
+  currentSpecsZh?: string;
+  currentSpecsEn?: string;
   onExtract: (data: ProductSpecExtractionResult) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -543,9 +562,20 @@ export function PdfSpecImportField({
 
       const res = await fetch("/api/admin/product-specs", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl: uploaded.url, modelHint: modelHint ?? "" }),
       });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          res.status === 401 || res.status === 403
+            ? "未授权或登录已失效，请重新登录后台后再试。"
+            : `识别接口返回异常（HTTP ${res.status}）。`
+        );
+      }
+
       const json = (await res.json()) as {
         ok?: boolean;
         error?: string;
@@ -555,8 +585,29 @@ export function PdfSpecImportField({
         throw new Error(json.error || "PDF 参数识别失败");
       }
 
+      const rowCount =
+        typeof json.data.rowCount === "number"
+          ? json.data.rowCount
+          : json.data.specsZh.split(/\r?\n/).filter((line) => line.trim()).length;
+
+      if (!rowCount) {
+        throw new Error("未识别到可用参数行，请换更清晰的 PDF 后重试。");
+      }
+
+      const hasExisting =
+        Boolean(currentSpecsZh.trim()) || Boolean(currentSpecsEn.trim());
+      if (hasExisting) {
+        const ok = window.confirm(
+          `当前参数表已有内容。识别到 ${rowCount} 条参数，是否覆盖未保存的参数表？\n取消将保留当前内容。`
+        );
+        if (!ok) {
+          setStatus("已取消覆盖，保留当前参数表。");
+          return;
+        }
+      }
+
       onExtract(json.data);
-      setStatus("识别完成，参数已自动填入，记得保存并发布。");
+      setStatus(`识别完成，已填入 ${rowCount} 条参数到表格，可继续编辑/排序后保存并发布。`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "识别失败");
     } finally {
@@ -567,7 +618,7 @@ export function PdfSpecImportField({
   }
 
   return (
-    <Field label="参数 PDF 识别（自动填充参数）" className="sm:col-span-2">
+    <Field label="参数 PDF 识别（自动填充参数表）" className="sm:col-span-2">
       <div className="space-y-2">
         <input
           ref={inputRef}
@@ -598,6 +649,9 @@ export function PdfSpecImportField({
         ) : null}
         {status ? <p className="text-xs text-emerald-400">{status}</p> : null}
         {error ? <p className="text-xs text-red-400">{error}</p> : null}
+        <p className="text-[11px] text-gray-500">
+          识别结果会写入可编辑参数表（参数名称 / 内容），不会恢复固定模板行。若表中已有内容，覆盖前会确认。
+        </p>
       </div>
     </Field>
   );

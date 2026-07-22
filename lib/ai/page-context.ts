@@ -21,7 +21,7 @@ export function resolvePageContext(
         type: "product",
         productId: id,
         model: p.model,
-        name: p.name[locale],
+        name: p.name?.[locale] || p.name?.zh || p.model,
         href: `/products/${id}`,
       };
     }

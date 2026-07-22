@@ -452,18 +452,3 @@ export function pickCaseTitleZh(doc: TitleSource, fallback = "未命名案例"):
 export function pickCaseTitleEn(doc: TitleSource, fallback = "Untitled case"): string {
   return pickString(doc.titleEn, doc.title, doc.nameEn, doc.name, doc.titleZh) || fallback;
 }
-
-/** 产品名称：nameZh → name → titleZh → title → model */
-export function pickProductNameZh(
-  doc: TitleSource & { model?: string | null },
-  fallback = "未命名产品"
-): string {
-  return pickString(doc.nameZh, doc.name, doc.titleZh, doc.title, doc.model) || fallback;
-}
-
-export function pickProductNameEn(
-  doc: TitleSource & { model?: string | null },
-  fallback = "Untitled product"
-): string {
-  return pickString(doc.nameEn, doc.name, doc.titleEn, doc.title, doc.model) || fallback;
-}

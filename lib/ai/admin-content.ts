@@ -1,4 +1,5 @@
 import { chatCompletion } from "@/lib/ai/deepseek";
+import { normalizeExtractedSpecsToTableFormat } from "@/lib/admin-product-specs";
 
 type CaseTranslation = {
   titleEn: string;
@@ -10,6 +11,7 @@ type ProductSpecExtraction = {
   specsEn: string;
   descZh?: string;
   descEn?: string;
+  rowCount?: number;
 };
 
 export type BilingualPairInput = {
@@ -31,6 +33,30 @@ function extractJsonObject(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function rowsFromAiPayload(parsed: Record<string, unknown>): {
+  specsZh: string;
+  specsEn: string;
+} | null {
+  const rowsRaw = parsed.rows;
+  if (!Array.isArray(rowsRaw) || !rowsRaw.length) return null;
+
+  const zhLines: string[] = [];
+  const enLines: string[] = [];
+  for (const item of rowsRaw) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const labelZh = String(row.labelZh ?? row.nameZh ?? row.label ?? "").trim();
+    const labelEn = String(row.labelEn ?? row.nameEn ?? row.label ?? "").trim();
+    const valueZh = String(row.valueZh ?? row.value ?? "").trim();
+    const valueEn = String(row.valueEn ?? row.value ?? "").trim();
+    if (!labelZh && !valueZh && !labelEn && !valueEn) continue;
+    if (labelZh || valueZh) zhLines.push(`${labelZh || "—"}: ${valueZh}`);
+    if (labelEn || valueEn) enLines.push(`${labelEn || "—"}: ${valueEn}`);
+  }
+  if (!zhLines.length && !enLines.length) return null;
+  return { specsZh: zhLines.join("\n"), specsEn: enLines.join("\n") };
 }
 
 export async function translateCaseZhToEn(input: {
@@ -69,7 +95,7 @@ export async function extractProductSpecsFromPdfText(input: {
       {
         role: "system",
         content:
-          "You extract product specification summary from PDF text. Return ONLY valid JSON with keys: specsZh, specsEn, descZh, descEn. Keep specs short, one compact line each language. If uncertain, best-effort from available text.",
+          "You extract product technical specifications from PDF text for a CMS editable table. Return ONLY valid JSON. Prefer: {\"rows\":[{\"labelZh\":\"参数名称\",\"labelEn\":\"Parameter\",\"valueZh\":\"中文值\",\"valueEn\":\"English value\"}],\"descZh\":\"...\",\"descEn\":\"...\"}. Rules: 1) One object per parameter row. 2) Do NOT return a single pipe-separated compact summary line. 3) Do NOT invent empty fixed template rows. 4) Only include parameters found in the PDF. 5) Keep bilingual labels/values aligned. Fallback keys specsZh/specsEn are allowed only as multiline \"Label: Value\" text (one parameter per line).",
       },
       {
         role: "user",
@@ -79,22 +105,27 @@ export async function extractProductSpecsFromPdfText(input: {
         }),
       },
     ],
-    { maxTokens: 700, temperature: 0.2 }
+    { maxTokens: 1600, temperature: 0.2 }
   );
 
   const parsed = extractJsonObject(reply);
   if (!parsed) return null;
 
-  const specsZh = String(parsed.specsZh ?? "").trim();
-  const specsEn = String(parsed.specsEn ?? "").trim();
+  const fromRows = rowsFromAiPayload(parsed);
+  const specsZhRaw = fromRows?.specsZh ?? String(parsed.specsZh ?? "").trim();
+  const specsEnRaw = fromRows?.specsEn ?? String(parsed.specsEn ?? "").trim();
   const descZh = String(parsed.descZh ?? "").trim();
   const descEn = String(parsed.descEn ?? "").trim();
 
-  if (!specsZh || !specsEn) return null;
+  if (!specsZhRaw && !specsEnRaw) return null;
+
+  const normalized = normalizeExtractedSpecsToTableFormat(specsZhRaw, specsEnRaw);
+  if (!normalized.rowCount) return null;
 
   return {
-    specsZh,
-    specsEn,
+    specsZh: normalized.specsZh,
+    specsEn: normalized.specsEn,
+    rowCount: normalized.rowCount,
     descZh: descZh || undefined,
     descEn: descEn || undefined,
   };

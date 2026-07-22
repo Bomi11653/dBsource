@@ -15,7 +15,7 @@ export default function ProductCard({
   locale: Locale;
   index?: number;
 }) {
-  const { primary, subtitle, label } = getProductDisplayTitle(product, locale);
+  const { primary, label } = getProductDisplayTitle(product, locale);
 
   return (
     <Link
@@ -46,9 +46,6 @@ export default function ProductCard({
         <div className="flex justify-between items-start gap-2">
           <div className="min-w-0">
             <h2 className="type-card-title text-xl">{primary}</h2>
-            {subtitle ? (
-              <p className="text-brand-gold text-sm type-label mt-1">{subtitle}</p>
-            ) : null}
           </div>
         </div>
         <p className="text-gray-400 text-sm mt-3 leading-relaxed">
