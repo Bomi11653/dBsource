@@ -499,6 +499,47 @@ export default function AdminSectionEditor({
   );
   const [missingManagedSlugs, setMissingManagedSlugs] = useState<ProductSeriesDisplayKey[]>([]);
   const [savingSeriesSlug, setSavingSeriesSlug] = useState<string | null>(null);
+  /** 产品系列管理：增加系列下拉是否展开 */
+  const [showAddSeriesMenu, setShowAddSeriesMenu] = useState(false);
+  /** 新增产品后短暂高亮定位 */
+  const [highlightedRowId, setHighlightedRowId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<number | null>(null);
+
+  const clearHighlightTimer = useCallback(() => {
+    if (highlightTimerRef.current != null) {
+      window.clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = null;
+    }
+  }, []);
+
+  const focusCreatedAdminRow = useCallback((createdId: string) => {
+    const tryScroll = () => {
+      const el = document.getElementById(`admin-row-${createdId}`);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return true;
+    };
+    window.requestAnimationFrame(() => {
+      if (tryScroll()) return;
+      window.setTimeout(() => {
+        if (!tryScroll()) window.setTimeout(tryScroll, 300);
+      }, 200);
+    });
+  }, []);
+
+  const highlightCreatedRow = useCallback(
+    (createdId: string) => {
+      clearHighlightTimer();
+      setHighlightedRowId(createdId);
+      highlightTimerRef.current = window.setTimeout(() => {
+        setHighlightedRowId((current) => (current === createdId ? null : current));
+        highlightTimerRef.current = null;
+      }, 2500);
+    },
+    [clearHighlightTimer]
+  );
+
+  useEffect(() => () => clearHighlightTimer(), [clearHighlightTimer]);
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
   const adminProductCatalogTabs = useMemo(
@@ -983,10 +1024,22 @@ export default function AdminSectionEditor({
     const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
     setSavingId(null);
     if (json.ok) {
-      const toast = formatSaveToast(json);
-      setMessage({ type: toast.type, text: toast.text });
       const created = (json as { data?: { data?: StrapiRow } }).data?.data;
       const createdId = created ? docId(created) : null;
+
+      // 产品：清搜索/切到全部，保证可见，再展开并滚动高亮（不改 sortOrder）
+      if (section === "products" && createdId) {
+        setSearch("");
+        setProductCatalogFilter("all");
+        await load(createdId);
+        setMessage({ type: "ok", text: "已创建新产品，已定位到新建项。" });
+        focusCreatedAdminRow(createdId);
+        highlightCreatedRow(createdId);
+        return;
+      }
+
+      const toast = formatSaveToast(json);
+      setMessage({ type: toast.type, text: toast.text });
       load(createdId);
     } else {
       setMessage({ type: "error", text: json.error || "创建失败" });
@@ -1055,7 +1108,9 @@ export default function AdminSectionEditor({
 
   async function fillMissingManagedSeries(slug: ProductSeriesDisplayKey) {
     if (!missingManagedSlugs.includes(slug)) return;
+    if (!isProductSeriesDisplayKey(slug)) return;
     setSavingSeriesSlug(slug);
+    setShowAddSeriesMenu(false);
     setMessage(null);
     try {
       const seed = getManagedSeriesSeedPayload(slug);
@@ -1066,8 +1121,10 @@ export default function AdminSectionEditor({
       });
       const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
       if (json.ok) {
-        const toast = formatSaveToast(json);
-        setMessage({ type: toast.type, text: toast.text || `已补齐系列 ${slug}` });
+        setMessage({
+          type: "ok",
+          text: `已补齐 ${seed.nameZh || slug.toUpperCase()} 系列。`,
+        });
         await reloadManagedSeries();
       } else {
         setMessage({ type: "error", text: json.error || "补齐系列失败" });
@@ -1083,11 +1140,62 @@ export default function AdminSectionEditor({
   }
 
   function countProductsUsingSeries(slug: string): number {
+    // rows 为后台加载的全量产品列表（筛选只作用于 filteredRows）
     return rows.reduce((count, row) => {
       const id = docId(row);
       const draft = drafts[id] ?? row;
       return String(draft.productLine ?? "").trim() === slug ? count + 1 : count;
     }, 0);
+  }
+
+  async function deleteManagedSeries(slug: string) {
+    const draft = managedSeriesDrafts[slug] ?? managedSeriesRows.find((row) => row.slug === slug);
+    if (!draft?.documentId) {
+      window.alert("无法删除：未找到该系列的文档 ID。");
+      return;
+    }
+
+    const usageCount = countProductsUsingSeries(slug);
+    if (usageCount > 0) {
+      window.alert(
+        `该系列下仍有 ${usageCount} 个产品，不能删除。请先将产品移动到其他系列，或使用隐藏。`
+      );
+      return;
+    }
+
+    // 稳定版：核心七项禁止真删除，请用 visible=false
+    if (isProductSeriesDisplayKey(slug)) {
+      window.alert("该系列属于固定产品系列，不建议删除。请使用隐藏功能。");
+      return;
+    }
+
+    const label = draft.nameZh?.trim() || slug;
+    const ok = window.confirm(
+      `确认删除系列「${label}」（${slug}）？\n删除后不可恢复，建议优先使用隐藏。`
+    );
+    if (!ok) return;
+
+    setSavingSeriesSlug(slug);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/product-series-configs/${draft.documentId}`, {
+        method: "DELETE",
+      });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        setMessage({ type: "ok", text: `系列「${label}」已删除。` });
+        await reloadManagedSeries();
+      } else {
+        setMessage({ type: "error", text: json.error || "删除系列失败" });
+      }
+    } catch (e) {
+      setMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "删除系列失败",
+      });
+    } finally {
+      setSavingSeriesSlug(null);
+    }
   }
 
   async function saveContact() {
@@ -1625,12 +1733,57 @@ export default function AdminSectionEditor({
 
       {section === "products" ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-medium text-gray-200">产品系列管理</h3>
-            <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-              用于控制产品页系列筛选、顶部产品下拉和后台产品编辑中的系列名称、排序与显示状态。
-              仅管理固定七项（la / lw / mi / do / sol / k / re）；不提供删除，隐藏请关闭「显示」。
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-gray-200">产品系列管理</h3>
+              <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                用于控制产品页系列筛选、顶部产品下拉和后台产品编辑中的系列名称、排序与显示状态。
+                仅管理固定七项（la / lw / mi / do / sol / k / re）；固定系列禁止真删除，请用「显示」开关隐藏。
+              </p>
+            </div>
+            <div className="relative shrink-0">
+              {missingManagedSlugs.length === 0 ? (
+                <button
+                  type="button"
+                  disabled
+                  className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-600 cursor-not-allowed"
+                  title="固定七项系列已存在，不允许新增陌生 slug"
+                >
+                  固定系列已完整
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={Boolean(savingSeriesSlug)}
+                    onClick={() => setShowAddSeriesMenu((open) => !open)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
+                  >
+                    {savingSeriesSlug ? "补齐中…" : "增加系列"}
+                  </button>
+                  {showAddSeriesMenu ? (
+                    <div className="absolute right-0 z-20 mt-1 min-w-[180px] rounded-xl border border-white/15 bg-zinc-950/95 shadow-lg p-1">
+                      <p className="px-2 py-1.5 text-[10px] text-gray-500">仅可补齐缺失的固定系列</p>
+                      {missingManagedSlugs.map((slug) => {
+                        const seed = getManagedSeriesSeedPayload(slug);
+                        return (
+                          <button
+                            key={slug}
+                            type="button"
+                            disabled={savingSeriesSlug === slug}
+                            onClick={() => fillMissingManagedSeries(slug)}
+                            className="w-full text-left text-xs px-2.5 py-2 rounded-lg text-gray-200 hover:bg-white/10 disabled:opacity-40"
+                          >
+                            补齐 {seed.nameZh || slug.toUpperCase()}
+                            <span className="ml-1 font-mono text-[10px] text-gray-500">({slug})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -1712,14 +1865,31 @@ export default function AdminSectionEditor({
                       </td>
                       <td className="py-2 pr-2 font-mono text-gray-400">{usage}</td>
                       <td className="py-2">
-                        <button
-                          type="button"
-                          disabled={savingSeriesSlug === row.slug}
-                          onClick={() => saveManagedSeries(row.slug)}
-                          className="text-xs px-3 py-1.5 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
-                        >
-                          {savingSeriesSlug === row.slug ? "保存中…" : "保存"}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={savingSeriesSlug === row.slug}
+                            onClick={() => saveManagedSeries(row.slug)}
+                            className="text-xs px-3 py-1.5 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
+                          >
+                            {savingSeriesSlug === row.slug ? "保存中…" : "保存"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingSeriesSlug === row.slug}
+                            onClick={() => deleteManagedSeries(row.slug)}
+                            className="text-xs px-3 py-1.5 rounded-lg border border-red-400/35 text-red-300/90 hover:bg-red-500/10 disabled:opacity-40"
+                            title={
+                              usage > 0
+                                ? `仍有 ${usage} 个产品占用`
+                                : isProductSeriesDisplayKey(row.slug)
+                                  ? "固定系列，请优先隐藏"
+                                  : "删除系列配置"
+                            }
+                          >
+                            删除
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1728,23 +1898,12 @@ export default function AdminSectionEditor({
             </table>
           </div>
 
-          {missingManagedSlugs.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-[11px] text-amber-200/80">缺失固定系列，可补齐：</span>
-              {missingManagedSlugs.map((slug) => (
-                <button
-                  key={slug}
-                  type="button"
-                  disabled={savingSeriesSlug === slug}
-                  onClick={() => fillMissingManagedSeries(slug)}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-200 hover:bg-amber-400/10 disabled:opacity-40"
-                >
-                  补齐 {slug}
-                </button>
-              ))}
-            </div>
-          ) : (
+          {missingManagedSlugs.length === 0 ? (
             <p className="text-[11px] text-gray-600">当前固定系列已完整，不支持新增陌生 slug。</p>
+          ) : (
+            <p className="text-[11px] text-amber-200/70">
+              检测到缺失 {missingManagedSlugs.length} 项固定系列，请使用右上角「增加系列」补齐。
+            </p>
           )}
         </div>
       ) : null}
@@ -2198,6 +2357,7 @@ export default function AdminSectionEditor({
                   ? globalIndex >= 0 && globalIndex < sortedAllProducts.length - 1
                   : true;
               const productSortSaving = savingId === `product-sort-${id}`;
+              const isHighlighted = highlightedRowId === id;
               const sortDraftValue =
                 productSortDrafts[id] ??
                 String(
@@ -2212,7 +2372,11 @@ export default function AdminSectionEditor({
                   id={`admin-row-${id}`}
                   className={cn(
                     "rounded-2xl border overflow-hidden transition-colors",
-                    isOpen ? "border-brand-gold/25 bg-white/[0.02]" : "border-white/10"
+                    isHighlighted
+                      ? "border-brand-gold/60 bg-brand-gold/[0.08] ring-1 ring-brand-gold/25"
+                      : isOpen
+                        ? "border-brand-gold/25 bg-white/[0.02]"
+                        : "border-white/10"
                   )}
                 >
                   <div className="w-full flex items-center gap-2 px-5 py-4 hover:bg-white/[0.03] transition-colors">
@@ -2223,6 +2387,11 @@ export default function AdminSectionEditor({
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{title}</span>
+                        {isHighlighted ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-brand-gold/20 text-brand-gold">
+                            刚刚创建
+                          </span>
+                        ) : null}
                         {section === "products" ? (
                           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300">
                             {getAdminProductMajorCategory(draft, productSeriesConfig).label}
