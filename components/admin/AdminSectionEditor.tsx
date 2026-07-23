@@ -20,12 +20,12 @@ import {
 import {
   compareAdminProductRows,
   countAdminProductsByCatalogFilter,
+  getAdminCatalogCategoryPatch,
   getAdminProductCatalogTabs,
   getAdminProductMajorCategory,
   getAdminProductRowMeta,
-  getAdminProductSeriesPatch,
   getAdminProductSeriesSelectOptions,
-  getAdminSeriesSelectValue,
+  getAdminSeriesSelectionPatch,
   matchAdminProductCatalogFilter,
   resolveAdminSeriesSavePatch,
   resolveAdminSeriesSelection,
@@ -397,7 +397,7 @@ const CREATABLE_SECTIONS = new Set(["products", "cases", "downloads", "about", "
 
 type ManagedSeriesDraft = {
   documentId: string;
-  slug: ProductSeriesDisplayKey;
+  slug: string;
   nameZh: string;
   nameEn: string;
   sortOrder: number;
@@ -408,7 +408,7 @@ type ManagedSeriesDraft = {
 
 function toManagedSeriesDraft(row: Record<string, unknown>): ManagedSeriesDraft | null {
   const slug = String(row.slug ?? "").trim().toLowerCase();
-  if (!isProductSeriesDisplayKey(slug)) return null;
+  if (!slug) return null;
   const documentId = String(row.documentId ?? "").trim();
   if (!documentId) return null;
   return {
@@ -440,6 +440,27 @@ function applyManagedSeriesState(
   setRows(managed);
   setDrafts(Object.fromEntries(managed.map((row) => [row.slug, { ...row }])));
   setMissing(getMissingManagedSeriesSlugs(cmsRows));
+}
+
+/** Soft reload 后保持当前滚动位置，避免保存时整页跳动 */
+function restoreAdminScroll(scrollY: number | null, openRowId?: string | null) {
+  if (typeof window === "undefined" || scrollY == null) return;
+  const apply = () => {
+    window.scrollTo({ top: scrollY, left: 0, behavior: "auto" });
+    if (openRowId) {
+      const el = document.getElementById(`admin-row-${openRowId}`);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const inView = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      if (!inView) {
+        el.scrollIntoView({ behavior: "auto", block: "nearest" });
+      }
+    }
+  };
+  window.requestAnimationFrame(() => {
+    apply();
+    window.setTimeout(apply, 50);
+  });
 }
 
 /** Unique draft model for each 「新增产品」 click (Strapi model is unique). */
@@ -639,13 +660,17 @@ export default function AdminSectionEditor({
   ]);
 
   const load = useCallback(
-    async (preferredOpenId?: string | null) => {
+    async (preferredOpenId?: string | null, options?: { soft?: boolean }) => {
       if (!tokenReady) {
         setLoading(false);
         return;
       }
-      setLoading(true);
-      setMessage(null);
+      const soft = options?.soft === true;
+      const scrollY = soft && typeof window !== "undefined" ? window.scrollY : null;
+      if (!soft) {
+        setLoading(true);
+        setMessage(null);
+      }
 
       if (section === "contact") {
         const [cRes, lRes, sRes] = await Promise.all([
@@ -690,12 +715,14 @@ export default function AdminSectionEditor({
           setSalesContactDrafts({});
           setSalesContactLoadError(parseSalesContactLoadError(sJson.error));
         }
-        setLoading(false);
+        if (!soft) setLoading(false);
+        restoreAdminScroll(scrollY);
         return;
       }
 
       if (!collection || collection === "contact-info") {
-        setLoading(false);
+        if (!soft) setLoading(false);
+        restoreAdminScroll(scrollY);
         return;
       }
 
@@ -751,12 +778,15 @@ export default function AdminSectionEditor({
           if (current && list.some((item) => docId(item) === current)) {
             return current;
           }
+          // soft 刷新时不要强制跳到第一项，避免编辑位置跳动
+          if (soft) return current;
           return list[0] ? docId(list[0]) : null;
         });
-      } else {
+      } else if (!soft) {
         setMessage({ type: "error", text: json.error || "加载失败" });
       }
-      setLoading(false);
+      if (!soft) setLoading(false);
+      restoreAdminScroll(scrollY, preferredOpenId);
     },
     [collection, section, tokenReady]
   );
@@ -812,8 +842,9 @@ export default function AdminSectionEditor({
     if (collection === "products") {
       const model = String(draft.model ?? "").trim();
       payload.model = model;
-      payload.nameZh = String(draft.nameZh ?? model).trim() || model;
-      payload.nameEn = String(draft.nameEn ?? model).trim() || model;
+      // 产品名与型号统一：中英文名称均写型号
+      payload.nameZh = model;
+      payload.nameEn = model;
       const seriesPatch = resolveAdminSeriesSavePatch(productSeriesConfig, {
         productLine: String(draft.productLine ?? "").trim(),
         model,
@@ -909,8 +940,9 @@ export default function AdminSectionEditor({
         next.delete(id);
         return next;
       });
+      // 产品保存后软刷新：保持展开项与滚动位置，避免整页跳动
       if (collection === "products") {
-        await load(id);
+        await load(id, { soft: true });
       }
     } else {
       setMessage({ type: "error", text: json.error || "保存失败" });
@@ -1032,7 +1064,7 @@ export default function AdminSectionEditor({
         setSearch("");
         setProductCatalogFilter("all");
         await load(createdId);
-        setMessage({ type: "ok", text: "已创建新产品，已定位到新建项。" });
+        setMessage({ type: "ok", text: "已创建新产品，并已定位到列表底部。" });
         focusCreatedAdminRow(createdId);
         highlightCreatedRow(createdId);
         return;
@@ -1066,7 +1098,7 @@ export default function AdminSectionEditor({
     }
   }
 
-  async function saveManagedSeries(slug: ProductSeriesDisplayKey) {
+  async function saveManagedSeries(slug: string) {
     const draft = managedSeriesDrafts[slug];
     if (!draft?.documentId) return;
     setSavingSeriesSlug(slug);
@@ -1158,7 +1190,7 @@ export default function AdminSectionEditor({
     const usageCount = countProductsUsingSeries(slug);
     if (usageCount > 0) {
       window.alert(
-        `该系列下仍有 ${usageCount} 个产品，不能删除。请先将产品移动到其他系列，或使用隐藏。`
+        `该系列下仍有 ${usageCount} 个产品，不能删除。请先移动产品，或使用隐藏。`
       );
       return;
     }
@@ -1483,7 +1515,7 @@ export default function AdminSectionEditor({
         return next;
       });
 
-      await load(openId);
+      await load(openId ?? documentId, { soft: true });
       setMessage({
         type: "ok",
         text: json.message || (json.changed === false ? "排序未变化" : "排序已更新"),
@@ -1720,6 +1752,17 @@ export default function AdminSectionEditor({
         </div>
       ) : null}
 
+      {section === "products" ? (
+        <div className="rounded-lg border border-brand-gold/35 bg-brand-gold/[0.06] px-3 py-2">
+          <p className="text-sm font-medium text-brand-gold tracking-wide">
+            产品中心 · 在线编辑 v2c12739
+          </p>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            系列管理增强版：每行可删除（固定七项受保护）· 新增产品自动定位
+          </p>
+        </div>
+      ) : null}
+
       {section === "products" && duplicateProductSortOrders.length > 0 ? (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200 space-y-1">
           <p>检测到产品排序号重复，请先修复，否则排序交换可能失败：</p>
@@ -1741,16 +1784,16 @@ export default function AdminSectionEditor({
                 仅管理固定七项（la / lw / mi / do / sol / k / re）；固定系列禁止真删除，请用「显示」开关隐藏。
               </p>
             </div>
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 max-w-sm">
               {missingManagedSlugs.length === 0 ? (
-                <button
-                  type="button"
-                  disabled
-                  className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-600 cursor-not-allowed"
-                  title="固定七项系列已存在，不允许新增陌生 slug"
-                >
-                  固定系列已完整
-                </button>
+                <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-left sm:text-right">
+                  <p className="text-xs font-medium text-emerald-200/95 leading-snug">
+                    固定七项已完整
+                  </p>
+                  <p className="text-[11px] text-emerald-100/75 mt-1 leading-relaxed">
+                    如需新增自定义系列需后续开启「自定义系列模式」。
+                  </p>
+                </div>
               ) : (
                 <>
                   <button
@@ -1763,7 +1806,9 @@ export default function AdminSectionEditor({
                   </button>
                   {showAddSeriesMenu ? (
                     <div className="absolute right-0 z-20 mt-1 min-w-[180px] rounded-xl border border-white/15 bg-zinc-950/95 shadow-lg p-1">
-                      <p className="px-2 py-1.5 text-[10px] text-gray-500">仅可补齐缺失的固定系列</p>
+                      <p className="px-2 py-1.5 text-[10px] text-gray-500">
+                        仅可补齐缺失的固定系列（la/lw/mi/do/sol/k/re）
+                      </p>
                       {missingManagedSlugs.map((slug) => {
                         const seed = getManagedSeriesSeedPayload(slug);
                         return (
@@ -1803,6 +1848,7 @@ export default function AdminSectionEditor({
                 {managedSeriesRows.map((row) => {
                   const draft = managedSeriesDrafts[row.slug] ?? row;
                   const usage = countProductsUsingSeries(row.slug);
+                  const isCoreSeries = isProductSeriesDisplayKey(row.slug);
                   return (
                     <tr key={row.slug} className="border-b border-white/5 align-top">
                       <td className="py-2 pr-2">
@@ -1823,6 +1869,9 @@ export default function AdminSectionEditor({
                       </td>
                       <td className="py-2 pr-2">
                         <code className="text-brand-gold/90">{row.slug}</code>
+                        {isCoreSeries ? (
+                          <span className="ml-1 text-[10px] text-gray-600">固定</span>
+                        ) : null}
                       </td>
                       <td className="py-2 pr-2">
                         <input
@@ -1882,7 +1931,7 @@ export default function AdminSectionEditor({
                             title={
                               usage > 0
                                 ? `仍有 ${usage} 个产品占用`
-                                : isProductSeriesDisplayKey(row.slug)
+                                : isCoreSeries
                                   ? "固定系列，请优先隐藏"
                                   : "删除系列配置"
                             }
@@ -1899,7 +1948,9 @@ export default function AdminSectionEditor({
           </div>
 
           {missingManagedSlugs.length === 0 ? (
-            <p className="text-[11px] text-gray-600">当前固定系列已完整，不支持新增陌生 slug。</p>
+            <p className="text-[11px] text-emerald-200/70">
+              固定七项已完整，如需新增自定义系列需后续开启「自定义系列模式」。
+            </p>
           ) : (
             <p className="text-[11px] text-amber-200/70">
               检测到缺失 {missingManagedSlugs.length} 项固定系列，请使用右上角「增加系列」补齐。
@@ -2670,21 +2721,34 @@ function renderFields(
 
   if (section === "products") {
     const seriesSelection = resolveAdminSeriesSelection(draft, productSeriesConfig);
-    const seriesOptions = getAdminProductSeriesSelectOptions(productSeriesConfig);
-    const seriesSelectValue = getAdminSeriesSelectValue(draft, productSeriesConfig);
     const seriesBadgeZh = getText(draft, "seriesZh");
     const seriesBadgeEn = getText(draft, "seriesEn");
     const productLineRaw = getText(draft, "productLine");
-    const seriesInStandardList = seriesOptions.some((o) => o.value === productLineRaw);
-    const seriesSelectOptions = seriesInStandardList
-      ? seriesOptions.map(({ value, label }) => ({ value, label }))
-      : [
-          {
-            value: productLineRaw || "__unknown",
-            label: `未知系列（${productLineRaw || "空"}）`,
-          },
-          ...seriesOptions.map(({ value, label }) => ({ value, label })),
-        ];
+    const catalogCategory =
+      seriesSelection.category === "touring"
+        ? "touring"
+        : seriesSelection.category === "engineering"
+          ? "engineering"
+          : "other";
+    const engineeringOptions = getAdminProductSeriesSelectOptions(productSeriesConfig);
+    const engineeringSelectValue =
+      catalogCategory === "engineering" && seriesSelection.seriesKey
+        ? seriesSelection.seriesKey
+        : "";
+    const engineeringSelectOptions =
+      catalogCategory === "engineering" && engineeringSelectValue
+        ? engineeringOptions.map(({ value, label }) => ({ value, label }))
+        : [
+            ...(catalogCategory === "other"
+              ? [
+                  {
+                    value: "__unknown",
+                    label: `未知系列（${productLineRaw || "空"}）`,
+                  },
+                ]
+              : [{ value: "", label: "请选择工程子系列" }]),
+            ...engineeringOptions.map(({ value, label }) => ({ value, label })),
+          ];
 
     const sectionCard = (title: string, children: React.ReactNode) => (
       <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
@@ -2702,36 +2766,103 @@ function renderFields(
               <input
                 className={inputClass}
                 value={getText(draft, "model")}
-                onChange={(e) => onChange({ model: e.target.value })}
-              />
-              <FieldHint>前台列表、详情与导航标题均显示此型号。</FieldHint>
-            </Field>
-            {textField("nameZh", "产品名称（中文）")}
-            {textField("nameEn", "产品名称（英文）")}
-            <p className="sm:col-span-2 text-[11px] text-white/40 -mt-2">
-              名称为 CMS 存档字段（唯一编辑入口）；保存时若为空则自动沿用型号。
-            </p>
-            <div className="sm:col-span-2">
-              <SelectField
-                key="productSeries"
-                label="产品系列"
-                value={seriesInStandardList ? seriesSelectValue : productLineRaw || "__unknown"}
-                options={seriesSelectOptions}
-                onChange={(v) => {
-                  if (!isProductSeriesDisplayKey(v)) return;
-                  onChange(getAdminProductSeriesPatch(v, productSeriesConfig));
+                onChange={(e) => {
+                  const model = e.target.value;
+                  onChange({ model, nameZh: model, nameEn: model });
                 }}
               />
               <FieldHint>
-                唯一系列编辑入口：选择后自动写入 productLine / seriesZh / seriesEn（不可手填）
-                {seriesBadgeZh || seriesBadgeEn
-                  ? `；当前：${[seriesBadgeZh, seriesBadgeEn].filter(Boolean).join(" / ")}`
-                  : ""}
-                。
+                唯一名称入口：中英文产品名与前台标题均使用此型号；保存时自动写入 nameZh / nameEn。
               </FieldHint>
-              {!seriesInStandardList || seriesSelection.category === "other" ? (
-                <p className="mt-2 text-[11px] text-amber-200/80 leading-relaxed">
-                  当前 productLine（{productLineRaw || "空"}）不在标准七项内。请重新选择「产品系列」后保存并发布。
+            </Field>
+            <div className="sm:col-span-2 space-y-3">
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">产品大类</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = getAdminCatalogCategoryPatch(
+                        "engineering",
+                        draft,
+                        productSeriesConfig
+                      );
+                      if (Object.keys(patch).length) onChange(patch);
+                    }}
+                    className={cn(
+                      "text-xs px-3 py-1.5 rounded-lg border transition-colors",
+                      catalogCategory === "engineering"
+                        ? "border-brand-gold/50 bg-brand-gold/15 text-brand-gold"
+                        : "border-white/15 text-gray-400 hover:text-white hover:border-white/30"
+                    )}
+                  >
+                    工程系列
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = getAdminCatalogCategoryPatch(
+                        "touring",
+                        draft,
+                        productSeriesConfig
+                      );
+                      if (Object.keys(patch).length) onChange(patch);
+                    }}
+                    className={cn(
+                      "text-xs px-3 py-1.5 rounded-lg border transition-colors",
+                      catalogCategory === "touring"
+                        ? "border-brand-gold/50 bg-brand-gold/15 text-brand-gold"
+                        : "border-white/15 text-gray-400 hover:text-white hover:border-white/30"
+                    )}
+                  >
+                    流动演出
+                  </button>
+                </div>
+              </div>
+
+              {catalogCategory === "engineering" || catalogCategory === "other" ? (
+                <SelectField
+                  key="engineeringSeries"
+                  label="工程子系列"
+                  value={engineeringSelectValue || "__unknown"}
+                  options={
+                    engineeringSelectValue
+                      ? engineeringSelectOptions
+                      : engineeringSelectOptions.map((opt) =>
+                          opt.value === "" ? { ...opt, value: "__unknown" } : opt
+                        )
+                  }
+                  onChange={(v) => {
+                    if (!v || v === "__unknown" || v === "") return;
+                    onChange(
+                      getAdminSeriesSelectionPatch(
+                        productSeriesConfig,
+                        "engineering",
+                        v,
+                        getText(draft, "model")
+                      )
+                    );
+                  }}
+                />
+              ) : (
+                <p className="text-[11px] text-gray-500 leading-relaxed rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
+                  当前为流动演出：保存后前台 / Navbar 会按本产品「型号」单独展示一项（工程按系列，演出按型号）。
+                  请确认型号唯一且可读；改型号后保存即可同步导航名称。
+                  {seriesBadgeZh || seriesBadgeEn
+                    ? ` 当前角标：${[seriesBadgeZh, seriesBadgeEn].filter(Boolean).join(" / ")}`
+                    : ""}
+                </p>
+              )}
+
+              <FieldHint>
+                大类选「工程系列」或「流动演出」；工程再选子系列，流动演出自动按型号登记到前台。
+                {catalogCategory === "engineering" && (seriesBadgeZh || seriesBadgeEn)
+                  ? ` 当前：${[seriesBadgeZh, seriesBadgeEn].filter(Boolean).join(" / ")}`
+                  : ""}
+              </FieldHint>
+              {catalogCategory === "other" ? (
+                <p className="text-[11px] text-amber-200/80 leading-relaxed">
+                  当前 productLine（{productLineRaw || "空"}）未能匹配。请选择「工程系列」或「流动演出」后保存并发布。
                 </p>
               ) : null}
             </div>
