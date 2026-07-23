@@ -35,8 +35,14 @@ import {
   buildProductSeriesConfig,
   DEFAULT_PRODUCT_SERIES_CONFIG,
   getAdminSeriesPatch,
+  getDefaultVisibleProductSeriesKey,
+  getManagedSeriesSeedPayload,
+  getMissingManagedSeriesSlugs,
+  isProductSeriesDisplayKey,
+  MANAGED_PRODUCT_SERIES_SLUGS,
   type CmsProductSeriesRow,
   type ProductSeriesConfig,
+  type ProductSeriesDisplayKey,
 } from "@/lib/product-series-config";
 import { serializeSalesContactPayload } from "@/lib/admin-sales-contact-payload";
 import { ADMIN_SECTIONS } from "@/lib/admin-sections";
@@ -389,6 +395,64 @@ function rowSearchText(
 
 const CREATABLE_SECTIONS = new Set(["products", "cases", "downloads", "about", "qr"]);
 
+type ManagedSeriesDraft = {
+  documentId: string;
+  slug: ProductSeriesDisplayKey;
+  nameZh: string;
+  nameEn: string;
+  sortOrder: number;
+  visible: boolean;
+  modelPrefix: string;
+  seriesGroup: string;
+};
+
+function toManagedSeriesDraft(row: Record<string, unknown>): ManagedSeriesDraft | null {
+  const slug = String(row.slug ?? "").trim().toLowerCase();
+  if (!isProductSeriesDisplayKey(slug)) return null;
+  const documentId = String(row.documentId ?? "").trim();
+  if (!documentId) return null;
+  return {
+    documentId,
+    slug,
+    nameZh: String(row.nameZh ?? ""),
+    nameEn: String(row.nameEn ?? ""),
+    sortOrder: Number(row.sortOrder) || 0,
+    visible: row.visible !== false,
+    modelPrefix: String(row.modelPrefix ?? slug.toUpperCase()),
+    seriesGroup: String(row.seriesGroup ?? "speaker"),
+  };
+}
+
+function applyManagedSeriesState(
+  cmsRows: CmsProductSeriesRow[] | undefined,
+  setConfig: (config: ProductSeriesConfig) => void,
+  setRows: (rows: ManagedSeriesDraft[]) => void,
+  setDrafts: (drafts: Record<string, ManagedSeriesDraft>) => void,
+  setMissing: (slugs: ProductSeriesDisplayKey[]) => void
+) {
+  setConfig(buildProductSeriesConfig(cmsRows));
+  const managed = MANAGED_PRODUCT_SERIES_SLUGS.map((slug) => {
+    const hit = (cmsRows ?? []).find(
+      (row) => String(row.slug ?? "").trim().toLowerCase() === slug
+    );
+    return hit ? toManagedSeriesDraft(hit as unknown as Record<string, unknown>) : null;
+  }).filter((row): row is ManagedSeriesDraft => Boolean(row));
+  setRows(managed);
+  setDrafts(Object.fromEntries(managed.map((row) => [row.slug, { ...row }])));
+  setMissing(getMissingManagedSeriesSlugs(cmsRows));
+}
+
+/** Unique draft model for each 「新增产品」 click (Strapi model is unique). */
+function createDraftProductModel(): string {
+  const now = new Date();
+  const pad = (n: number, len = 2) => String(n).padStart(len, "0");
+  const stamp =
+    `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+    `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `DRAFT-${stamp}-${suffix}`;
+}
+
 export default function AdminSectionEditor({
   section,
   tokenReady,
@@ -429,6 +493,12 @@ export default function AdminSectionEditor({
   const [productSeriesConfig, setProductSeriesConfig] = useState<ProductSeriesConfig>(
     DEFAULT_PRODUCT_SERIES_CONFIG
   );
+  const [managedSeriesRows, setManagedSeriesRows] = useState<ManagedSeriesDraft[]>([]);
+  const [managedSeriesDrafts, setManagedSeriesDrafts] = useState<Record<string, ManagedSeriesDraft>>(
+    {}
+  );
+  const [missingManagedSlugs, setMissingManagedSlugs] = useState<ProductSeriesDisplayKey[]>([]);
+  const [savingSeriesSlug, setSavingSeriesSlug] = useState<string | null>(null);
 
   const previewHref = ADMIN_SECTIONS.find((s) => s.id === section)?.previewHref;
   const adminProductCatalogTabs = useMemo(
@@ -598,9 +668,18 @@ export default function AdminSectionEditor({
             data?: { data?: CmsProductSeriesRow[] };
           };
           const cmsRows = seriesJson.ok ? seriesJson.data?.data : undefined;
-          setProductSeriesConfig(buildProductSeriesConfig(cmsRows));
+          applyManagedSeriesState(
+            cmsRows,
+            setProductSeriesConfig,
+            setManagedSeriesRows,
+            setManagedSeriesDrafts,
+            setMissingManagedSlugs
+          );
         } catch {
           setProductSeriesConfig(DEFAULT_PRODUCT_SERIES_CONFIG);
+          setManagedSeriesRows([]);
+          setManagedSeriesDrafts({});
+          setMissingManagedSlugs([...MANAGED_PRODUCT_SERIES_SLUGS]);
         }
       }
       if (json.ok && json.data?.data) {
@@ -850,14 +929,16 @@ export default function AdminSectionEditor({
     if (!collection || collection === "contact-info") return;
     setSavingId("new");
     const maxLegacyId = rows.reduce((m, r) => Math.max(m, Number(r.legacyId) || 0), 0);
+    const draftModel = createDraftProductModel();
+    const defaultSeriesKey = getDefaultVisibleProductSeriesKey(productSeriesConfig);
     const defaults: Record<string, Record<string, unknown>> = {
       products: {
-        model: "NEW-MODEL",
-        nameZh: "NEW-MODEL",
-        nameEn: "NEW-MODEL",
+        model: draftModel,
+        nameZh: draftModel,
+        nameEn: draftModel,
         descZh: "",
         descEn: "",
-        ...getAdminSeriesPatch(productSeriesConfig, "engineering", "la", "NEW-MODEL"),
+        ...getAdminSeriesPatch(productSeriesConfig, "engineering", defaultSeriesKey, draftModel),
         market: "all",
         sortOrder: rows.length + 1,
       },
@@ -910,6 +991,103 @@ export default function AdminSectionEditor({
     } else {
       setMessage({ type: "error", text: json.error || "创建失败" });
     }
+  }
+
+  async function reloadManagedSeries() {
+    try {
+      const seriesRes = await fetch("/api/admin/product-series-configs");
+      const seriesJson = (await seriesRes.json()) as {
+        ok?: boolean;
+        data?: { data?: CmsProductSeriesRow[] };
+      };
+      const cmsRows = seriesJson.ok ? seriesJson.data?.data : undefined;
+      applyManagedSeriesState(
+        cmsRows,
+        setProductSeriesConfig,
+        setManagedSeriesRows,
+        setManagedSeriesDrafts,
+        setMissingManagedSlugs
+      );
+    } catch {
+      setMessage({ type: "error", text: "产品系列配置刷新失败" });
+    }
+  }
+
+  async function saveManagedSeries(slug: ProductSeriesDisplayKey) {
+    const draft = managedSeriesDrafts[slug];
+    if (!draft?.documentId) return;
+    setSavingSeriesSlug(slug);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/product-series-configs/${draft.documentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: draft.slug,
+          nameZh: draft.nameZh.trim() || draft.slug,
+          nameEn: draft.nameEn.trim() || draft.nameZh.trim() || draft.slug,
+          sortOrder: Number(draft.sortOrder) || 0,
+          visible: draft.visible,
+          modelPrefix: draft.modelPrefix || draft.slug.toUpperCase(),
+          seriesGroup: draft.seriesGroup || "speaker",
+        }),
+      });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        const toast = formatSaveToast(json);
+        setMessage({
+          type: toast.type,
+          text: toast.text || `系列 ${slug} 已保存`,
+        });
+        await reloadManagedSeries();
+      } else {
+        setMessage({ type: "error", text: json.error || "系列保存失败" });
+      }
+    } catch (e) {
+      setMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "系列保存失败",
+      });
+    } finally {
+      setSavingSeriesSlug(null);
+    }
+  }
+
+  async function fillMissingManagedSeries(slug: ProductSeriesDisplayKey) {
+    if (!missingManagedSlugs.includes(slug)) return;
+    setSavingSeriesSlug(slug);
+    setMessage(null);
+    try {
+      const seed = getManagedSeriesSeedPayload(slug);
+      const res = await fetch("/api/admin/product-series-configs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(seed),
+      });
+      const json = (await res.json()) as AdminSaveResponse & { ok?: boolean; error?: string };
+      if (json.ok) {
+        const toast = formatSaveToast(json);
+        setMessage({ type: toast.type, text: toast.text || `已补齐系列 ${slug}` });
+        await reloadManagedSeries();
+      } else {
+        setMessage({ type: "error", text: json.error || "补齐系列失败" });
+      }
+    } catch (e) {
+      setMessage({
+        type: "error",
+        text: e instanceof Error ? e.message : "补齐系列失败",
+      });
+    } finally {
+      setSavingSeriesSlug(null);
+    }
+  }
+
+  function countProductsUsingSeries(slug: string): number {
+    return rows.reduce((count, row) => {
+      const id = docId(row);
+      const draft = drafts[id] ?? row;
+      return String(draft.productLine ?? "").trim() === slug ? count + 1 : count;
+    }, 0);
   }
 
   async function saveContact() {
@@ -1442,6 +1620,132 @@ export default function AdminSectionEditor({
               #{item.sortOrder} 被 {item.count} 个产品使用
             </p>
           ))}
+        </div>
+      ) : null}
+
+      {section === "products" ? (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-medium text-gray-200">产品系列管理</h3>
+            <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+              用于控制产品页系列筛选、顶部产品下拉和后台产品编辑中的系列名称、排序与显示状态。
+              仅管理固定七项（la / lw / mi / do / sol / k / re）；不提供删除，隐藏请关闭「显示」。
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-xs">
+              <thead>
+                <tr className="text-gray-500 border-b border-white/10">
+                  <th className="py-2 pr-2 font-medium">排序</th>
+                  <th className="py-2 pr-2 font-medium">系列 key</th>
+                  <th className="py-2 pr-2 font-medium">中文名称</th>
+                  <th className="py-2 pr-2 font-medium">英文名称</th>
+                  <th className="py-2 pr-2 font-medium">显示</th>
+                  <th className="py-2 pr-2 font-medium">产品数</th>
+                  <th className="py-2 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {managedSeriesRows.map((row) => {
+                  const draft = managedSeriesDrafts[row.slug] ?? row;
+                  const usage = countProductsUsingSeries(row.slug);
+                  return (
+                    <tr key={row.slug} className="border-b border-white/5 align-top">
+                      <td className="py-2 pr-2">
+                        <input
+                          className={cn(inputClass, "w-16")}
+                          type="number"
+                          value={draft.sortOrder}
+                          onChange={(e) =>
+                            setManagedSeriesDrafts((prev) => ({
+                              ...prev,
+                              [row.slug]: {
+                                ...draft,
+                                sortOrder: Number(e.target.value) || 0,
+                              },
+                            }))
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <code className="text-brand-gold/90">{row.slug}</code>
+                      </td>
+                      <td className="py-2 pr-2">
+                        <input
+                          className={inputClass}
+                          value={draft.nameZh}
+                          onChange={(e) =>
+                            setManagedSeriesDrafts((prev) => ({
+                              ...prev,
+                              [row.slug]: { ...draft, nameZh: e.target.value },
+                            }))
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <input
+                          className={inputClass}
+                          value={draft.nameEn}
+                          onChange={(e) =>
+                            setManagedSeriesDrafts((prev) => ({
+                              ...prev,
+                              [row.slug]: { ...draft, nameEn: e.target.value },
+                            }))
+                          }
+                        />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <label className="inline-flex items-center gap-2 text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={draft.visible}
+                            onChange={(e) =>
+                              setManagedSeriesDrafts((prev) => ({
+                                ...prev,
+                                [row.slug]: { ...draft, visible: e.target.checked },
+                              }))
+                            }
+                          />
+                          {draft.visible ? "显示" : "隐藏"}
+                        </label>
+                      </td>
+                      <td className="py-2 pr-2 font-mono text-gray-400">{usage}</td>
+                      <td className="py-2">
+                        <button
+                          type="button"
+                          disabled={savingSeriesSlug === row.slug}
+                          onClick={() => saveManagedSeries(row.slug)}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-brand-gold/40 text-brand-gold hover:bg-brand-gold/10 disabled:opacity-40"
+                        >
+                          {savingSeriesSlug === row.slug ? "保存中…" : "保存"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {missingManagedSlugs.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] text-amber-200/80">缺失固定系列，可补齐：</span>
+              {missingManagedSlugs.map((slug) => (
+                <button
+                  key={slug}
+                  type="button"
+                  disabled={savingSeriesSlug === slug}
+                  onClick={() => fillMissingManagedSeries(slug)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-200 hover:bg-amber-400/10 disabled:opacity-40"
+                >
+                  补齐 {slug}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-gray-600">当前固定系列已完整，不支持新增陌生 slug。</p>
+          )}
         </div>
       ) : null}
 
@@ -2197,12 +2501,21 @@ function renderFields(
 
   if (section === "products") {
     const seriesSelection = resolveAdminSeriesSelection(draft, productSeriesConfig);
-    const seriesOptions = getAdminProductSeriesSelectOptions();
+    const seriesOptions = getAdminProductSeriesSelectOptions(productSeriesConfig);
     const seriesSelectValue = getAdminSeriesSelectValue(draft, productSeriesConfig);
     const seriesBadgeZh = getText(draft, "seriesZh");
     const seriesBadgeEn = getText(draft, "seriesEn");
     const productLineRaw = getText(draft, "productLine");
     const seriesInStandardList = seriesOptions.some((o) => o.value === productLineRaw);
+    const seriesSelectOptions = seriesInStandardList
+      ? seriesOptions.map(({ value, label }) => ({ value, label }))
+      : [
+          {
+            value: productLineRaw || "__unknown",
+            label: `未知系列（${productLineRaw || "空"}）`,
+          },
+          ...seriesOptions.map(({ value, label }) => ({ value, label })),
+        ];
 
     const sectionCard = (title: string, children: React.ReactNode) => (
       <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
@@ -2233,9 +2546,12 @@ function renderFields(
               <SelectField
                 key="productSeries"
                 label="产品系列"
-                value={seriesSelectValue}
-                options={seriesOptions}
-                onChange={(v) => onChange(getAdminProductSeriesPatch(v))}
+                value={seriesInStandardList ? seriesSelectValue : productLineRaw || "__unknown"}
+                options={seriesSelectOptions}
+                onChange={(v) => {
+                  if (!isProductSeriesDisplayKey(v)) return;
+                  onChange(getAdminProductSeriesPatch(v, productSeriesConfig));
+                }}
               />
               <FieldHint>
                 唯一系列编辑入口：选择后自动写入 productLine / seriesZh / seriesEn（不可手填）

@@ -64,10 +64,10 @@ export default function ProductsContent({
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 250);
 
-  /** 前台筛选：与导航/后台同一套 PRODUCT_SERIES_DISPLAY */
+  /** 前台筛选：visible=true 的固定七项，文案/排序来自 CMS */
   const engineeringFilterTabs = useMemo(
-    () => getProductPageSeriesFilterTabs(locale),
-    [locale]
+    () => getProductPageSeriesFilterTabs(locale, productSeriesConfig),
+    [locale, productSeriesConfig]
   );
 
   const engineeringSeriesKeys = useMemo(

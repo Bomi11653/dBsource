@@ -3,6 +3,8 @@ import type { ProductSeriesTabFilter } from "@/lib/product-series-tabs";
 
 /** CMS product-series-config 行（Strapi ProductSeries） */
 export type CmsProductSeriesRow = {
+  documentId?: string;
+  id?: number | string;
   slug: string;
   nameZh: string;
   nameEn: string;
@@ -12,6 +14,17 @@ export type CmsProductSeriesRow = {
   visible?: boolean;
   featuredProductId?: number;
 };
+
+/** 稳定版可管理的固定七项（与 product.productLine 枚举对齐，禁止陌生 slug） */
+export const MANAGED_PRODUCT_SERIES_SLUGS = [
+  "la",
+  "lw",
+  "mi",
+  "do",
+  "sol",
+  "k",
+  "re",
+] as const;
 
 export type ProductSeriesCategoryKey = "engineering" | "touring";
 
@@ -23,6 +36,8 @@ export type ProductSeriesOption = {
   labelZh: string;
   labelEn: string;
   sortOrder: number;
+  /** 是否在前端筛选 / Navbar 展示；false=隐藏 */
+  visible?: boolean;
   /** 写入 CMS product 的 seriesGroup（与 productLine 绑定） */
   seriesGroup?: "speaker" | "dsp" | "software" | "engineering";
   /** 流动演出：按型号匹配 CMS 产品 */
@@ -88,8 +103,8 @@ export const ENGINEERING_PRODUCT_LINE_SLUGS = [
 export type EngineeringProductLineSlug = (typeof ENGINEERING_PRODUCT_LINE_SLUGS)[number];
 
 /**
- * 前台 /products 工程系列筛选按钮：统一短文案 + 固定顺序。
- * 仅影响展示层；内部 key / productLine 不变。不包含电子产品。
+ * 固定七项 fallback（CMS 缺失时使用）。
+ * 展示层优先读 CMS product-series-configs 的 nameZh/nameEn/sortOrder/visible。
  */
 export const PRODUCT_SERIES_DISPLAY = [
   { key: "la", labelZh: "LA系列", labelEn: "LA Series" },
@@ -103,64 +118,159 @@ export const PRODUCT_SERIES_DISPLAY = [
 
 export type ProductSeriesDisplayKey = (typeof PRODUCT_SERIES_DISPLAY)[number]["key"];
 
+const MANAGED_SERIES_SLUG_SET = new Set<string>(MANAGED_PRODUCT_SERIES_SLUGS);
+
+export function isProductSeriesDisplayKey(value: string): value is ProductSeriesDisplayKey {
+  return MANAGED_SERIES_SLUG_SET.has(value.trim().toLowerCase());
+}
+
+function resolveSeriesLocaleLabel(
+  entry: { key: string; labelZh: string; labelEn: string },
+  locale: "zh" | "en"
+): string {
+  if (locale === "en") {
+    return entry.labelEn.trim() || entry.labelZh.trim() || entry.key;
+  }
+  return entry.labelZh.trim() || entry.labelEn.trim() || entry.key;
+}
+
+/** 固定七项（含隐藏），按 CMS sortOrder；CMS 优先，缺省回退 PRODUCT_SERIES_DISPLAY */
+export function getManagedProductSeriesEntries(
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG,
+  options?: { includeHidden?: boolean }
+): ProductSeriesOption[] {
+  const includeHidden = options?.includeHidden ?? false;
+  return getEngineeringSeriesOptions(config)
+    .filter((series) => isProductSeriesDisplayKey(series.key))
+    .filter((series) => includeHidden || series.visible !== false)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.key.localeCompare(b.key));
+}
+
+export function getDefaultVisibleProductSeriesKey(
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): ProductSeriesDisplayKey {
+  const first = getManagedProductSeriesEntries(config, { includeHidden: false })[0];
+  return (first?.key as ProductSeriesDisplayKey) || "la";
+}
+
+export function getMissingManagedSeriesSlugs(
+  cmsRows?: CmsProductSeriesRow[] | null
+): ProductSeriesDisplayKey[] {
+  const present = new Set(
+    (cmsRows ?? [])
+      .map((row) => normalize(String(row.slug ?? "")))
+      .filter((slug) => isProductSeriesDisplayKey(slug))
+  );
+  return MANAGED_PRODUCT_SERIES_SLUGS.filter((slug) => !present.has(slug));
+}
+
+export function getManagedSeriesSeedPayload(slug: ProductSeriesDisplayKey): {
+  slug: ProductSeriesDisplayKey;
+  nameZh: string;
+  nameEn: string;
+  modelPrefix: string;
+  seriesGroup: "speaker";
+  sortOrder: number;
+  visible: boolean;
+} {
+  const fallback =
+    PRODUCT_SERIES_DISPLAY.find((item) => item.key === slug) ?? PRODUCT_SERIES_DISPLAY[0];
+  const index = PRODUCT_SERIES_DISPLAY.findIndex((item) => item.key === slug);
+  return {
+    slug,
+    nameZh: fallback.labelZh,
+    nameEn: fallback.labelEn,
+    modelPrefix: slug.toUpperCase(),
+    seriesGroup: "speaker",
+    sortOrder: index >= 0 ? index + 1 : 99,
+    visible: true,
+  };
+}
+
 export function getProductSeriesDisplayLabel(
   key: string,
-  locale: "zh" | "en" = "zh"
+  locale: "zh" | "en" = "zh",
+  config?: ProductSeriesConfig
 ): string | null {
-  const entry = PRODUCT_SERIES_DISPLAY.find((item) => item.key === key);
+  const normalized = key.trim().toLowerCase();
+  if (config) {
+    const entry = getManagedProductSeriesEntries(config, { includeHidden: true }).find(
+      (item) => item.key === normalized
+    );
+    if (entry) return resolveSeriesLocaleLabel(entry, locale);
+  }
+  const entry = PRODUCT_SERIES_DISPLAY.find((item) => item.key === normalized);
   if (!entry) return null;
   return locale === "zh" ? entry.labelZh : entry.labelEn;
 }
 
-/** 前台产品页工程系列筛选 Tab（不含「全部」、不含电子产品） */
-export function getProductPageSeriesFilterTabs(locale: "zh" | "en" = "zh"): Array<{
+/** 前台产品页工程系列筛选 Tab（不含「全部」、不含电子产品；仅 visible=true） */
+export function getProductPageSeriesFilterTabs(
+  locale: "zh" | "en" = "zh",
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): Array<{
   id: ProductSeriesDisplayKey;
   label: string;
 }> {
-  return PRODUCT_SERIES_DISPLAY.map((entry) => ({
-    id: entry.key,
-    label: locale === "zh" ? entry.labelZh : entry.labelEn,
+  return getManagedProductSeriesEntries(config, { includeHidden: false }).map((entry) => ({
+    id: entry.key as ProductSeriesDisplayKey,
+    label: resolveSeriesLocaleLabel(entry, locale),
   }));
 }
 
-export function isProductSeriesDisplayKey(value: string): value is ProductSeriesDisplayKey {
-  return PRODUCT_SERIES_DISPLAY.some((entry) => entry.key === value);
-}
-
-/** 前后台统一工程系列条目（固定顺序 / 短文案 / 不含电子产品） */
-export function getUnifiedEngineeringSeriesEntries(): Array<{
+/** 前后台统一工程系列条目（含隐藏；顺序/文案来自 config） */
+export function getUnifiedEngineeringSeriesEntries(
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): Array<{
   key: ProductSeriesDisplayKey;
   productLine: ProductSeriesDisplayKey;
   labelZh: string;
   labelEn: string;
   sortOrder: number;
+  visible: boolean;
 }> {
-  return PRODUCT_SERIES_DISPLAY.map((entry, index) => ({
-    key: entry.key,
-    productLine: entry.key,
+  return getManagedProductSeriesEntries(config, { includeHidden: true }).map((entry) => ({
+    key: entry.key as ProductSeriesDisplayKey,
+    productLine: entry.key as ProductSeriesDisplayKey,
     labelZh: entry.labelZh,
     labelEn: entry.labelEn,
-    sortOrder: index + 1,
+    sortOrder: entry.sortOrder,
+    visible: entry.visible !== false,
   }));
 }
 
-/** 后台「产品系列」下拉：仅短文案七项，不含电子产品 / CMS 长名称 / 流动演出 */
-export function getAdminProductSeriesSelectOptions(): Array<{ value: ProductSeriesDisplayKey; label: string }> {
-  return getUnifiedEngineeringSeriesEntries().map((entry) => ({
-    value: entry.key,
-    label: entry.labelZh,
-  }));
+/** 后台「产品系列」下拉：固定七项；隐藏项带「已隐藏」标记 */
+export function getAdminProductSeriesSelectOptions(
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): Array<{ value: ProductSeriesDisplayKey; label: string; hidden: boolean }> {
+  return getManagedProductSeriesEntries(config, { includeHidden: true }).map((entry) => {
+    const hidden = entry.visible === false;
+    const base = entry.labelZh.trim() || entry.key;
+    return {
+      value: entry.key as ProductSeriesDisplayKey,
+      label: hidden ? `${base}（已隐藏）` : base,
+      hidden,
+    };
+  });
 }
 
-/** 由统一短文案映射写入 CMS 系列字段 */
-export function getAdminProductSeriesPatch(seriesKey: string): AdminSeriesFieldPatch {
-  const entry =
-    PRODUCT_SERIES_DISPLAY.find((item) => item.key === seriesKey) ?? PRODUCT_SERIES_DISPLAY[0];
-  const taxonomy = getProductLineTaxonomy(entry.key);
+/** 由配置（CMS 优先）映射写入 product 系列字段 */
+export function getAdminProductSeriesPatch(
+  seriesKey: string,
+  config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
+): AdminSeriesFieldPatch {
+  const key = isProductSeriesDisplayKey(seriesKey) ? seriesKey : "la";
+  const fromConfig = getManagedProductSeriesEntries(config, { includeHidden: true }).find(
+    (item) => item.key === key
+  );
+  const fallback =
+    PRODUCT_SERIES_DISPLAY.find((item) => item.key === key) ?? PRODUCT_SERIES_DISPLAY[0];
+  const taxonomy = getProductLineTaxonomy(key);
   return {
-    productLine: entry.key,
-    seriesZh: entry.labelZh,
-    seriesEn: entry.labelEn,
+    productLine: key,
+    seriesZh: fromConfig?.labelZh?.trim() || fallback.labelZh,
+    seriesEn: fromConfig?.labelEn?.trim() || fallback.labelEn,
     seriesGroup: taxonomy.seriesGroup,
     category: taxonomy.category,
   };
@@ -181,6 +291,7 @@ const DEFAULT_ENGINEERING_SERIES: ProductSeriesOption[] = [
     labelZh: entry.labelZh,
     labelEn: entry.labelEn,
     sortOrder: index + 1,
+    visible: true,
     seriesGroup: "speaker" as const,
   })),
   {
@@ -189,6 +300,7 @@ const DEFAULT_ENGINEERING_SERIES: ProductSeriesOption[] = [
     labelZh: "电子产品",
     labelEn: "Electronics",
     sortOrder: PRODUCT_SERIES_DISPLAY.length + 1,
+    visible: true,
     seriesGroup: "speaker",
   },
 ];
@@ -308,7 +420,7 @@ function getCategory(
   return config.categories.find((category) => category.key === key);
 }
 
-/** CMS 有数据时合并工程系列标签/排序；流动演出子系列仍用默认（CMS 无独立条目） */
+/** CMS 有数据时合并工程系列标签/排序/可见性；固定七项 CMS 优先；流动演出仍用默认 */
 export function buildProductSeriesConfig(
   cmsRows?: CmsProductSeriesRow[] | null
 ): ProductSeriesConfig {
@@ -317,7 +429,7 @@ export function buildProductSeriesConfig(
 
   const cmsBySlug = new Map(
     cmsRows
-      .filter((row) => row.slug && row.visible !== false)
+      .filter((row) => row.slug)
       .map((row) => [normalize(row.slug), row])
   );
 
@@ -336,24 +448,29 @@ export function buildProductSeriesConfig(
           ? cmsGroup
           : series.seriesGroup;
 
-      // 统一七项：展示名 / 顺序固定，不被 CMS 长名称覆盖；electronics 等仍可读 CMS
+      // 固定七项：name / sortOrder / visible 优先 CMS，缺省回退默认短文案
       if (isProductSeriesDisplayKey(series.key)) {
-        const display = PRODUCT_SERIES_DISPLAY.find((item) => item.key === series.key)!;
+        const fallback = PRODUCT_SERIES_DISPLAY.find((item) => item.key === series.key)!;
+        const fallbackOrder =
+          PRODUCT_SERIES_DISPLAY.findIndex((item) => item.key === series.key) + 1;
         return {
           ...series,
-          labelZh: display.labelZh,
-          labelEn: display.labelEn,
-          sortOrder: PRODUCT_SERIES_DISPLAY.findIndex((item) => item.key === series.key) + 1,
+          labelZh: cms?.nameZh?.trim() || fallback.labelZh,
+          labelEn: cms?.nameEn?.trim() || fallback.labelEn,
+          sortOrder:
+            typeof cms?.sortOrder === "number" ? cms.sortOrder : fallbackOrder,
+          visible: cms ? cms.visible !== false : true,
           seriesGroup: seriesGroup ?? series.seriesGroup,
         };
       }
 
-      if (!cms) return series;
+      if (!cms) return { ...series, visible: series.visible !== false };
       return {
         ...series,
         labelZh: cms.nameZh?.trim() || series.labelZh,
         labelEn: cms.nameEn?.trim() || series.labelEn,
         sortOrder: typeof cms.sortOrder === "number" ? cms.sortOrder : series.sortOrder,
+        visible: cms.visible !== false,
         seriesGroup,
       };
     })
@@ -472,9 +589,9 @@ export function getSeriesBadge(
   const model = String(input.model ?? "").trim();
   if (!productLine) return { seriesZh: "", seriesEn: "" };
 
-  // 工程七项：始终用统一短文案，避免 CMS 长名称回写
+  // 工程七项：优先 CMS 配置文案
   if (isProductSeriesDisplayKey(productLine)) {
-    const display = getAdminProductSeriesPatch(productLine);
+    const display = getAdminProductSeriesPatch(productLine, config);
     return { seriesZh: display.seriesZh, seriesEn: display.seriesEn };
   }
 
@@ -501,12 +618,12 @@ export function getAdminSeriesPatch(
   _model?: string
 ): AdminSeriesFieldPatch {
   if (categoryKey === "engineering" && isProductSeriesDisplayKey(seriesKey)) {
-    return getAdminProductSeriesPatch(seriesKey);
+    return getAdminProductSeriesPatch(seriesKey, config);
   }
 
   const series = getSeriesOptions(config, categoryKey).find((entry) => entry.key === seriesKey);
   if (!series) {
-    return getAdminProductSeriesPatch("la");
+    return getAdminProductSeriesPatch("la", config);
   }
 
   const taxonomy = getProductLineTaxonomy(series.productLine);
@@ -523,7 +640,7 @@ export function getAdminSeriesPatch(
   }
 
   if (isProductSeriesDisplayKey(series.productLine)) {
-    return getAdminProductSeriesPatch(series.productLine);
+    return getAdminProductSeriesPatch(series.productLine, config);
   }
 
   return {
@@ -542,7 +659,7 @@ export function resolveAdminSeriesSavePatch(
 ): AdminSeriesFieldPatch | null {
   const productLine = String(input.productLine ?? "").trim();
   if (isProductSeriesDisplayKey(productLine)) {
-    return getAdminProductSeriesPatch(productLine);
+    return getAdminProductSeriesPatch(productLine, config);
   }
   const resolved = resolveProductSeriesSelection(config, input);
   if (resolved.category === "other" || !resolved.seriesKey) return null;
@@ -590,7 +707,7 @@ export type EngineeringSeriesNavEntry = {
 export function getEngineeringSeriesOrder(
   config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): EngineeringSeriesNavEntry[] {
-  const unified = getUnifiedEngineeringSeriesEntries().map((entry) => ({
+  const unified = getManagedProductSeriesEntries(config, { includeHidden: true }).map((entry) => ({
     key: entry.key as ProductSeriesTabFilter,
     labelZh: entry.labelZh,
     labelEn: entry.labelEn,

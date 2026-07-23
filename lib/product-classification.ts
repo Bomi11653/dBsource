@@ -3,6 +3,7 @@ import {
   DEFAULT_PRODUCT_SERIES_CONFIG,
   findTouringProduct,
   getEngineeringProductLines,
+  getManagedProductSeriesEntries,
   getTouringSeriesOrder,
   getUnifiedEngineeringSeriesEntries,
   isEngineeringProductLine,
@@ -94,8 +95,9 @@ export function getEngineeringSeriesNavItems(
   options?: { hideEmpty?: boolean; config?: ProductSeriesConfig }
 ): EngineeringSeriesNavItem[] {
   const hideEmpty = options?.hideEmpty ?? false;
-  // 导航与产品页 / 后台同一套 PRODUCT_SERIES_DISPLAY（不含电子产品）
-  const order = getUnifiedEngineeringSeriesEntries();
+  const config = options?.config ?? DEFAULT_PRODUCT_SERIES_CONFIG;
+  // 仅 visible=true 的固定七项；文案/排序来自 CMS 配置
+  const order = getManagedProductSeriesEntries(config, { includeHidden: false });
 
   return order
     .filter((entry) => {
@@ -103,7 +105,7 @@ export function getEngineeringSeriesNavItems(
       return products.some((product) => product.productLine === entry.key);
     })
     .map((entry) => ({
-      key: entry.key,
+      key: entry.key as ProductSeriesTabFilter,
       labelZh: entry.labelZh,
       labelEn: entry.labelEn,
       href: getProductSeriesHref(entry.key),

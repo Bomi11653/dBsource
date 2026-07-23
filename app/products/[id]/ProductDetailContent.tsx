@@ -7,6 +7,7 @@ import ProductStickyCta, { ProductDetailActions } from "@/components/ProductStic
 import StackedSpecPanel from "@/components/StackedSpecPanel";
 import type { ProductSpecSheet } from "@/data/product-specs";
 import { useI18n } from "@/components/I18nProvider";
+import { useSiteData } from "@/components/SiteDataProvider";
 import { getProductGallery } from "@/lib/products";
 import {
   formatProductHeading,
@@ -60,10 +61,11 @@ export default function ProductDetailContent({
   product: Product;
 }) {
   const { locale, t } = useI18n();
+  const { productSeriesConfig } = useSiteData();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [specsCopied, setSpecsCopied] = useState(false);
   const { primary, label } = getProductDisplayTitle(product, locale);
-  const seriesLabel = getProductSeriesLabel(product, locale);
+  const seriesLabel = getProductSeriesLabel(product, locale, productSeriesConfig);
   const gallery = getProductGallery(product);
   const body = product.detail?.[locale] ?? product.desc[locale];
 

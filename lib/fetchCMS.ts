@@ -130,7 +130,7 @@ const GLOBAL_SETTING_QUERY =
   "/global-setting?populate[logo]=true&populate[homeFeaturedCaseImage]=true";
 const SMART_SELECTION_PAGE_QUERY = "/smart-selection-page";
 const PRODUCT_SERIES_CONFIG_QUERY =
-  "/product-series-configs?sort[0]=sortOrder:asc&pagination[pageSize]=100&filters[visible][$eq]=true";
+  "/product-series-configs?sort[0]=sortOrder:asc&pagination[pageSize]=100";
 
 export const getProductSeriesConfig = cache(async function getProductSeriesConfig(): Promise<ProductSeriesConfig> {
   if (isMockMode()) return DEFAULT_PRODUCT_SERIES_CONFIG;

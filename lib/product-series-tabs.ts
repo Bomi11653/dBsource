@@ -29,7 +29,7 @@ export interface ProductSeriesTabRow {
 }
 
 function buildEngineeringTabMeta(config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG) {
-  const unified = getUnifiedEngineeringSeriesEntries();
+  const unified = getUnifiedEngineeringSeriesEntries(config).filter((entry) => entry.visible);
   const fullOrder = getEngineeringSeriesOrder(config);
   const tabOrder: ProductSeriesTabFilter[] = [
     "all",
@@ -41,7 +41,7 @@ function buildEngineeringTabMeta(config: ProductSeriesConfig = DEFAULT_PRODUCT_S
     other: "其他",
     electronics: "电子产品",
   } as Record<ProductSeriesTabFilter, string>;
-  for (const entry of unified) {
+  for (const entry of getUnifiedEngineeringSeriesEntries(config)) {
     tabLabels[entry.key as ProductSeriesTabFilter] = entry.labelZh;
   }
   for (const entry of fullOrder) {
@@ -188,14 +188,17 @@ export function parseProductSeriesTabFromParams(
   category: string | null,
   config: ProductSeriesConfig = DEFAULT_PRODUCT_SERIES_CONFIG
 ): ProductSeriesTabFilter {
-  if (sub && isProductSeriesTab(sub)) return sub;
-  if (series && isProductSeriesTab(series)) return series;
-
   const meta = buildEngineeringTabMeta(config);
+  const visibleTabs = new Set(meta.tabOrder);
+
+  if (sub && isProductSeriesTab(sub) && visibleTabs.has(sub)) return sub;
+  if (series && isProductSeriesTab(series) && visibleTabs.has(series)) return series;
 
   if (sub) {
     const subLine = sub.toLowerCase();
-    if (meta.lineToTab[subLine]) return meta.lineToTab[subLine];
+    if (meta.lineToTab[subLine] && visibleTabs.has(meta.lineToTab[subLine])) {
+      return meta.lineToTab[subLine];
+    }
     if (["electronics", "accessory", "driver", "unit48"].includes(subLine)) return "electronics";
     if (subLine === "suite") return "all";
   }

@@ -161,7 +161,7 @@ export function getAdminSeriesSelectionPatch(
   model?: string
 ): Partial<AdminProductRow> {
   if (categoryKey === "engineering" && isProductSeriesDisplayKey(seriesKey)) {
-    return getAdminProductSeriesPatch(seriesKey);
+    return getAdminProductSeriesPatch(seriesKey, config);
   }
   return getAdminSeriesPatch(config, categoryKey, seriesKey, model);
 }

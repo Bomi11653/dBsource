@@ -1,5 +1,8 @@
 import type { Locale, Product } from "@/data/mock";
-import { getProductSeriesDisplayLabel } from "@/lib/product-series-config";
+import {
+  getProductSeriesDisplayLabel,
+  type ProductSeriesConfig,
+} from "@/lib/product-series-config";
 
 export type ProductDisplayTitle = {
   /** 主标题：CMS 产品名称 */
@@ -24,15 +27,25 @@ export function getProductDisplayName(product: Product, locale: Locale = "zh"): 
 
 /**
  * 前台系列文案：
- * - 统一七项（la/lw/…）优先按 productLine 显示短名，对齐筛选/导航/后台
- * - 其他（tour / electronics 等）回退 CMS seriesZh/En
+ * 1) product-series-configs（按 productLine，含隐藏项）
+ * 2) 产品自身 seriesZh / seriesEn
+ * 3) 旧默认短文案 / slug
  */
-export function getProductSeriesLabel(product: Product, locale: Locale = "zh"): string {
-  const fromUnified = getProductSeriesDisplayLabel(product.productLine, locale);
-  if (fromUnified) return fromUnified;
+export function getProductSeriesLabel(
+  product: Product,
+  locale: Locale = "zh",
+  config?: ProductSeriesConfig
+): string {
+  const line = String(product.productLine ?? "").trim();
+  if (line) {
+    const fromConfig = getProductSeriesDisplayLabel(line, locale, config);
+    if (fromConfig) return fromConfig;
+  }
   const localized = product.series?.[locale]?.trim();
   if (localized) return localized;
-  return product.series?.zh?.trim() || product.series?.en?.trim() || "";
+  const other = product.series?.zh?.trim() || product.series?.en?.trim();
+  if (other) return other;
+  return line;
 }
 
 export function getProductDisplayTitle(product: Product, locale: Locale = "zh"): ProductDisplayTitle {
