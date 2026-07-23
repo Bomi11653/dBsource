@@ -1,18 +1,41 @@
 import { chatCompletion } from "@/lib/ai/deepseek";
-import { normalizeExtractedSpecsToTableFormat } from "@/lib/admin-product-specs";
+import {
+  normalizeExtractedSpecsToTableFormat,
+  type SpecTableRow,
+} from "@/lib/admin-product-specs";
 
 type CaseTranslation = {
   titleEn: string;
   descEn: string;
 };
 
-type ProductSpecExtraction = {
+/** One parameter row returned by PDF extraction (API contract). */
+export type ProductSpecExtractRow = {
+  id: string;
+  zhName: string;
+  zhValue: string;
+  enName: string;
+  enValue: string;
+};
+
+export type ProductSpecExtraction = {
+  rows: ProductSpecExtractRow[];
   specsZh: string;
   specsEn: string;
   descZh?: string;
   descEn?: string;
-  rowCount?: number;
+  rowCount: number;
 };
+
+function toExtractRows(tableRows: SpecTableRow[]): ProductSpecExtractRow[] {
+  return tableRows.map((row, index) => ({
+    id: String(row.id || `spec-${index}`),
+    zhName: String(row.labelZh || "").trim(),
+    zhValue: String(row.valueZh || "").trim() || "/",
+    enName: String(row.labelEn || "").trim(),
+    enValue: String(row.valueEn || row.valueZh || "").trim() || "/",
+  }));
+}
 
 export type BilingualPairInput = {
   zhKey: string;
@@ -120,12 +143,16 @@ export async function extractProductSpecsFromPdfText(input: {
   if (!specsZhRaw && !specsEnRaw) return null;
 
   const normalized = normalizeExtractedSpecsToTableFormat(specsZhRaw, specsEnRaw);
-  if (!normalized.rowCount) return null;
+  if (!normalized.rowCount || !normalized.rows.length) return null;
+
+  const rows = toExtractRows(normalized.rows);
+  if (!rows.length) return null;
 
   return {
+    rows,
     specsZh: normalized.specsZh,
     specsEn: normalized.specsEn,
-    rowCount: normalized.rowCount,
+    rowCount: rows.length,
     descZh: descZh || undefined,
     descEn: descEn || undefined,
   };

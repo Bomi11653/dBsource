@@ -1,5 +1,8 @@
 import { assertAdminRequest } from "@/lib/admin-auth";
-import { extractProductSpecsFromPdfText } from "@/lib/ai/admin-content";
+import {
+  extractProductSpecsFromPdfText,
+  type ProductSpecExtractRow,
+} from "@/lib/ai/admin-content";
 import { getAdminToken } from "@/lib/strapi-admin";
 import { getCmsUrl } from "@/lib/strapi-client";
 import fs from "node:fs";
@@ -121,15 +124,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Strict response contract: rows is required; each row one parameter with stable id.
-    const rows = extracted.rows.map((row, index) => ({
-      id: String(row.id || `spec-${index}`),
-      zhName: String(row.zhName || "").trim(),
-      zhValue: String(row.zhValue || "/").trim() || "/",
-      enName: String(row.enName || "").trim(),
-      enValue: String(row.enValue || row.zhValue || "/").trim() || "/",
-    }));
+    const rows: ProductSpecExtractRow[] = extracted.rows.map(
+      (row: ProductSpecExtractRow, index: number): ProductSpecExtractRow => ({
+        id: String(row.id || `spec-${index}`),
+        zhName: String(row.zhName || "").trim(),
+        zhValue: String(row.zhValue || "/").trim() || "/",
+        enName: String(row.enName || "").trim(),
+        enValue: String(row.enValue || row.zhValue || "/").trim() || "/",
+      })
+    );
 
-    const invalid = rows.some((row) => !row.zhName && !row.enName);
+    const invalid = rows.some(
+      (row: ProductSpecExtractRow) => !row.zhName && !row.enName
+    );
     if (invalid) {
       return NextResponse.json(
         { ok: false, error: "参数识别结果无效：存在缺少参数名的行" },
