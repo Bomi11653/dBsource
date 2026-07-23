@@ -231,7 +231,8 @@ export default function AboutContent({
               socialLinks={socialLinks}
               productModel={productModel}
               showForm
-              showSales={false}
+              showSales
+              salesPlacement="after-map"
               infoId="about-contact-info"
               mapId="about-contact-map"
               formId="about-contact-form"

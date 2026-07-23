@@ -117,15 +117,22 @@ export default function SalesContactCards({ contacts }: { contacts: SalesContact
             >
               <div className="flex flex-col items-center text-center">
                 <div className="flex items-center justify-center w-40 h-40 min-w-[160px] min-h-[160px] rounded-lg border border-white/10 bg-white p-2 shrink-0">
-                  <Image
-                    src={person.qrImage}
-                    alt={`${displayName} ${t.contact.wechatQr}`}
-                    width={160}
-                    height={160}
-                    className="w-full h-full object-contain"
-                    sizes="160px"
-                    decoding="async"
-                  />
+                  {person.qrImage ? (
+                    <Image
+                      src={person.qrImage}
+                      alt={`${displayName} ${t.contact.wechatQr}`}
+                      width={160}
+                      height={160}
+                      className="w-full h-full object-contain"
+                      sizes="160px"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full rounded bg-zinc-100"
+                      aria-hidden
+                    />
+                  )}
                 </div>
                 <p className="mt-3 text-sm sm:text-base font-medium text-white leading-snug break-words max-w-full">
                   {displayName}

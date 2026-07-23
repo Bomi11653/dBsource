@@ -67,12 +67,14 @@ function buildRemotePatterns() {
 const allowSvgFromCms =
   process.env.NEXT_PUBLIC_ALLOW_CMS_SVG === "true" && Boolean(cmsHostname());
 
-/** Ensure pdf.worker.mjs is copied into .next/standalone for PM2/server.js deploys */
-const PDF_WORKER_TRACING = [
-  "./node_modules/pdf-parse/dist/worker/pdf.worker.mjs",
-  "./node_modules/pdf-parse/dist/pdf-parse/cjs/pdf.worker.mjs",
-  "./node_modules/pdf-parse/dist/pdf-parse/esm/pdf.worker.mjs",
-  "./node_modules/pdf-parse/dist/pdf-parse/web/pdf.worker.mjs",
+/**
+ * Trace server-side PDF deps into standalone.
+ * Runtime uses pdf-parse/worker getData() (embedded); loader must be present on disk.
+ */
+const PDF_SERVER_TRACING = [
+  "./lib/pdf-parse-loader.cjs",
+  "./node_modules/pdf-parse/**/*",
+  "./node_modules/pdfjs-dist/**/*",
 ];
 
 const nextConfig = {
@@ -82,9 +84,9 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["pdf-parse", "pdfjs-dist"],
     outputFileTracingIncludes: {
-      "/api/admin/product-specs": PDF_WORKER_TRACING,
-      "/api/admin/product-specs/route": PDF_WORKER_TRACING,
-      "./app/api/admin/product-specs/route.ts": PDF_WORKER_TRACING,
+      "/api/admin/product-specs": PDF_SERVER_TRACING,
+      "/api/admin/product-specs/route": PDF_SERVER_TRACING,
+      "./app/api/admin/product-specs/route.ts": PDF_SERVER_TRACING,
     },
   },
   async rewrites() {

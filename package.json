@@ -23,7 +23,8 @@
     "sync:product-images": "python scripts/sync-product-images.py",
     "sync:product-images:strapi": "node scripts/sync-product-images-to-strapi.mjs",
     "sync:product-images:all": "npm run sync:product-images && npm run sync:product-images:strapi",
-    "docs:ppt": "node scripts/generate-project-report-ppt.mjs"
+    "docs:ppt": "node scripts/generate-project-report-ppt.mjs",
+    "verify:pdf-worker": "node scripts/verify-pdf-worker.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",

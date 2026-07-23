@@ -10,48 +10,44 @@ export type PDFParseInstance = {
 type PDFParseClass = new (params: { data: Buffer }) => PDFParseInstance;
 
 type PdfParseLoader = {
-  listPdfWorkerCandidates: () => string[];
-  resolvePdfWorkerPath: () => string;
-  resolvePdfWorkerSrc: () => string;
+  extractPdfText: (data: Buffer | Uint8Array) => Promise<string>;
   getPDFParseClass: () => PDFParseClass;
+  isWorkerConfigured: () => boolean;
 };
 
 let cachedLoader: PdfParseLoader | null = null;
 
+function resolveLoaderAbs(): string {
+  const candidates = [
+    path.join(process.cwd(), "lib", "pdf-parse-loader.cjs"),
+    path.join(process.cwd(), "..", "lib", "pdf-parse-loader.cjs"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  throw new Error(
+    `PDF loader 缺失。已尝试：${candidates.join(" | ")}。请确认部署包含 lib/pdf-parse-loader.cjs 后重启网站进程。`
+  );
+}
+
 /**
- * Load the CommonJS helper from disk at runtime.
- * The app-route webpack bundle must NOT inline pdf-parse / require.resolve("pdf-parse"),
- * otherwise production rewrites resolve to numeric module ids (e.g. 74193) or drops require.
+ * Runtime-load CommonJS PDF extractor (embedded worker via pdf-parse/worker getData).
+ * Do not statically import pdf-parse in App Router bundles.
  */
 function loadLoader(): PdfParseLoader {
   if (cachedLoader) return cachedLoader;
 
-  const loaderAbs = path.join(process.cwd(), "lib", "pdf-parse-loader.cjs");
-  if (!fs.existsSync(loaderAbs)) {
-    throw new Error(
-      `PDF loader 缺失：${loaderAbs}。请确认部署包含 lib/pdf-parse-loader.cjs 后重启网站进程。`
-    );
-  }
-
-  // Parent must be a real on-disk filename so Node createRequire works under Next.
-  const nodeRequire = createRequire(path.join(process.cwd(), "package.json"));
+  const loaderAbs = resolveLoaderAbs();
+  const pkgJson = path.join(path.dirname(path.dirname(loaderAbs)), "package.json");
+  const nodeRequire = createRequire(fs.existsSync(pkgJson) ? pkgJson : loaderAbs);
   cachedLoader = nodeRequire(loaderAbs) as PdfParseLoader;
   return cachedLoader;
 }
 
-export function listPdfWorkerCandidates(): string[] {
-  return loadLoader().listPdfWorkerCandidates();
+export async function extractPdfText(data: Buffer | Uint8Array): Promise<string> {
+  return loadLoader().extractPdfText(data);
 }
 
-export function resolvePdfWorkerPath(): string {
-  return loadLoader().resolvePdfWorkerPath();
-}
-
-export function resolvePdfWorkerSrc(): string {
-  return loadLoader().resolvePdfWorkerSrc();
-}
-
-/** Configure pdfjs worker once before parsing (fixes production ./pdf.worker.mjs errors). */
 export function getPDFParseClass(): PDFParseClass {
   return loadLoader().getPDFParseClass();
 }

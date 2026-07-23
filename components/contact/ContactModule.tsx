@@ -2,7 +2,9 @@
 
 import type { ContactInfo, QRItem, SocialLinkItem } from "@/data/mock";
 import type { SalesContactItem } from "@/data/sales-contacts";
-import ContactDetailsLayout from "@/components/contact/ContactDetailsLayout";
+import ContactDetailsLayout, {
+  type SalesPlacement,
+} from "@/components/contact/ContactDetailsLayout";
 import ContactForm from "@/components/contact/ContactForm";
 
 /**
@@ -20,6 +22,7 @@ export default function ContactModule({
   mapId = "contact-map",
   showForm = true,
   showSales = true,
+  salesPlacement = "default",
 }: {
   contact: ContactInfo;
   salesContacts: SalesContactItem[];
@@ -29,9 +32,11 @@ export default function ContactModule({
   formId?: string;
   infoId?: string;
   mapId?: string;
-  /** 关于页等场景仅展示联系信息与二维码 */
+  /** 关于页等场景可关闭表单 */
   showForm?: boolean;
   showSales?: boolean;
+  /** default=联系页顺序；after-map=关于页通栏（地图区域之后、占满两列） */
+  salesPlacement?: SalesPlacement;
 }) {
   return (
     <ContactDetailsLayout
@@ -41,6 +46,7 @@ export default function ContactModule({
       socialLinks={socialLinks}
       infoId={infoId}
       mapId={mapId}
+      salesPlacement={salesPlacement}
       formSlot={
         showForm ? (
           <ContactForm productModel={productModel} formId={formId} />
