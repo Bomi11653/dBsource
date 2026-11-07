@@ -1,0 +1,46 @@
+# Copy to .github/workflows/ci.yml of a NEW project only after adapting.
+# This example never deploys, never uses production secrets, and does not mutate DB.
+name: build-checks-example
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_USE_MOCK_DATA: 'true' # Only to build CI; production must use real CMS.
+      NEXT_PUBLIC_SITE_URL: 'http://localhost:3003'
+      CMS_URL: 'http://127.0.0.1:1337'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - name: PDF worker smoke (if script exists)
+        run: |
+          if [ -f scripts/verify-pdf-worker.mjs ]; then
+            node scripts/verify-pdf-worker.mjs
+          fi
+      - name: Reusable CMS client unit tests (if included)
+        run: |
+          if [ -f templates/reusable/cms-client.test.mjs ]; then
+            node --test templates/reusable/cms-client.test.mjs
+          fi
+  cms:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: cms/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
